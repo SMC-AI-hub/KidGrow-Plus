@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KidGrow Pro · Pediatric Milestone, Immunization & Growth Suite (IAP Standards)</title>
+<meta name="description" content="Professional pediatric suite: developmental milestone assessment, IAP digital vaccination record, and IAP/WHO growth assessment with charts.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0e7c7b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KidGrow Pro">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+</head>
+<body>
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo" id="brandLogo">👶</div>
+      <div><h1 id="brandName">KidGrow Pro</h1><small id="brandSub">Pediatric Suite · IAP</small></div>
+    </div>
+    <nav class="nav" id="sideNav">
+      <div class="nav-group">Overview</div>
+      <button data-page="dashboard" class="active"><span class="ic">📊</span>Dashboard</button>
+      <div class="nav-group">Clinic flow</div>
+      <button data-page="children"><span class="ic">🧒</span>Children</button>
+      <button data-page="nb"><span class="ic">👶</span>Newborn</button>
+      <button data-page="schedule"><span class="ic">📅</span>Schedule</button>
+      <button data-page="front"><span class="ic">🎟️</span>Frontdesk</button>
+      <button data-page="stock"><span class="ic">🧊</span>Vaccine Stock</button>
+      <button data-page="display"><span class="ic">📺</span>Display</button>
+      <div class="nav-group">Clinical care</div>
+      <button data-page="milestones"><span class="ic">🌟</span>Milestones</button>
+      <button data-page="vaccines"><span class="ic">💉</span>Vaccination Record</button>
+      <button data-page="card"><span class="ic">🧾</span>Vaccine Card</button>
+      <button data-page="aefi"><span class="ic">⚠️</span>AEFI</button>
+      <button data-page="growth"><span class="ic">📈</span>Growth (IAP/WHO)</button>
+      <button data-page="labs"><span class="ic">🩸</span>Labs & Anaemia</button>
+      <button data-page="screen"><span class="ic">🔍</span>Screening</button>
+      <button data-page="diet"><span class="ic">🥗</span>Diet</button>
+      <button data-page="visits"><span class="ic">🩺</span>Visits & Notes</button>
+      <button data-page="rx"><span class="ic">💊</span>Prescription</button>
+      <button data-page="consent"><span class="ic">✍️</span>Consent</button>
+      <div class="nav-group">Insights</div>
+      <button data-page="analytics"><span class="ic">📊</span>Analytics</button>
+      <button data-page="emg"><span class="ic">🚨</span>Emergency</button>
+      <button data-page="hand"><span class="ic">📄</span>Handouts</button>
+      <button data-page="reports"><span class="ic">🖨️</span>Reports</button>
+      <button data-page="export"><span class="ic">📤</span>Exports</button>
+      <div class="nav-group">System</div>
+      <button data-page="users"><span class="ic">👥</span>Users & Audit</button>
+      <button data-page="settings"><span class="ic">⚙️</span>Settings</button>
+    </nav>
+    <div id="userChip"></div>
+    <div class="side-foot"><b>KidGrow Pro v9</b> · Sep 2026<br>IAP ACVIP 2023-24 · WHO MGRS 2006 (0–5y) · IAP 2015 (5–18y)<br>Screening aid — clinical judgement prevails.</div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="topbar">
+      <button class="icon-btn" id="navToggle" onclick="toggleNav()" title="Collapse / expand menu">☰</button>
+      <div><h2 id="pageTitle">Dashboard</h2><div class="sub" id="clinicLine">—</div></div>
+      <span id="netBadge" class="badge b-green" title="Connection status">● Online</span>
+      <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Dark / light mode">🌙</button>
+      <button class="icon-btn" id="settingsGear" onclick="go('settings')" title="Settings — clinic profile, logo, doctors">⚙️</button>
+      <div class="child-picker">
+        <div class="avatar" id="childAvatar">–</div>
+        <div><select id="childSelect" title="Active child"></select>
+        <div class="sub" id="childAgeLine" style="font-size:11.5px"></div></div>
+        <button class="btn btn-p btn-sm" onclick="openChildModal()">+ New</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- ======== DASHBOARD ======== -->
+      <section class="page active" id="pg-dashboard">
+        <div class="hero no-print" id="dashHero"></div>
+        <div class="toolbar"><span class="badge b-teal">● IAP Standards Edition</span><span class="badge b-gray" id="dashChildTag"></span><span class="sp"></span>
+          <button class="btn btn-o btn-sm" onclick="exportData()">⬇ Export backup</button>
+          <button class="btn btn-o btn-sm" onclick="document.getElementById('importFile').click()">⬆ Import</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        </div>
+        <div class="grid g4" id="dashStats"></div>
+        <div style="height:16px"></div>
+        <div class="card"><h3>🏥 Today's clinic pulse</h3><div class="hint">Appointments + doses needing action, across all children</div><div id="dashClinic"></div></div>
+        <div style="height:16px"></div>
+        <div class="grid g2">
+          <div class="card"><h3>💉 Vaccination status</h3><div class="hint">Next due & overdue (IAP ACVIP timetable)</div><div id="dashVac"></div></div>
+          <div class="card"><h3>📈 Growth snapshot</h3><div class="hint">Latest anthropometry with IAP/WHO interpretation</div><div id="dashGrowth"></div></div>
+        </div>
+        <div style="height:16px"></div>
+        <div class="grid g2">
+          <div class="card"><h3>🌟 Milestone summary</h3><div class="hint">Current age-band progress by domain</div><div id="dashMs"></div></div>
+          <div class="card"><h3>🩺 Recent visits</h3><div class="hint">Last clinical encounters</div><div id="dashVisits"></div></div>
+        </div>
+      </section>
+
+      <!-- ======== SCHEDULE ======== -->
+      <section class="page" id="pg-schedule">
+        <div class="grid g4" id="schStats"></div>
+        <div style="height:16px"></div>
+        <div class="grid g2">
+          <div class="card"><h3>📅 Appointments</h3><div class="hint">Day diary + upcoming bookings</div><div id="apptList"></div></div>
+          <div class="card"><h3>💉 Vaccine reminders</h3><div class="hint">Defaulters first — WhatsApp or copy message</div><div id="remList"></div></div>
+        </div>
+      </section>
+
+      <!-- ======== ANALYTICS ======== -->
+      <section class="page" id="pg-analytics">
+        <div class="toolbar"><span style="font-size:13px;color:var(--muted)">Clinic-wide quality indicators</span><span class="sp"></span><button class="btn btn-o btn-sm" onclick="printPage('pg-analytics')">🖨️ Print</button></div>
+        <div class="grid g4" id="anStats"></div>
+        <div style="height:16px"></div>
+        <div class="grid g2">
+          <div class="card"><h3>🛡️ Immunisation coverage</h3><div id="anCov"></div></div>
+          <div class="card"><h3>🥗 Nutrition snapshot</h3><div id="anNut"></div></div>
+        </div>
+        <div style="height:16px"></div>
+        <div class="grid g2">
+          <div class="card"><h3>🚨 Growth faltering</h3><div id="anFalt"></div></div>
+          <div class="card"><h3>🩺 Visit volume</h3><div id="anVol"></div></div>
+        </div>
+        <div style="height:16px"></div>
+        <div class="card"><h3>💼 Management — revenue & footfall</h3><div id="anMgmt"></div></div>
+      </section>
+
+      <!-- ======== VACCINE CARD ======== -->
+      <section class="page" id="pg-card">
+        <div id="cardBox"></div>
+      </section>
+
+      <!-- ======== EMERGENCY ======== -->
+      <section class="page" id="pg-emg">
+        <div class="card"><h3>🚨 Emergency ready-reckoner</h3><div class="hint">Weight-based resuscitation &amp; common-drug doses (PALS / standard formularies) — verify before use</div><div id="emgBox"></div></div>
+      </section>
+
+      <!-- ======== DIET ======== -->
+      <section class="page" id="pg-diet"><div id="dietBox"></div></section>
+
+      <!-- ======== CONSENT ======== -->
+      <section class="page" id="pg-consent"><div id="conBox"></div></section>
+      <section class="page" id="pg-conprint"><div id="conPrint"></div></section>
+
+      <!-- ======== HANDOUTS ======== -->
+      <section class="page" id="pg-hand"><div id="handBox"></div></section>
+
+      <!-- ======== EXPORTS ======== -->
+      <section class="page" id="pg-export"><div id="expBox"></div></section>
+
+      <!-- ======== NEWBORN ======== -->
+      <section class="page" id="pg-nb"><div id="nbBox"></div></section>
+
+      <!-- ======== LABS ======== -->
+      <section class="page" id="pg-labs"><div id="labsBox"></div></section>
+
+      <!-- ======== AEFI ======== -->
+      <section class="page" id="pg-aefi"><div id="aefiBox"></div></section>
+
+      <!-- ======== SCREENING ======== -->
+      <section class="page" id="pg-screen"><div id="screenBox"></div></section>
+
+      <!-- ======== RX ======== -->
+      <section class="page" id="pg-rx"><div id="rxBox"></div></section>
+
+      <!-- ======== FRONTDESK ======== -->
+      <section class="page" id="pg-front"><div id="frontBox"></div></section>
+
+      <!-- ======== VACCINE STOCK ======== -->
+      <section class="page" id="pg-stock"><div id="stockBox"></div></section>
+
+      <!-- ======== TOKEN DISPLAY ======== -->
+      <section class="page display-page" id="pg-display"><div id="displayBox"></div></section>
+
+      <!-- ======== USERS ======== -->
+      <section class="page" id="pg-users"><div id="usersBox"></div></section>
+
+      <!-- ======== RX PRINT ======== -->
+      <section class="page" id="pg-rxprint"><div id="rxPrint"></div></section>
+
+      <!-- ======== BILL PRINT ======== -->
+      <section class="page" id="pg-billprint"><div id="billPrint"></div></section>
+
+      <!-- ======== GROWTH FULL REPORT PRINT ======== -->
+      <section class="page" id="pg-growthprint"><div id="growthFullPrint"></div></section>
+
+      <!-- ======== MILESTONES FULL REPORT PRINT ======== -->
+      <section class="page" id="pg-msprint"><div id="msFullPrint"></div></section>
+
+      <!-- ======== DAY COLLECTION PRINT ======== -->
+      <section class="page" id="pg-dayprint"><div id="dayPrint"></div></section>
+
+      <!-- ======== CHILDREN ======== -->
+      <section class="page" id="pg-children">
+        <div class="toolbar">
+          <input class="search" id="childSearch" placeholder="🔍 Search children…" oninput="renderChildren()">
+          <span class="sp"></span>
+          <button class="btn btn-p" onclick="openChildModal()">+ Register child</button>
+        </div>
+        <div class="grid g3" id="childCards"></div>
+      </section>
+
+      <!-- ======== MILESTONES ======== -->
+      <section class="page" id="pg-milestones">
+        <div class="toolbar">
+          <div class="tabs" id="msTabs" style="margin:0"></div>
+          <span class="sp"></span>
+          <button class="btn btn-o btn-sm" onclick="printPage('pg-milestones')">🖨️ Print assessment</button>
+          <button class="btn btn-o btn-sm" onclick="printMilestonesFull()">📋 Full report</button>
+          <button class="btn btn-o btn-sm" onclick="exportMilestonesCSV()">⬇ CSV</button>
+        </div>
+        <div id="msAlert"></div>
+        <div class="grid g4" id="msDomainStats" style="margin-bottom:16px"></div>
+        <div class="card"><h3 id="msBandTitle">—</h3><div class="hint" id="msBandHint"></div><div id="msList"></div></div>
+        <div style="height:16px"></div>
+        <div class="card"><h3>🚩 Red-flag watch (this band)</h3><div class="hint">Any red flag → counsel + early referral to developmental paediatrics / early intervention</div><div id="msRed"></div></div>
+      </section>
+
+      <!-- ======== VACCINES ======== -->
+      <section class="page" id="pg-vaccines">
+        <div class="toolbar">
+          <div class="progress" style="flex:1;min-width:180px"><div id="vacBar" style="width:0%"></div></div>
+          <b id="vacPct">0%</b>
+          <span class="sp"></span>
+          <button class="btn btn-o btn-sm" onclick="printPage('pg-vaccines')">🖨️ Print record</button>
+          <button class="btn btn-p btn-sm" onclick="printCertificate()">🏅 Certificate</button>
+        </div>
+        <div id="vacAlerts"></div>
+        <div class="timeline" id="vacTimeline"></div>
+        <div id="vacExtras" style="margin-top:4px"></div>
+      </section>
+
+            <!-- ======== GROWTH ======== -->
+      <section class="page" id="pg-growth">
+        <div class="toolbar">
+          <button class="btn btn-p" onclick="openGrowthModal()">+ Record measurements</button>
+          <button class="btn btn-o btn-sm" onclick="toggleMeasureTable()">📋 History</button>
+          <button class="btn btn-o btn-sm" onclick="printGrowthSheet()">🖨️ Growth sheet</button>
+          <button class="btn btn-o btn-sm" onclick="printGrowthFull()">📈 Full report (all charts)</button>
+          <span class="sp"></span>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;text-transform:none;letter-spacing:0;margin:0;white-space:nowrap"><input type="checkbox" id="corrAgeTgl" style="width:16px" onchange="toggleCorrAge(this.checked)"> Corrected age for preterm</label>
+        </div>
+        <div id="growthPmaLine"></div>
+        <div class="tabs" id="growthSubTabs">
+          <button data-gs="charts" class="active">📊 Charts</button>
+          <button data-gs="overview">🖼️ All charts</button>
+          <button data-gs="assess">🧾 Full assessment</button>
+          <button data-gs="velocity">🚀 Velocity</button>
+          <button data-gs="puberty">🧍 Puberty & body</button>
+          <button data-gs="ref">ⓘ Standards & method</button>
+        </div>
+        <div id="gs-charts">
+          <div class="card" id="measureTableCard" style="display:none;margin-bottom:16px"><h3>Measurement history</h3><div class="hint">“B” = birth point from profile · BMI auto-calculated · ✎ edit stored visits</div><div style="overflow:auto"><table class="tbl" id="measureTable"></table></div></div>
+          <div class="grid g4" id="growthStats" style="margin-bottom:16px"></div>
+          <div id="growthAlerts"></div>
+          <div class="toolbar"><div class="tabs" id="growthTabs" style="margin:0">
+            <button data-g="wfa" class="active">Weight</button>
+            <button data-g="lhfa">Length / Height</button>
+            <button data-g="wfh">Weight-for-ht</button>
+            <button data-g="bmi">BMI</button>
+            <button data-g="hc">Head circ.</button>
+            <button data-g="muac">MUAC</button>
+          </div></div>
+          <div class="toolbar">
+            <span style="font-size:12px;color:var(--muted);font-weight:700">LINES</span>
+            <div class="tabs" id="gLineTabs" style="margin:0">
+              <button data-gl="pct" class="active">Percentiles</button>
+              <button data-gl="z">Z-scores</button>
+            </div>
+            <span style="font-size:12px;color:var(--muted);font-weight:700">5–18 REF</span>
+            <div class="tabs" id="gRefTabs" style="margin:0">
+              <button data-gr="iap" class="active">IAP 2015</button>
+              <button data-gr="cdc">CDC 2000</button>
+            </div>
+            <span class="sp"></span>
+            <button class="btn btn-o btn-sm" onclick="toggleFullRange()">↔ Full 0–18 view</button>
+          </div>
+          <div class="card"><h3 id="gChartTitle">—</h3><div class="hint" id="gChartHint"></div>
+            <canvas class="chart" id="gChart" width="900" height="360"></canvas>
+            <div class="legend" id="gLegend"></div>
+          </div>
+          <div class="footer-note">Exact references: WHO MGRS 2006 (0–5 y, daily LMS) · CDC 2000 + extended BMI (2–20 y alternative) · IAP 2015-aligned curves (5–18 y default, screening) · IAP BMI cutoffs (adult-equiv 23/27). Preterm: corrected age to 24 mo. Confirm diagnostic labels on official charts.</div>
+        </div>
+        <div id="gs-assess" style="display:none"></div>
+        <div id="gs-velocity" style="display:none"></div>
+        <div id="gs-puberty" style="display:none"></div>
+        <div id="gs-ref" style="display:none"></div>
+        <div id="gs-overview" style="display:none"></div>
+      </section>
+<!-- ======== VISITS ======== -->
+      <section class="page" id="pg-visits">
+        <div class="toolbar"><button class="btn btn-p" onclick="openVisitModal()">+ New visit note</button><span class="sp"></span>
+        <button class="btn btn-o btn-sm" onclick="printPage('pg-visits')">🖨️ Print notes</button></div>
+        <div id="visitList"></div>
+      </section>
+
+      <!-- ======== REPORTS ======== -->
+      <section class="page" id="pg-reports">
+        <div class="grid g2">
+          <div class="card"><h3>📄 Comprehensive health summary</h3><div class="hint">One-page: profile, growth, vaccines, milestones, visits</div>
+            <button class="btn btn-p" onclick="buildSummary();printPage('pg-summary')">Preview & print summary</button></div>
+          <div class="card"><h3>🏅 Immunization certificate</h3><div class="hint">Official-looking record with clinic seal block</div>
+            <button class="btn btn-d" onclick="printCertificate()">Preview & print certificate</button></div>
+        </div>
+        <div style="height:16px"></div>
+        <div class="card" id="summaryCard" style="display:none"><div id="summaryBody"></div></div>
+      </section>
+
+      <!-- printable summary (built dynamically) -->
+      <section class="page" id="pg-summary"><div class="card"><div id="summaryPrint"></div></div></section>
+      <!-- printable growth sheet -->
+      <section class="page" id="pg-gsheet"><div class="card"><div id="gsheetPrint"></div></div></section>
+      <!-- printable certificate -->
+      <section class="page" id="pg-cert"><div class="card"><div id="certPrint"></div></div></section>
+
+      <!-- ======== SETTINGS ======== -->
+      <section class="page" id="pg-settings">
+        <div class="grid g2">
+          <div class="card"><h3>🏥 Clinic profile</h3><div class="hint">Appears on reports & certificates</div>
+            <div class="form-grid">
+              <div class="full"><label>Clinic / Hospital name</label><input id="sClinic" placeholder="e.g. Smile Child Care Clinic"></div>
+              <div><label>Doctor name</label><input id="sDoctor" placeholder="e.g. Dr. A. Sharma, MD (Paeds)"></div>
+              <div><label>Registration no.</label><input id="sReg" placeholder="MCI / State reg."></div>
+              <div class="full"><label>Address & phone</label><input id="sAddr" placeholder="Address · phone"></div>
+              <div class="full"><label>Clinic / hospital logo (PNG/JPG · shows on sidebar + all letterheads)</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><img id="logoPrev" alt="" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;display:none"><input type="file" id="sLogo" accept="image/*" style="max-width:230px" onchange="handleLogoFile(this)"><button class="btn btn-o btn-xs" onclick="removeLogo()">Remove</button></div></div>
+            </div>
+            <button class="btn btn-p" onclick="saveSettings()">💾 Save clinic profile</button>
+          </div>
+          <div class="card"><h3>👩‍⚕️ Doctors & letterheads</h3><div class="hint">Add all consulting doctors · ● selected prints on reports</div><div id="docBox"></div></div>
+          <div class="card"><h3>🗄️ Data management</h3><div class="hint">All data stays on this device (offline-first, private) · App <b>v9</b></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-o" onclick="exportData()">⬇ Export backup (JSON)</button>
+              <button class="btn btn-p btn-sm" id="installAppBtn" style="display:none" onclick="installApp()">📲 Install app</button>
+              <button class="btn btn-o" onclick="document.getElementById('importFile').click()">⬆ Import backup</button>
+              <button class="btn btn-danger" onclick="factoryReset()">🗑 Wipe all data</button>
+            </div>
+            <div class="footer-note">Tip: export a backup monthly. Importing replaces current data. Growth references: WHO MGRS 2006 (0–5 y) + IAP 2015 (5–18 y); vaccines: IAP ACVIP 2023-24. Always confirm on official charts before labelling malnutrition/obesity.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- mobile nav -->
+<div class="mobile-nav"><div id="mobNav">
+  <button data-page="dashboard" class="active"><span class="ic">📊</span>Home</button>
+  <button data-page="milestones"><span class="ic">🌟</span>Miles</button>
+  <button data-page="vaccines"><span class="ic">💉</span>Shots</button>
+  <button data-page="growth"><span class="ic">📈</span>Growth</button>
+  <button data-page="children"><span class="ic">🧒</span>Kids</button>
+  <button data-page="emg"><span class="ic">🚨</span>SOS</button>
+</div></div>
+
+<!-- ============ MODALS ============ -->
+<div class="modal-bg" id="mChild"><div class="modal">
+  <h3 id="childModalTitle">Register child</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">Starred fields are required</div>
+  <div class="form-grid">
+    <input type="hidden" id="cId">
+    <div><label>Full name *</label><input id="cName" placeholder="e.g. Aarav Kumar"></div>
+    <div><label>Gender *</label><select id="cSex"><option value="boy">Boy</option><option value="girl">Girl</option></select></div>
+    <div><label>Date of birth *</label><input type="date" id="cDob"></div>
+    <div><label>Blood group</label><select id="cBlood"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+    <div><label>Birth weight (kg)</label><input type="number" step="0.01" id="cBirthWt" placeholder="e.g. 2.9"></div>
+    <div><label>Gestation (weeks)</label><input type="number" id="cGest" placeholder="e.g. 39"></div>
+    <div><label>Birth length (cm)</label><input type="number" step="0.1" id="cBirthLen" placeholder="e.g. 49"></div>
+    <div><label>Birth head circ. (cm)</label><input type="number" step="0.1" id="cBirthHC" placeholder="e.g. 34"></div>
+    <div><label>Father name</label><input id="cFather" placeholder="Father's name"></div>
+    <div><label>Mother name</label><input id="cMother" placeholder="Mother's name"></div>
+    <div><label>Father height (cm)</label><input type="number" step="0.1" id="cFHt" placeholder="e.g. 172"></div>
+    <div><label>Mother height (cm)</label><input type="number" step="0.1" id="cMHt" placeholder="e.g. 160"></div>
+    <div><label>Phone</label><input id="cPhone" placeholder="Parent phone"></div>
+    <div><label>ABHA ID (14-digit)</label><input id="cAbha" placeholder="e.g. 91-2345-6789-0123"></div>
+    <div><label>Pediatrician</label><input id="cPed" placeholder="Treating doctor"></div>
+    <div class="full"><label>Allergies / conditions</label><input id="cAllergy" placeholder="e.g. Egg allergy, asthma"></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mChild')">Cancel</button><button class="btn btn-p" onclick="saveChild()">💾 Save child</button></div>
+</div></div>
+
+<div class="modal-bg" id="mGrowth"><div class="modal">
+  <h3>Record measurements</h3><div class="hint" style="font-size:12.5px;color:var(--muted)" id="gChildLine"></div>
+  <div class="form-grid">
+    <input type="hidden" id="gId">
+    <div><label>Date *</label><input type="date" id="gDate"></div>
+    <div><label>Age (auto)</label><input id="gAgeShow" disabled></div>
+    <div><label>Weight (kg) *</label><input type="number" step="0.01" id="gWt" placeholder="e.g. 12.4"></div>
+    <div><label>Length / Height (cm) *</label><input type="number" step="0.1" id="gHt" placeholder="e.g. 87.5"></div>
+    <div><label>Measured as *</label><select id="gPos"><option value="auto">Auto (length &lt; 2 y)</option><option value="length">Length — lying down</option><option value="height">Height — standing</option></select></div>
+    <div><label>Head circumference (cm)</label><input type="number" step="0.1" id="gHc" placeholder="e.g. 47.2"></div>
+    <div><label>MUAC (cm)</label><input type="number" step="0.1" id="gMuac" placeholder="6–59 mo"></div>
+    <div><label>Sitting height (cm)</label><input type="number" step="0.1" id="gSit" placeholder="Upper segment"></div>
+    <div><label>Arm span (cm)</label><input type="number" step="0.1" id="gSpan" placeholder="Fingertip–fingertip"></div>
+    <div><label>Oedema</label><select id="gEdema"><option value="">None</option><option value="+">+ — feet only</option><option value="++">++ — legs</option><option value="+++">+++ — generalised</option></select></div>
+    <div><label>Appetite test</label><select id="gApp"><option value="">Not done</option><option value="good">Pass (good)</option><option value="poor">Fail (poor)</option></select></div>
+    <div><label>BMI (auto)</label><input id="gBmiShow" disabled></div>
+    <div><label>Measured by</label><input id="gBy" placeholder="e.g. Nurse / Doctor"></div>
+    <div class="full"><label>Notes</label><input id="gNote" placeholder="e.g. Mild cold, measured on scale B"></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mGrowth')">Cancel</button><button class="btn btn-p" onclick="saveGrowth()">💾 Save measurement</button></div>
+</div></div>
+
+<div class="modal-bg" id="mVac"><div class="modal">
+  <h3 id="vacModalTitle">Record vaccination</h3><div class="hint" style="font-size:12.5px;color:var(--muted)" id="vacModalSub"></div>
+  <div class="form-grid">
+    <input type="hidden" id="vCode"><input type="hidden" id="vVisit">
+    <div><label>Date given *</label><input type="date" id="vDate"></div>
+    <div><label>Batch / Lot no.</label><input id="vBatch" placeholder="e.g. B-2213"></div>
+    <div><label>Brand — select or type</label><input id="vBrand" list="vBrandList" placeholder="e.g. Hexaxim" autocomplete="off"><datalist id="vBrandList"></datalist></div>
+    <div><label>Manufacturer (auto)</label><input id="vMfr" placeholder="Auto-fills for known brands"></div>
+    <div><label>Site</label><input id="vSite" placeholder="e.g. Left thigh"></div>
+    <div><label>Given by</label><input id="vBy" placeholder="e.g. Dr. / Nurse name"></div>
+    <div class="full"><label>Adverse reaction (if any)</label><input id="vAer" placeholder="e.g. Mild fever 24h — or leave blank"></div>
+    <div class="full"><label>Remarks</label><input id="vNote" placeholder="e.g. Next visit counselled"></div>
+    <div class="full" id="vSibBox" style="display:none;background:#f8fafc;border:1px dashed var(--line);border-radius:10px;padding:10px 12px"></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+    <button class="btn btn-danger btn-sm" id="vClearBtn" onclick="clearVaccine()">Remove entry</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-o" onclick="closeModal('mVac')">Cancel</button>
+    <button class="btn btn-p" onclick="saveVaccine()">💾 Save</button>
+  </div>
+</div></div>
+
+<div class="modal-bg" id="mStock"><div class="modal">
+  <h3 id="stockModalTitle">+ Add stock</h3><div class="hint" style="font-size:12.5px;color:var(--muted)" id="stockModalSub"></div>
+  <div class="form-grid">
+    <input type="hidden" id="kId">
+    <div class="full"><label>Vaccine</label><select id="kCode"></select></div>
+    <div class="full" id="kNameWrap" style="display:none"><label>Vaccine name *</label><input id="kName" placeholder="e.g. Rabies (PVRV)"></div>
+    <div><label>Brand</label><input id="kBrand" list="kBrandList" placeholder="e.g. Hexaxim" autocomplete="off"><datalist id="kBrandList"></datalist></div>
+    <div><label>Batch / Lot no.</label><input id="kBatch" placeholder="e.g. B-2213"></div>
+    <div><label>Expiry</label><input type="date" id="kExpiry"></div>
+    <div><label>Quantity (doses/vials) *</label><input type="number" id="kQty" min="0" placeholder="e.g. 10"></div>
+    <div><label>Reorder level</label><input type="number" id="kMin" min="0" placeholder="e.g. 2"></div>
+    <div><label>Note</label><input id="kNote" placeholder="e.g. Fridge top shelf"></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-o" onclick="closeModal('mStock')">Cancel</button>
+    <button class="btn btn-p" onclick="saveStock()">💾 Save lot</button>
+  </div>
+</div></div>
+
+<div class="modal-bg" id="mVisit"><div class="modal">
+  <h3>Visit note</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">SOAP-style clinical note</div>
+  <div class="form-grid">
+    <input type="hidden" id="vsId">
+    <div><label>Date *</label><input type="date" id="vsDate"></div>
+    <div><label>Visit type</label><select id="vsType"><option>Routine / Well-child</option><option>Illness</option><option>Vaccination</option><option>Growth review</option><option>Developmental review</option><option>Teleconsult</option></select></div>
+    <div class="full"><label>Complaints / History</label><textarea id="vsSubj" rows="2" placeholder="e.g. Fever 2 days, cold, appetite ok"></textarea></div>
+    <div class="full"><label>Examination</label><textarea id="vsObj" rows="2" placeholder="e.g. Alert, hydrated; throat congested; chest clear"></textarea></div>
+    <div class="full"><label>Assessment & Plan</label><textarea id="vsPlan" rows="2" placeholder="e.g. Viral URI — paracetamol SOS, fluids, review 3 days"></textarea></div>
+    <div class="full"><label>🎙️ Voice note (speak any language · max 60 s)</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn btn-o btn-sm" id="voiceRecBtn" onclick="voiceToggle()">⏺ Record</button><span id="voiceStatus" style="font-size:12.5px;color:var(--muted)">No recording</span><audio id="voicePlay" controls style="display:none;max-width:220px;height:32px"></audio><button class="btn btn-o btn-xs" id="voiceDelBtn" onclick="voiceClear()" style="display:none">✕</button></div></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mVisit')">Cancel</button><button class="btn btn-p" onclick="saveVisit()">💾 Save note</button></div>
+</div></div>
+
+<div class="modal-bg" id="mTanner"><div class="modal">
+  <h3>Puberty staging (Tanner / SMR)</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">Chaperoned exam · onset = B2 (girls) / testes &ge;4 mL or G2 (boys)</div>
+  <div class="form-grid">
+    <input type="hidden" id="tnId">
+    <div><label>Date *</label><input type="date" id="tnDate"></div>
+    <div><label id="tnGonLbl">Stage</label><select id="tnGon"></select></div>
+    <div><label>Pubic hair (PH)</label><select id="tnPH"></select></div>
+    <div id="tnTvRow"><label>Testes L / R (mL, orchidometer)</label><div style="display:flex;gap:8px"><input id="tnTvL" type="number" step="0.5" placeholder="L"><input id="tnTvR" type="number" step="0.5" placeholder="R"></div></div>
+    <div id="tnMenRow"><label>Menarche</label><select id="tnMen"><option value="">—</option><option value="no">Not attained</option><option value="yes">Attained (age in note)</option></select></div>
+    <div class="full"><label>Note</label><input id="tnNote" placeholder="e.g. Growth spurt ongoing; bone age ordered"></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mTanner')">Cancel</button><button class="btn btn-p" onclick="saveTanner()">&#128190; Save staging</button></div>
+</div></div>
+
+<div class="modal-bg" id="mExtra"><div class="modal">
+  <h3>Additional vaccine</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">Outside the routine IAP timetable — rabies, cholera, meningococcal, campaign doses…</div>
+  <div class="form-grid">
+    <input type="hidden" id="xId">
+    <div><label>Vaccine name *</label><input id="xName" list="xNameList" placeholder="e.g. Rabies (PEP)"><datalist id="xNameList"></datalist></div>
+    <div><label>Date given *</label><input type="date" id="xDate"></div>
+    <div><label>Brand — select or type</label><input id="xBrand" list="xBrandList" placeholder="e.g. Verorab" autocomplete="off"><datalist id="xBrandList"></datalist></div>
+    <div><label>Manufacturer (auto)</label><input id="xMfr" placeholder="Auto-fills for known brands"></div>
+    <div><label>Batch / Lot no.</label><input id="xBatch" placeholder="e.g. R-1024"></div>
+    <div><label>Given by</label><input id="xBy" placeholder="e.g. Dr. / Nurse name"></div>
+    <div class="full"><label>Remarks</label><input id="xNote" placeholder="e.g. Dog bite Day 0 — Essen regimen"></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+    <button class="btn btn-danger btn-sm" id="xDelBtn" onclick="deleteExtra($('xId').value)">Remove entry</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-o" onclick="closeModal('mExtra')">Cancel</button>
+    <button class="btn btn-p" onclick="saveExtra()">&#128190; Save</button>
+  </div>
+</div></div>
+
+<div class="modal-bg" id="mAppt"><div class="modal">
+  <h3>Book appointment</h3>
+  <div class="form-grid">
+    <input type="hidden" id="aId">
+    <div><label>Child *</label><select id="aChild"></select></div>
+    <div><label>Date *</label><input type="date" id="aDate"></div>
+    <div><label>Time</label><input type="time" id="aTime"></div>
+    <div><label>Type</label><select id="aType"><option>Vaccine</option><option>Growth review</option><option>Review</option><option>General</option><option>Follow-up</option></select></div>
+    <div class="full"><label>Note</label><input id="aNote" placeholder="e.g. MMR-2 + Varicella catch-up"></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mAppt')">Cancel</button><button class="btn btn-p" onclick="saveAppt()">📅 Book</button></div>
+</div></div>
+
+<div id="lockScreen" class="lock"><div class="lock-card">
+  <div style="font-size:44px">🔐</div><h2 style="margin:6px 0">KidGrow Pro</h2>
+  <div class="hint">Select user &amp; enter PIN</div>
+  <select id="lockUser"></select>
+  <input id="lockPin" type="password" inputmode="numeric" placeholder="PIN" onkeydown="if(event.key==='Enter')doLogin()">
+  <button class="btn btn-p" style="width:100%;margin-top:6px" onclick="doLogin()">Unlock</button>
+  <div id="lockMsg" style="color:var(--red);font-size:13px;margin-top:6px"></div>
+</div></div>
+
+<script src="js/data.js"></script>
+<script src="js/brands.js"></script>
+<script src="js/ref-who.js"></script>
+<script src="js/ref-cdc.js"></script>
+<script src="js/growth.js"></script>
+<script src="js/growth-chart.js"></script>
+<script src="js/app.js"></script>
+<script src="js/qrcode.min.js"></script>
+<script src="js/clinic.js"></script>
+<script src="js/aids.js"></script>
+<script src="js/drugs.js"></script>
+<script src="js/rx.js"></script>
+<script src="js/front.js"></script>
+<script src="js/nb.js"></script>
+<script src="js/labs.js"></script>
+<script src="js/aefi.js"></script>
+<script src="js/screen.js"></script>
+<script src="js/diet.js"></script>
+<script src="js/consent.js"></script>
+<script src="js/handouts.js"></script>
+<script src="js/exports.js"></script>
+<script src="js/docs.js"></script>
+<script src="js/ops.js"></script>
+<div id="updateBar" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#0c2340;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px;text-align:center">A new version of KidGrow Pro is ready. <button onclick="kgUpdate()" style="background:#0e7c7b;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;margin-left:8px">Refresh now</button></div>
+<script>
+function kgUpdate() { try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage("SKIP_WAITING"); } catch (e) {} location.reload(); }
+function netTick() { var b = document.getElementById("netBadge"); if (!b) return; var on = navigator.onLine !== false; b.textContent = on ? "● Online" : "○ Offline"; b.className = "badge " + (on ? "b-green" : "b-gray"); }
+window.addEventListener("online", netTick); window.addEventListener("offline", netTick); netTick();
+if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+  navigator.serviceWorker.register("sw.js").then(function (reg) {
+    function watch(w) { if (!w) return; w.addEventListener("statechange", function () { if (w.state === "installed" && navigator.serviceWorker.controller) document.getElementById("updateBar").style.display = "block"; }); }
+    if (reg.waiting && navigator.serviceWorker.controller) document.getElementById("updateBar").style.display = "block";
+    reg.onupdatefound = function () { watch(reg.installing); };
+  }).catch(function () {});
+}
+</script>
+</body>
+</html>
