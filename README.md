@@ -71,4 +71,4 @@ official printed charts.*
 
 ## 📄 License
 
-All rights reserved — private clinic software.
+Apache License 2.0 — see LICENSE file.
