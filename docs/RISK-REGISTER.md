@@ -31,9 +31,9 @@ output encoding consistent in report paths (`clinicHeader`, `childHeader`).
 | C1 | Drug doses lack **per-drug versioned source**; no pharmacist sign-off trail | 🟠 | `drugs.js` header cites "IAP/Nelson/formularies" generically | Add `source`+`version` per drug, formulary review workflow, clinician UAT gate (M5; **blocks** SaaS prescribing claims) | planned |
 | C2 | Neonatal dosing essentially absent; age bands are coarse | 🟠 | `ageMinM` only; no GA/weight-band tables | Neonatal formulary module with GA/PNA bands + independent validation (M5) | planned |
 | C3 | Fenton curves are **fitted approximations** (transcribed percentiles) | 🟡 | `tools/build_refs.py` header (honestly documented) | Label fitted curves in UI; never compute precise Fenton z-scores for diagnosis (M5) | planned |
-| C4 | No record versioning/amendment history; silent overwrite possible | 🟡 | `save()` replaces whole DB | Versioned clinical tables + append-only audit in relational core (M3) | planned |
+| C4 | No record versioning/amendment history; silent overwrite possible | 🟡 | `save()` replaces whole DB | ✅ client_rev ordering + apply_* LWW + conflict queue + server audit writer (M4, tested); per-field version history with M5 modules | 🛠️ partial |
 | C5 | No allergy/interaction checking beyond keyword match | 🟡 | `drugs.js allergy:[keywords]` | Interaction DB license/source + versioned rules (M5) | planned |
-| C6 | No duplicate-order / double-submit protection | 🟢 | forms submit directly | Idempotency keys on orders (M4) | planned |
+| C6 | No duplicate-order / double-submit protection | 🟢 | forms submit directly | ✅ outbox opIds + server replay-safe LWW + 2.5s double-submit guards on rx/bill/registration (M4, tested) | ✅ done |
 | C7 | Growth/dose calculators unvalidated by independent clinicians | 🟡 | no UAT evidence | Clinician validation protocol required before any clinical-use claim (M7 gate) | planned |
 | C8 | Retention/legal-hold/deletion workflows absent (India: 3-yr+ record rules vary) | 🟡 | no retention code | ✅ legal_hold delete-block + retain_until + consents + notice template (M3, tested); retention automation + counsel sign-off pending | 🛠️ partial |
 

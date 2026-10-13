@@ -112,6 +112,7 @@ function rxAddItem(isAllergy) {
   renderRx();
 }
 function saveRx() {
+  if (typeof guardSubmit === "function" && !guardSubmit("rx")) return; // M4: no double prescriptions
   const c = child(); if (!c) return;
   c.rx = c.rx || [];
   const dft = rxDraft();

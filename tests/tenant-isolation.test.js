@@ -236,6 +236,38 @@ async function main() {
   await withClaim(app, A, async () => app.query("INSERT INTO invites (tenant_id, email, role, expires_at) VALUES ($1,'nurse-e@synthetic.test','nurse', now()-interval '1 day')", [tA]));
   const oldTok = await withClaim(app, A, async () => (await app.query("SELECT token FROM invites WHERE tenant_id=$1 AND accepted_at IS NULL ORDER BY created_at DESC LIMIT 1", [tA])).rows[0].token);
   ok(await expectDeny(withClaim(app, E, async () => app.query("SELECT public.accept_invite($1)", [oldTok]))) === "denied", "expired invite rejected");
+
+  // ================= M4 (0003): idempotent apply ops =================
+  const P1 = { tenant_id: tA, local_id: "c_kid1", client_rev: "2026-10-01T10:00:00Z", mrn: "CC-1", name: "Aarav Sync", dob: "2023-01-02", sex: "male", birth_weight_g: 3100, guardian: { mother: "M" }, allergies: ["penicillin"] };
+  const ap = async (u, fn, row) => (await withClaim(app, u, async () => (await app.query(`SELECT public.${fn}($1) AS r`, [JSON.stringify(row)])).rows[0].r));
+  ok(await ap(A, "apply_patient_op", P1) === "inserted", "apply_patient_op inserts");
+  ok(await ap(A, "apply_patient_op", { ...P1, name: "Aarav S.", client_rev: "2026-10-02T10:00:00Z" }) === "updated", "newer rev updates");
+  ok(await ap(A, "apply_patient_op", { ...P1, name: "Stale", client_rev: "2026-10-01T09:00:00Z" }) === "stale", "older rev rejected as stale");
+  ok(await ap(A, "apply_patient_op", { ...P1, name: "Replay", client_rev: "2026-10-02T10:00:00Z" }) === "stale", "replay of same rev is a safe no-op");
+  const p1name = await withClaim(app, A, async () => (await app.query("SELECT name FROM patients WHERE tenant_id=$1 AND local_id='c_kid1'", [tA])).rows[0].name);
+  ok(p1name === "Aarav S.", "LWW kept the newest write");
+  ok(await expectDeny(withClaim(app, B, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ ...P1, local_id: "c_evil" })]))) === "denied", "cross-tenant apply rejected");
+  ok(await expectDeny(withClaim(app, C, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify(P1)]))) === "denied", "stranger apply rejected");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='suspended' WHERE id=$1", [tA]));
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ ...P1, local_id: "c_susp", mrn: "CC-S" })]))) === "denied", "apply while suspended rejected");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='active' WHERE id=$1", [tA]));
+  ok(await expectDeny(withClaim(app, D, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ tenant_id: tD, local_id: "c_q", client_rev: "2026-10-03T00:00:00Z", mrn: "Q-X", name: "Over" })]))) === "denied", "apply over patient quota rejected");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ ...P1, local_id: "" })]))) === "denied", "missing local_id rejected");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ ...P1, local_id: "c_fut", mrn: "CC-F", dob: "2031-01-01" })]))) === "denied", "future dob rejected");
+  const E1 = { tenant_id: tA, local_id: "e_v1", client_rev: "2026-10-02T11:00:00Z", patient_local_id: "c_kid1", kind: "opd", status: "closed", started_at: "2026-10-02T09:00:00Z" };
+  ok(await ap(A, "apply_encounter_op", E1) === "inserted", "apply_encounter_op inserts");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_encounter_op($1)", [JSON.stringify({ ...E1, local_id: "e_ghost", patient_local_id: "c_nonexistent" })]))) === "denied", "encounter for unknown patient rejected");
+  ok(await expectDeny(withClaim(app, B, async () => app.query("SELECT public.apply_encounter_op($1)", [JSON.stringify({ ...E1, tenant_id: tB, local_id: "e_x" })]))) === "denied", "encounter cannot steal another tenant's patient");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_encounter_op($1)", [JSON.stringify({ ...E1, local_id: "e_bad", kind: "surgery" })]))) === "denied", "invalid encounter kind rejected");
+  const K1 = { tenant_id: tA, local_id: "k_c1", client_rev: "2026-10-02T12:00:00Z", patient_local_id: "c_kid1", purpose: "care", status: "granted", granted_by: "Mother" };
+  ok(await ap(A, "apply_consent_op", K1) === "inserted", "apply_consent_op inserts");
+  ok(await ap(A, "apply_consent_op", { ...K1, status: "withdrawn", client_rev: "2026-10-03T12:00:00Z" }) === "updated", "consent withdraw updates");
+  ok(await ap(A, "apply_patient_op", { ...P1, deleted: "true", client_rev: "2026-10-04T10:00:00Z" }) === "updated", "soft-delete via deleted flag");
+  const p1del = await withClaim(app, A, async () => (await app.query("SELECT deleted_at FROM patients WHERE tenant_id=$1 AND local_id='c_kid1'", [tA])).rows[0].deleted_at);
+  ok(!!p1del, "deleted_at stamped, row preserved for audit");
+
+  try { await app.end(); } catch (_) {}
+  await stop();
   console.log(`\nisolation: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

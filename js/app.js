@@ -307,6 +307,7 @@ function openChildModal(id) {
   openModal("mChild");
 }
 function saveChild() {
+  if (typeof guardSubmit === "function" && !guardSubmit("child")) return; // M4: no duplicate registrations
   const name = $("cName").value.trim(), dob = $("cDob").value;
   if (!name || !dob) return alert("Name and date of birth are required.");
   if (dob > todayISO()) return alert("Date of birth cannot be in the future.");

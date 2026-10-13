@@ -205,6 +205,7 @@ function billAddCustom() {
 }
 function billDelItem(i) { billDraft().items.splice(i, 1); renderFront(); }
 function saveBill() {
+  if (typeof guardSubmit === "function" && !guardSubmit("bill")) return; // M4: no double bills
   const dft = billDraft();
   if (!dft.items.length) return alert("Add at least one charge.");
   DB.bills = DB.bills || [];

@@ -39,7 +39,7 @@ TypeScript/React migration is deferred to M8 and only if justified by team size.
 - **M3 — Core platform (✅ DONE 2026-10-13 — 176/176 green: 75 offline + 58 isolation + 33 hardening + 10 api; live MFA/invite timing needs staging per M3-MANUAL-TESTS).** Org signup/onboarding UI, invites + roles (pediatrician,
   nurse, pharmacist, MRD, billing, auditor…), MFA, break-glass, server audit,
   usage quotas, suspension-with-export-grace, DPDP consent/retention baseline.
-- **M4 — Web migration to relational core.** Dual-write (blob + relational),
+- **M4 — Relational migration (✅ DONE 2026-10-13 — 240/240 green: 120 offline + 77 isolation + 33 hardening + 10 api).** Dual-write (blob + relational),
   conflict-safe sync, idempotent orders; keep offline-first guarantees.
 - **M5 — Clinical modules.** OPD depth, NICU longitudinal, MAR, validated
   fluids/feeds/nutrition calculator (every formula cited + tested), growth alerts.
