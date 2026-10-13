@@ -57,7 +57,7 @@
       <button data-page="settings"><span class="ic">⚙️</span>Settings</button>
     </nav>
     <div id="userChip"></div>
-    <div class="side-foot"><b>KidGrow Pro v9</b> · Sep 2026<br>IAP ACVIP 2023-24 · WHO MGRS 2006 (0–5y) · IAP 2015 (5–18y)<br>Screening aid — clinical judgement prevails.</div>
+    <div class="side-foot"><b>KidGrow Pro v10</b> · Oct 2026<br>IAP ACVIP 2023-24 · WHO MGRS 2006 (0–5y) · IAP 2015 (5–18y)<br>Screening aid — clinical judgement prevails.</div>
   </aside>
 
   <!-- ============ MAIN ============ -->
@@ -330,7 +330,7 @@
             <button class="btn btn-p" onclick="saveSettings()">💾 Save clinic profile</button>
           </div>
           <div class="card"><h3>👩‍⚕️ Doctors & letterheads</h3><div class="hint">Add all consulting doctors · ● selected prints on reports</div><div id="docBox"></div></div>
-          <div class="card"><h3>🗄️ Data management</h3><div class="hint">All data stays on this device (offline-first, private) · App <b>v9</b></div>
+          <div class="card"><h3>🗄️ Data management</h3><div class="hint">All data stays on this device (offline-first, private) · App <b>v10</b></div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button class="btn btn-o" onclick="exportData()">⬇ Export backup (JSON)</button>
               <button class="btn btn-p btn-sm" id="installAppBtn" style="display:none" onclick="installApp()">📲 Install app</button>
@@ -535,6 +535,9 @@
 <script src="js/handouts.js"></script>
 <script src="js/exports.js"></script>
 <script src="js/docs.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vendor/supabase.js"></script>
+<script src="js/cloud.js"></script>
 <script src="js/ops.js"></script>
 <div id="updateBar" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#0c2340;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px;text-align:center">A new version of KidGrow Pro is ready. <button onclick="kgUpdate()" style="background:#0e7c7b;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;margin-left:8px">Refresh now</button></div>
 <script>

@@ -38,6 +38,7 @@ function save() {
     return;
   }
   try { localStorage.setItem(LS_KEY + "_auto", json); } catch (_) {}
+  try { if (typeof CloudSchedulePush === "function") CloudSchedulePush(); } catch (_) {}
 }
 function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function parseDB(raw) {

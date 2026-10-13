@@ -721,3 +721,5 @@ function voiceData() { return VOICE.data || ""; }
 if (typeof renderAll === "function") { try { renderAll(); } catch (e) { if (typeof console !== "undefined" && console.error) console.error("KidGrow boot render:", e); } }
 /* Deep link: open #page from app shortcuts / shared links (after every module is ready). */
 try { const _h = (location.hash || "").replace("#", ""); if (_h && typeof TITLES !== "undefined" && TITLES[_h] && typeof go === "function" && !(typeof roleBlock === "function" && roleBlock(_h))) go(_h); } catch (e) {}
+/* Cloud (Supabase auth/sync + subscriptions) — no-op unless js/config.js has keys. */
+try { if (typeof Cloud !== "undefined" && Cloud.init) Cloud.init(); } catch (e) {}
