@@ -120,5 +120,20 @@ for (const f of fs.readdirSync(path.join(R, "supabase/migrations")).filter((f) =
 }
 ok(rlsOk, "RLS enabled on every migrated table" + (rlsDetail.length ? " (" + rlsDetail.join(",") + ")" : ""));
 
+// 13. M5 clinical safety rails (static)
+const m4 = read("supabase/migrations/0004_clinical.sql");
+ok((m4.match(/create table if not exists (\w+)/gi) || []).length === 4, "0004 creates exactly 4 clinical tables");
+ok((m4.match(/enable row level security/gi) || []).length === 4, "0004 enables RLS on all 4");
+ok(m4.includes("witness required for controlled drugs") && m4.includes("controlled = false or witness <> ''"), "two-person rule in function + CHECK");
+ok(m4.includes("unknown clinical table") && m4.includes("tenant_write_ok(tenant_id)"), "table whitelist + write-gate in policies");
+const marSrc = read("js/mar.js");
+ok((marSrc.match(/witness/gi) || []).length >= 6, "client mirrors the witness rule");
+const calcSrc = read("js/calc.js");
+ok(calcSrc.includes("capped") && (calcSrc.match(/warnings/gi) || []).length >= 8, "calculators cap + warn, never bare numbers");
+const nicuSrc = read("js/nicu.js");
+ok(!nicuSrc.includes("splice(") && nicuSrc.includes("outcome is required"), "NICU: no UI delete path, discharge needs outcome");
+const growthSrc = read("js/growth.js");
+ok(growthSrc.includes("function growthAlerts(") && growthSrc.includes("confirm on chart"), "growth alerts point back to official charts");
+
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

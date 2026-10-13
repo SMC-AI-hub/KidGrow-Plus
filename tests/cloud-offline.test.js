@@ -303,6 +303,86 @@ async function main() {
   ok(fl.ran === false, "flush no-ops when offline/cloud-off");
   ok(sb.guardSubmit("t-probe") === true && sb.guardSubmit("t-probe") === false, "guardSubmit live behavior");
 
+  // ---- M5 clinical: NICU, eMAR, calculators, growth alerts ----
+  ok(idx("js/sync-rel.js") < idx("js/nicu.js") && idx("js/calc.js") < idx("js/ops.js"), "clinical scripts load between sync and ops");
+  ok(typeof sb.renderNicu === "function" && typeof sb.renderMar === "function" && typeof sb.renderCalc === "function", "clinical pages render");
+  const NP = sb.NicuPure, MP = sb.MarPure, CP = sb.CalcPure;
+  ok(NP.losDays("2026-10-01T08:00", null, "2026-10-03") === 3, "LOS counts admission day");
+  ok(NP.losDays("2026-10-01T08:00", "2026-10-02T10:00", "2026-10-03") === 2, "LOS stops at discharge");
+  ok(NP.activeAdmissions([{ status: "admitted" }, { status: "discharged" }]).length === 1, "active admissions filter");
+  ok(NP.roundsDue([{ status: "admitted", rounds: [] }], "2026-10-07").length === 1, "round due when none today");
+  ok(NP.roundsDue([{ status: "admitted", rounds: [{ date: "2026-10-07" }] }], "2026-10-07").length === 0, "no dup round same day");
+  ok(NP.roundsDue([{ status: "discharged", rounds: [] }], "2026-10-07").length === 0, "discharged never due");
+  ok(NP.admissionValid({}).length > 0 && NP.admissionValid({ admittedAt: "x", birthWtG: 99 }).some((e) => /300/.test(e)), "admission validation");
+  ok(NP.admissionValid({ admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36 }).length === 0, "valid admission passes");
+  ok(NP.dischargeValid({ status: "discharged" }).length > 0, "discharge requires active admission");
+  ok(NP.dischargeValid({ status: "admitted", admittedAt: "2026-10-06", dischargedAt: "2026-10-05", outcome: "stable" }).some((e) => /precede/.test(e)), "discharge before admit rejected");
+  ok(NP.dischargeValid({ status: "admitted", admittedAt: "2026-10-06", dischargedAt: "2026-10-09", outcome: "stable" }).length === 0, "valid discharge passes");
+  ok(NP.roundValid({ date: "2031-01-01" }, "2026-10-13").some((e) => /future/.test(e)), "future round rejected");
+  ok(NP.roundValid({ date: "2026-10-07", wtG: 2450 }, "2026-10-13").length === 0, "valid round passes");
+  ok(NP.feedGuide(1, 3).mlPerKg === 20 && /trophic/.test(NP.feedGuide(1, 3).note), "day-1 trophic feeds");
+  ok(NP.feedGuide(10, 3).mlPerKg === 160 && NP.feedGuide(10, 3).totalMl === 480 && NP.feedGuide(10, 3).perFeedQ3h === 60, "feed goal + q3h split");
+  ok(NP.censusList([{ name: "a", nicu: { admissions: [{ status: "admitted" }] } }, { name: "b" }]).length === 1, "census lists active only");
+  ok(MP.entryValid({}).some((e) => /drug/.test(e)), "MAR needs drug name");
+  ok(MP.entryValid({ drug: "x", controlled: true, status: "given", witness: "" }).some((e) => /witness/.test(e)), "controlled needs witness");
+  ok(MP.entryValid({ drug: "Paracetamol" }).length === 0, "valid MAR entry passes");
+  ok(MP.logDose({ logs: [] }, { by: "", status: "given" }).ok === false, "log needs given-by");
+  ok(MP.logDose({ logs: [] }, { by: "n", status: "vaporized" }).ok === false, "log rejects bad status");
+  ok(MP.logDose({ controlled: true, logs: [] }, { by: "n", status: "given", witness: "" }).ok === false, "controlled log needs witness");
+  const ml0 = { drug: "Caffeine", controlled: false, logs: [] };
+  const mlr = MP.logDose(ml0, { at: "2026-10-07T10:00", by: "Nurse", status: "given" });
+  ok(mlr.ok === true && mlr.entry.logs.length === 1 && mlr.entry.givenBy === "Nurse" && ml0.logs.length === 0, "logDose appends without mutating");
+  ok(MP.dosesDue([{ mar: [{ status: "scheduled", scheduledAt: "2026-10-07T08:00" }] }], "2026-10-07T09:00").length === 1, "past scheduled dose due");
+  ok(MP.dosesDue([{ mar: [{ status: "scheduled", scheduledAt: "2026-10-08T08:00" }] }], "2026-10-07T09:00").length === 0, "future dose not due");
+  ok(MP.dosesDue([{ mar: [{ status: "given", scheduledAt: "2026-10-07T08:00" }] }], "2026-10-07T09:00").length === 0, "given dose not due");
+  const adh = MP.marAdherence([{ logs: [{ at: "2026-10-07T08:00", status: "given" }, { at: "2026-10-07T14:00", status: "missed" }, { at: "2026-10-06T08:00", status: "given" }] }], "2026-10-07");
+  ok(adh.given === 1 && adh.total === 2 && adh.pct === 50, "adherence counts the day only");
+  const hs8 = CP.fluidsHS(8);
+  ok(hs8.mlPerDay === 800 && hs8.mlPerHour === 33.3 && hs8.capped === false, "H-S under 10 kg");
+  ok(CP.fluidsHS(15).mlPerDay === 1250 && CP.fluidsHS(25).mlPerDay === 1600, "H-S bands");
+  const hsBig = CP.fluidsHS(150);
+  ok(hsBig.mlPerDay === 2400 && hsBig.capped === true && hsBig.warnings.length > 0, "H-S capped at adult ceiling");
+  ok(CP.fluidsHS(0).error && CP.fluidsHS("x").error, "H-S rejects bad weight");
+  const neo1 = CP.fluidsNeonatal(3, 1);
+  ok(neo1.mlPerKg === 70 && neo1.mlPerDay === 210, "neonatal day-1 fluids");
+  ok(CP.fluidsNeonatal(3, 5).mlPerKg === 145, "neonatal day-5 fluids");
+  ok(CP.fluidsNeonatal(1.2, 3).warnings.some((w) => /VLBW/.test(w)), "VLBW warning");
+  ok(CP.fluidsNeonatal(3, 0).error && CP.fluidsNeonatal(10, 3).error, "neonatal rejects out-of-range");
+  const fv = CP.feedVolume(3, 160);
+  ok(fv.totalMl === 480 && fv.q3h === 60 && fv.q2h === 40, "feed splits");
+  ok(CP.feedVolume(3, 200).warnings.length > 0 && CP.feedVolume(3, 0).error, "feed ceiling warns, zero errors");
+  const ng = CP.nutritionGoal(2, true);
+  ok(ng.kcalPerDay === 240 && ng.proteinGPerDay === 6.4, "preterm nutrition goal");
+  ok(CP.nutritionGoal(0.1, false).error, "nutrition rejects bad weight");
+  ok(sb.growthAlerts([], "2020-01-01", "2026-10-13").some((a) => /no measurement/.test(a.msg)), "growth overdue fires");
+  ok(sb.growthAlerts([{ date: "2026-01-01", wt: 10 }, { date: "2026-02-01", wt: 8.4 }], "2024-01-01", "2026-10-13").some((a) => a.level === "red"), ">10% drop is red");
+  ok(sb.growthAlerts([{ date: "2026-02-01", wt: 3 }, { date: "2026-06-01", wt: 3 }], "2026-01-15", "2026-10-13").some((a) => /no weight gain/.test(a.msg)), "stagnation under 1y fires");
+  ok(sb.growthAlerts([{ date: "2026-10-01", wt: 2.4 }], "2026-09-01", "2026-10-13", () => ({ waz: -2.5, haz: 0 })).some((a) => /WAZ/.test(a.msg)), "low WAZ alerts");
+  ok(sb.growthAlerts([{ date: "2026-10-01", wt: 3.2, ht: 50 }], "2026-09-01", "2026-10-13", () => ({ waz: 0, haz: 0.5 })).length === 0, "healthy growth is quiet");
+  const arow = SP.admToRow("m5", { id: "a1", admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36, status: "admitted", indication: "RDS" });
+  ok(arow.local_id === "n_a1" && arow.patient_local_id === "c_m5" && arow.birth_weight_g === 2400, "admToRow maps");
+  const rrow = SP.roundToRow("a1", { id: "r1", date: "2026-10-07", wtG: 2450, vitals: { spo2: 94 } });
+  ok(rrow.local_id === "r_r1" && rrow.admission_local_id === "n_a1" && rrow.vitals.spo2 === 94, "roundToRow maps");
+  const mrow = SP.marToRow("m5", { id: "e1", drug: "Morphine", controlled: true, status: "scheduled" });
+  ok(mrow.local_id === "m_e1" && mrow.controlled === true, "marToRow maps");
+  const grow = SP.measureToRow("m5", { id: "g1", date: "2026-10-01", wt: 2.4, ht: 45 });
+  ok(grow.local_id === "g_g1" && grow.wt_kg === 2.4 && grow.len_cm === 45 && grow.measured_at === "2026-10-01T00:00:00Z", "measureToRow maps");
+  ok(SP.flushParams("mar_entries", {}).p_table === "mar_entries" && SP.flushParams("patients", {}).p_table === undefined, "flush routes clinical via p_table");
+  sb.localStorage.removeItem("kidgrow_outbox"); sb.localStorage.removeItem("kidgrow_revs");
+  vm.runInContext(`DB.children=[{id:'m5',name:'M5 Kid',dob:'2026-09-01',sex:'girl',visits:[],consents:[],
+    measures:[{date:'2026-10-01',wt:2.4,ht:45,hc:32}],
+    nicu:{admissions:[{id:'a1',admittedAt:'2026-10-06T08:00',birthWtG:2400,ga:36,indication:'RDS',status:'admitted',rounds:[{id:'r1',date:'2026-10-07',wtG:2450}]}]},
+    mar:[{id:'e1',drug:'Caffeine',dose:'5 mg',route:'PO',freq:'daily',controlled:false,scheduledAt:'2026-10-07T08:00',status:'scheduled',logs:[]}]}];`, sb);
+  ok(sb.SyncEngine.scan() === 5, "scan detects patient + admission + round + MAR + growth");
+  const obc = JSON.parse(sb.localStorage.getItem("kidgrow_outbox"));
+  ok(["nicu_admissions", "nicu_rounds", "mar_entries", "growth_points"].every((t) => obc.some((o) => o.table === t)), "clinical ops enqueued");
+  ok(obc.find((o) => o.table === "growth_points").localId.startsWith("g_"), "growth op keyed by measure id");
+  ok(sb.SyncEngine.scan() === 0, "clinical rescan is quiet");
+  ok(sb.nicuCensusHTML().includes("M5 Kid"), "census shows admitted baby");
+  ok(sb.marDueHTML().includes("Caffeine"), "due list shows scheduled dose");
+  vm.runInContext("DB.children[0].measures.push({date:'2026-10-10',wt:2.0});", sb);
+  ok(sb.growthAlertsHTML().includes("M5 Kid"), "dashboard flags the weight drop");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

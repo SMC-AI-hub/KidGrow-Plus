@@ -46,6 +46,9 @@
       <button data-page="visits"><span class="ic">🩺</span>Visits & Notes</button>
       <button data-page="rx"><span class="ic">💊</span>Prescription</button>
       <button data-page="consent"><span class="ic">✍️</span>Consent</button>
+      <button data-page="nicu"><span class="ic">🏥</span>NICU</button>
+      <button data-page="mar"><span class="ic">💊</span>eMAR</button>
+      <button data-page="calc"><span class="ic">🧮</span>Calculators</button>
       <div class="nav-group">Insights</div>
       <button data-page="analytics"><span class="ic">📊</span>Analytics</button>
       <button data-page="emg"><span class="ic">🚨</span>Emergency</button>
@@ -194,6 +197,9 @@
       <section class="page" id="pg-dayprint"><div id="dayPrint"></div></section>
 
       <!-- ======== CHILDREN ======== -->
+      <section class="page" id="pg-nicu"><div id="nicuBox"></div></section>
+      <section class="page" id="pg-mar"><div id="marBox"></div></section>
+      <section class="page" id="pg-calc"><div id="calcBox"></div></section>
       <section class="page" id="pg-children">
         <div class="toolbar">
           <input class="search" id="childSearch" placeholder="🔍 Search children…" oninput="renderChildren()">
@@ -359,6 +365,7 @@
   <button data-page="growth"><span class="ic">📈</span>Growth</button>
   <button data-page="children"><span class="ic">🧒</span>Kids</button>
   <button data-page="emg"><span class="ic">🚨</span>SOS</button>
+  <button data-page="nicu"><span class="ic">🏥</span>NICU</button>
 </div></div>
 
 <!-- ============ MODALS ============ -->
@@ -546,6 +553,9 @@
 <script src="js/cloud.js"></script>
 <script src="js/tenant.js"></script>
 <script src="js/sync-rel.js"></script>
+<script src="js/nicu.js"></script>
+<script src="js/mar.js"></script>
+<script src="js/calc.js"></script>
 <script src="js/ops.js"></script>
 <div id="updateBar" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#0c2340;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px;text-align:center">A new version of KidGrow Pro is ready. <button onclick="kgUpdate()" style="background:#0e7c7b;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;margin-left:8px">Refresh now</button></div>
 <script>

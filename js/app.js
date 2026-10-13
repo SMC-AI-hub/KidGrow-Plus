@@ -81,6 +81,9 @@ function normalizeChild(c) {
   if (!Array.isArray(c.aefi)) c.aefi = [];
   if (!Array.isArray(c.tanner)) c.tanner = [];
   if (!Array.isArray(c.consents)) c.consents = [];
+  if (!c.nicu || typeof c.nicu !== "object") c.nicu = { admissions: [] };
+  if (!Array.isArray(c.nicu.admissions)) c.nicu.admissions = [];
+  if (!Array.isArray(c.mar)) c.mar = [];
   if (!c.dental || typeof c.dental !== "object") c.dental = {};
   if (!c.diet || typeof c.diet !== "object") c.diet = { type: "veg" };
   if (!c.asthma || typeof c.asthma !== "object") c.asthma = { pef: [], triggers: [] };
@@ -209,8 +212,8 @@ function seedDemo() {
 }
 
 /* ---------------- Navigation ---------------- */
-const TITLES = { dashboard: "Dashboard", children: "Children", nb: "Newborn Care", schedule: "Schedule & Reminders", milestones: "Milestone Assessment", vaccines: "Vaccination Digital Record", card: "Digital Vaccine Card", aefi: "AEFI Register", growth: "Growth Assessment (IAP / WHO)", labs: "Labs & Anaemia", screen: "Screening Suite", diet: "Diet Planner", hand: "Parent Handouts", visits: "Visits & Clinical Notes", rx: "Prescription", consent: "E-Consent", front: "Frontdesk — Tokens & Billing", analytics: "Clinic Analytics", emg: "Emergency Ready-Reckoner", reports: "Reports & Certificates", export: "Data & Exports", users: "Users & Audit", settings: "Settings", stock: "Vaccine Stock & Ledger", display: "Token Display" };
-const RENDER_FOR = { dashboard: "renderDashboard", children: "renderChildren", nb: "renderNB", schedule: "renderSchedule", milestones: "renderMilestones", vaccines: "renderVaccines", card: "renderCard", aefi: "renderAefi", growth: "renderGrowth", labs: "renderLabs", screen: "renderScreen", diet: "renderDiet", hand: "renderHand", visits: "renderVisits", rx: "renderRx", consent: "renderConsent", front: "renderFront", analytics: "renderAnalytics", emg: "renderEmergency", export: "renderExport", users: "renderUsers", stock: "renderStock", display: "renderDisplay" };
+const TITLES = { dashboard: "Dashboard", children: "Children", nb: "Newborn Care", schedule: "Schedule & Reminders", milestones: "Milestone Assessment", vaccines: "Vaccination Digital Record", card: "Digital Vaccine Card", aefi: "AEFI Register", growth: "Growth Assessment (IAP / WHO)", labs: "Labs & Anaemia", screen: "Screening Suite", diet: "Diet Planner", hand: "Parent Handouts", visits: "Visits & Clinical Notes", rx: "Prescription", consent: "E-Consent", nicu: "NICU", mar: "eMAR", calc: "Calculators", front: "Frontdesk — Tokens & Billing", analytics: "Clinic Analytics", emg: "Emergency Ready-Reckoner", reports: "Reports & Certificates", export: "Data & Exports", users: "Users & Audit", settings: "Settings", stock: "Vaccine Stock & Ledger", display: "Token Display" };
+const RENDER_FOR = { dashboard: "renderDashboard", children: "renderChildren", nb: "renderNB", schedule: "renderSchedule", milestones: "renderMilestones", vaccines: "renderVaccines", card: "renderCard", aefi: "renderAefi", growth: "renderGrowth", labs: "renderLabs", screen: "renderScreen", diet: "renderDiet", hand: "renderHand", visits: "renderVisits", rx: "renderRx", consent: "renderConsent", nicu: "renderNicu", mar: "renderMar", calc: "renderCalc", front: "renderFront", analytics: "renderAnalytics", emg: "renderEmergency", export: "renderExport", users: "renderUsers", stock: "renderStock", display: "renderDisplay" };
 function go(page) {
   if (typeof roleBlock === "function" && roleBlock(page)) { alert("🔒 Your role cannot open this page."); return; }
   document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
@@ -622,7 +625,7 @@ function renderDashboard() {
         <button class="btn btn-o btn-sm" onclick="openVisitModal()">+ Visit note</button>
         <button class="btn btn-o btn-sm" onclick="openApptModal()">+ Book visit</button>
         <button class="btn btn-o btn-sm" onclick="go('front')">🎟️ Frontdesk</button></div>`; } }
-  $("dashClinic").innerHTML = clinicPulseHTML();
+  $("dashClinic").innerHTML = clinicPulseHTML() + (typeof nicuCensusHTML === "function" ? nicuCensusHTML() : "") + (typeof marDueHTML === "function" ? marDueHTML() : "") + (typeof growthAlertsHTML === "function" ? growthAlertsHTML() : "");
   $("dashStats").innerHTML = `
     <div class="stat" style="--ac:var(--blue)"><div><div class="n">${ageStr(a)}</div><div class="l">Age · ${c.sex === "boy" ? "Boy" : "Girl"}</div></div><div class="e">🎂</div></div>
     <div class="stat" style="--ac:var(--teal)"><div><div class="n">${vs.done}/${vs.total}</div><div class="l">Vaccines · ${vs.pct}%</div></div><div class="e">💉</div></div>

@@ -701,3 +701,51 @@ function printGrowthSheet() {
   DB.gSub = wasSub; save(); renderGrowth();
   printPage("pg-gsheet");
 }
+
+/* ---------------- M5 growth alerts ----------------
+   growthAlerts(measures, dobISO, todayISO, zOf): zOf(m) -> {waz,haz}|null is
+   injected so the pure is unit-testable without WHO tables; the dashboard
+   passes a whoAgeZ wrapper. Rules: overdue, >10% weight drop, stagnation
+   under 1y, WAZ/HAZ below -2. Guidance only — confirm on official charts. */
+function growthAlerts(measures, dobISO, todayISO, zOf) {
+  const ms = [...(measures || [])].filter((m) => m && m.date).sort((a, b) => (a.date < b.date ? -1 : 1));
+  const alerts = [];
+  const lastD = ms.length ? ms[ms.length - 1].date : dobISO;
+  const ageM = Math.max(0, Math.round(((new Date(todayISO + "T00:00:00Z") - new Date(dobISO + "T00:00:00Z")) / 864e5) / 30.44));
+  const gapM = Math.round(((new Date(todayISO + "T00:00:00Z") - new Date(lastD + "T00:00:00Z")) / 864e5) / 30.44);
+  const due = ageM < 24 ? 6 : 12;
+  if (gapM > due) alerts.push({ level: "amber", msg: `no measurement for ${gapM} mo (due every ${due} mo)` });
+  for (let i = 1; i < ms.length; i++) {
+    const a = +ms[i - 1].wt, b = +ms[i].wt;
+    if (a > 0 && b > 0 && b < a * 0.9) alerts.push({ level: "red", msg: `weight drop ${a} → ${b} kg (>${10}%): review urgently` });
+  }
+  if (ms.length >= 2 && ageM < 12) {
+    const spanD = Math.round((new Date(ms[ms.length - 1].date + "T00:00:00Z") - new Date(ms[0].date + "T00:00:00Z")) / 864e5);
+    if (spanD >= 90 && +ms[ms.length - 1].wt <= +ms[0].wt) alerts.push({ level: "amber", msg: "no weight gain in 3+ mo under 1 y — review feeding/illness" });
+  }
+  if (typeof zOf === "function" && ms.length) {
+    try {
+      const z = zOf(ms[ms.length - 1]);
+      if (z && typeof z.waz === "number" && z.waz < -2) alerts.push({ level: "red", msg: `WAZ ${z.waz.toFixed(2)} (<−2): underweight — confirm on chart` });
+      if (z && typeof z.haz === "number" && z.haz < -2) alerts.push({ level: "red", msg: `HAZ ${z.haz.toFixed(2)} (<−2): stunting — confirm on chart` });
+    } catch (e) {}
+  }
+  return alerts;
+}
+function growthAlertsHTML() {
+  if (typeof DB === "undefined" || !DB.children) return "";
+  const today = (typeof todayISO === "function") ? todayISO() : "";
+  const rows = [];
+  DB.children.forEach((c) => {
+    const zOf = (m) => {
+      try {
+        const ga = growthAge(c, m.date);
+        return { waz: whoAgeZ(c.sex, "wfa", ga.ageD, +m.wt).z, haz: m.ht ? whoAgeZ(c.sex, "lhfa", ga.ageD, +m.ht).z : 0 };
+      } catch (e) { return null; }
+    };
+    growthAlerts(c.measures, c.dob, today, zOf).forEach((a) => rows.push({ name: c.name, a }));
+  });
+  if (!rows.length) return "";
+  const items = rows.slice(0, 6).map((r) => `<div style='font-size:13px'>${r.a.level === "red" ? "🔴" : "🟡"} <b>${esc(r.name)}</b> — ${esc(r.a.msg)}</div>`).join("");
+  return `<div class='card' style='margin-top:10px'><h3>Growth alerts (${rows.length})</h3>${items}<button class='btn btn-o btn-sm' style='margin-top:6px' onclick="go('growth')">Open growth →</button></div>`;
+}

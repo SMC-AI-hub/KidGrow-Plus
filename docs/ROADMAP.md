@@ -18,7 +18,7 @@ TypeScript/React migration is deferred to M8 and only if justified by team size.
 | Tenant identity, org onboarding, branding | ❌ | M1 schema → M3 UI |
 | RLS tenant isolation + isolation tests | ❌ | **M1 (this turn)** |
 | Server RBAC, MFA, break-glass, audit (tamper-evident) | ❌ (local only) | M3 |
-| NICU longitudinal, MAR, fluids/nutrition calc | ❌ (basic NB only) | M5 |
+| NICU longitudinal, MAR, fluids/nutrition calc | ✅ (M5 2026-10-13; calculators await M7 UAT) | M5 |
 | Wards/beds, handover, discharge, analytics | ❌ | M5–M6 |
 | Plans/quotas/suspension-grace billing | ⚠️ single plan only | M3 |
 | Backups tested, RPO/RTO, staging env | ❌ | M2 |
@@ -41,8 +41,7 @@ TypeScript/React migration is deferred to M8 and only if justified by team size.
   usage quotas, suspension-with-export-grace, DPDP consent/retention baseline.
 - **M4 — Relational migration (✅ DONE 2026-10-13 — 240/240 green: 120 offline + 77 isolation + 33 hardening + 10 api).** Dual-write (blob + relational),
   conflict-safe sync, idempotent orders; keep offline-first guarantees.
-- **M5 — Clinical modules.** OPD depth, NICU longitudinal, MAR, validated
-  fluids/feeds/nutrition calculator (every formula cited + tested), growth alerts.
+- **M5 — Clinical modules (✅ DONE 2026-10-13 — 326/326 green: 178 offline + 97 isolation + 41 hardening + 10 api).** NICU longitudinal, eMAR + witness rule, validated fluids/feeds/nutrition calculators, growth alerts. Calculators await M7 clinician UAT before clinical-use claims.
 - **M6 — Reports/analytics/interop.** Tenant-branded documents, MRD registers,
   dashboards with defined denominators, FHIR read API, ABDM Connector (if authorized).
 - **M7 — Validation gates (human).** Independent pen-test, clinician/pharmacist/nurse

@@ -266,6 +266,37 @@ async function main() {
   const p1del = await withClaim(app, A, async () => (await app.query("SELECT deleted_at FROM patients WHERE tenant_id=$1 AND local_id='c_kid1'", [tA])).rows[0].deleted_at);
   ok(!!p1del, "deleted_at stamped, row preserved for audit");
 
+  // ================= M5 (0004): clinical apply ops =================
+  const ac = async (u, table, row) => (await withClaim(app, u, async () => (await app.query("SELECT public.apply_clinical_op($1,$2) AS r", [table, JSON.stringify(row)])).rows[0].r));
+  ok(await ap(A, "apply_patient_op", { tenant_id: tA, local_id: "c_m5kid", client_rev: "2026-10-05T09:00:00Z", mrn: "CC-M5", name: "M5 Kid", dob: "2026-09-01", sex: "female" }) === "inserted", "M5 patient seeded");
+  const N1 = { tenant_id: tA, local_id: "n_a1", client_rev: "2026-10-06T08:00:00Z", patient_local_id: "c_m5kid", admitted_at: "2026-10-06T08:00:00Z", birth_weight_g: 2400, ga_weeks: 36, status: "admitted", indication: "RDS" };
+  ok(await ac(A, "nicu_admissions", N1) === "inserted", "admission inserts");
+  ok(await ac(A, "nicu_admissions", { ...N1, status: "discharged", outcome: "stable", client_rev: "2026-10-09T10:00:00Z" }) === "updated", "admission discharge updates");
+  ok(await ac(A, "nicu_admissions", { ...N1, indication: "stale", client_rev: "2026-10-06T07:00:00Z" }) === "stale", "stale admission rev rejected");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["nicu_admissions", JSON.stringify({ ...N1, local_id: "n_ghost", patient_local_id: "c_nope" })]))) === "denied", "admission for unknown patient rejected");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["nicu_admissions", JSON.stringify({ ...N1, local_id: "n_bad", status: "vacation" })]))) === "denied", "invalid admission status rejected");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["nicu_admissions", JSON.stringify({ ...N1, local_id: "n_fut", admitted_at: "2031-05-01T00:00:00Z" })]))) === "denied", "future admitted_at rejected");
+  const R1 = { tenant_id: tA, local_id: "r_d1", client_rev: "2026-10-07T08:00:00Z", admission_local_id: "n_a1", round_date: "2026-10-07", weight_g: 2450, vitals: { spo2: 94 }, feeds: { ml: 120 }, events: [], note: "stable" };
+  ok(await ac(A, "nicu_rounds", R1) === "inserted", "NICU round inserts");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["nicu_rounds", JSON.stringify({ ...R1, local_id: "r_ghost", admission_local_id: "n_nope" })]))) === "denied", "round for unknown admission rejected");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["nicu_rounds", JSON.stringify({ ...R1, local_id: "r_fut", round_date: "2031-01-01" })]))) === "denied", "future round_date rejected");
+  const M1 = { tenant_id: tA, local_id: "m_d1", client_rev: "2026-10-07T09:00:00Z", patient_local_id: "c_m5kid", drug: "Morphine", dose: "0.05 mg", route: "IV", freq: "q4h", controlled: true, status: "scheduled", scheduled_at: "2026-10-07T10:00:00Z" };
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["mar_entries", JSON.stringify(M1)]))) === "denied", "controlled drug without witness rejected");
+  ok(await ac(A, "mar_entries", { ...M1, witness: "Nurse Joy", given_by: "Dr A", given_at: "2026-10-07T10:05:00Z", status: "given" }) === "inserted", "witnessed controlled dose inserts");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["mar_entries", JSON.stringify({ ...M1, local_id: "m_bad", witness: "x", status: "vaporized" })]))) === "denied", "invalid MAR status rejected");
+  const G1 = { tenant_id: tA, local_id: "g_m1", client_rev: "2026-10-07T11:00:00Z", patient_local_id: "c_m5kid", measured_at: "2026-10-07T09:00:00Z", wt_kg: 2.45, len_cm: 46, hc_cm: 33, source: "ward" };
+  ok(await ac(A, "growth_points", G1) === "inserted", "growth point inserts");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["growth_points", JSON.stringify({ ...G1, local_id: "g_bad", wt_kg: 900 })]))) === "denied", "absurd weight rejected");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["growth_points", JSON.stringify({ ...G1, local_id: "g_fut", measured_at: "2031-01-01T00:00:00Z" })]))) === "denied", "future measured_at rejected");
+  ok(await expectDeny(withClaim(app, B, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["mar_entries", JSON.stringify({ ...M1, local_id: "m_x" })]))) === "denied", "cross-tenant clinical apply rejected");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["oddtable", JSON.stringify({ ...M1, local_id: "m_y" })]))) === "denied", "unknown clinical table rejected");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='suspended' WHERE id=$1", [tA]));
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["growth_points", JSON.stringify({ ...G1, local_id: "g_susp" })]))) === "denied", "clinical apply while suspended rejected");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='active' WHERE id=$1", [tA]));
+  const aSees = await withClaim(app, A, async () => (await app.query("SELECT count(*)::int AS n FROM mar_entries WHERE tenant_id=$1", [tA])).rows[0].n);
+  const bSees = await withClaim(app, B, async () => (await app.query("SELECT count(*)::int AS n FROM mar_entries WHERE tenant_id=$1", [tA])).rows[0].n);
+  ok(aSees === 1 && bSees === 0, "clinical SELECT isolated by tenant");
+
   try { await app.end(); } catch (_) {}
   await stop();
   console.log(`\nisolation: ${pass} passed, ${fail} failed`);

@@ -10,8 +10,8 @@
 "use strict";
 
 var OB_KEY = "kidgrow_outbox", REV_KEY = "kidgrow_revs", PULL_KEY = "kidgrow_pull_rev", CF_KEY = "kidgrow_conflicts";
-var TABLE_RANK = { patients: 0, encounters: 1, consents: 2 };
-var RPC = { patients: "apply_patient_op", encounters: "apply_encounter_op", consents: "apply_consent_op" };
+var TABLE_RANK = { patients: 0, encounters: 1, consents: 2, nicu_admissions: 3, nicu_rounds: 4, mar_entries: 5, growth_points: 6 };
+var RPC = { patients: "apply_patient_op", encounters: "apply_encounter_op", consents: "apply_consent_op", nicu_admissions: "apply_clinical_op", nicu_rounds: "apply_clinical_op", mar_entries: "apply_clinical_op", growth_points: "apply_clinical_op" };
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -122,12 +122,48 @@ function canSubmitAt(store, key, nowMs, windowMs) {
   n[key] = nowMs;
   return { ok: true, store: n };
 }
+function snapshotAdm(a) { a = a || {}; return { admittedAt: a.admittedAt || "", birthWtG: a.birthWtG || "", ga: a.ga || "", indication: a.indication || "", status: a.status || "", dischargedAt: a.dischargedAt || "", outcome: a.outcome || "" }; }
+function snapshotRound(r) { r = r || {}; return { date: r.date || "", wtG: r.wtG || "", vitals: r.vitals || {}, feeds: r.feeds || {}, events: r.events || [], note: r.note || "" }; }
+function snapshotMar(e) { e = e || {}; return { drug: e.drug || "", dose: e.dose || "", route: e.route || "", freq: e.freq || "", controlled: !!e.controlled, scheduledAt: e.scheduledAt || "", status: e.status || "", givenAt: e.givenAt || "", givenBy: e.givenBy || "", witness: e.witness || "", logs: e.logs || [] }; }
+function snapshotMeasure(m) { m = m || {}; return { date: m.date || "", wt: m.wt || "", ht: m.ht || "", hc: m.hc || "", muac: m.muac || "" }; }
+function numOrNull(x) { var n = parseFloat(x); return isNaN(n) ? null : n; }
+function admToRow(childId, a) {
+  a = a || {};
+  return { local_id: "n_" + (a.id || "noid"), patient_local_id: "c_" + (childId || "noid"),
+    admitted_at: a.admittedAt || null, birth_weight_g: numOrNull(a.birthWtG), ga_weeks: numOrNull(a.ga),
+    status: a.status || "admitted", indication: a.indication || "",
+    discharged_at: a.dischargedAt || null, outcome: a.outcome || "" };
+}
+function roundToRow(admId, r) {
+  r = r || {};
+  return { local_id: "r_" + (r.id || "noid"), admission_local_id: "n_" + (admId || "noid"),
+    round_date: r.date || null, weight_g: numOrNull(r.wtG), vitals: r.vitals || {}, feeds: r.feeds || {},
+    events: r.events || [], note: r.note || "" };
+}
+function marToRow(childId, e) {
+  e = e || {};
+  return { local_id: "m_" + (e.id || "noid"), patient_local_id: "c_" + (childId || "noid"),
+    drug: e.drug || "", dose: e.dose || "", route: e.route || "", freq: e.freq || "",
+    controlled: !!e.controlled, status: e.status || "scheduled", scheduled_at: e.scheduledAt || null,
+    given_at: e.givenAt || null, given_by: e.givenBy || "", witness: e.witness || "", note: e.note || "" };
+}
+function measureToRow(childId, m) {
+  m = m || {};
+  return { local_id: "g_" + (m.id || "noid"), patient_local_id: "c_" + (childId || "noid"),
+    measured_at: (m.date || "2000-01-01") + "T00:00:00Z", wt_kg: numOrNull(m.wt), len_cm: numOrNull(m.ht),
+    hc_cm: numOrNull(m.hc), muac_cm: numOrNull(m.muac), source: m.src || "" };
+}
+function flushParams(table, row) {
+  return RPC[table] === "apply_clinical_op" ? { p_table: table, p_row: row } : { p_row: row };
+}
 window.SyncPure = {
   hashStr: hashStr, opId: opId, revNow: revNow, snapshotChild: snapshotChild, snapshotVisit: snapshotVisit,
   mrnFor: mrnFor, sexMap: sexMap, sexBack: sexBack, gaParse: gaParse, wtToG: wtToG,
   childToPatient: childToPatient, visitToEncounter: visitToEncounter, consentToRow: consentToRow,
   kindMap: kindMap, kindLabel: kindLabel, pickWinner: pickWinner, detectConflict: detectConflict,
-  obEnqueue: obEnqueue, obAck: obAck, obFail: obFail, obDue: obDue, canSubmitAt: canSubmitAt
+  obEnqueue: obEnqueue, obAck: obAck, obFail: obFail, obDue: obDue, canSubmitAt: canSubmitAt,
+  snapshotAdm: snapshotAdm, snapshotRound: snapshotRound, snapshotMar: snapshotMar, snapshotMeasure: snapshotMeasure,
+  admToRow: admToRow, roundToRow: roundToRow, marToRow: marToRow, measureToRow: measureToRow, flushParams: flushParams
 };
 
 /* ---------------- double-submit guard ---------------- */
@@ -155,7 +191,7 @@ function enqueueOp(table, localId, row) {
 }
 function scanLocal() {
   if (typeof DB === "undefined" || !DB.children) return 0;
-  var revs = lsGet(REV_KEY, {}), n = 0, seen = {}, i, j, c, lid, h, v, vlid, vh, k, klid, kh;
+  var revs = lsGet(REV_KEY, {}), n = 0, seen = {}, i, j, c, lid, h, v, vlid, vh, k, klid, kh, idsDirty = false;
   for (i = 0; i < DB.children.length; i++) {
     c = DB.children[i]; lid = "c_" + (c.id || "noid"); seen[lid] = 1;
     h = hashStr(JSON.stringify(snapshotChild(c)));
@@ -182,16 +218,57 @@ function scanLocal() {
         revs[klid] = { rev: krow.client_rev, hash: kh }; n++;
       }
     }
+    var adms = (c.nicu && c.nicu.admissions) || [], ai, a, alid, ah, ri, r, rlid, rh, ei, e, elid, eh, mi, m, mlid, mh, arow, rrow, mrow, grow;
+    for (ai = 0; ai < adms.length; ai++) {
+      a = adms[ai]; alid = "n_" + (a.id || "noid"); seen[alid] = 1;
+      ah = hashStr(JSON.stringify(snapshotAdm(a)));
+      if (!revs[alid] || revs[alid].hash !== ah) {
+        arow = admToRow(c.id, a); arow.client_rev = revNow();
+        enqueueOp("nicu_admissions", alid, arow);
+        revs[alid] = { rev: arow.client_rev, hash: ah }; n++;
+      }
+      for (ri = 0; ri < (a.rounds || []).length; ri++) {
+        r = a.rounds[ri]; rlid = "r_" + (r.id || "noid"); seen[rlid] = 1;
+        rh = hashStr(JSON.stringify(snapshotRound(r)));
+        if (!revs[rlid] || revs[rlid].hash !== rh) {
+          rrow = roundToRow(a.id, r); rrow.client_rev = revNow();
+          enqueueOp("nicu_rounds", rlid, rrow);
+          revs[rlid] = { rev: rrow.client_rev, hash: rh }; n++;
+        }
+      }
+    }
+    for (ei = 0; ei < (c.mar || []).length; ei++) {
+      e = c.mar[ei]; elid = "m_" + (e.id || "noid"); seen[elid] = 1;
+      eh = hashStr(JSON.stringify(snapshotMar(e)));
+      if (!revs[elid] || revs[elid].hash !== eh) {
+        mrow = marToRow(c.id, e); mrow.client_rev = revNow();
+        enqueueOp("mar_entries", elid, mrow);
+        revs[elid] = { rev: mrow.client_rev, hash: eh }; n++;
+      }
+    }
+    for (mi = 0; mi < (c.measures || []).length; mi++) {
+      m = c.measures[mi];
+      if (!m.id && typeof uid === "function") { m.id = uid(); idsDirty = true; }
+      mlid = "g_" + (m.id || "noid"); seen[mlid] = 1;
+      mh = hashStr(JSON.stringify(snapshotMeasure(m)));
+      if (!revs[mlid] || revs[mlid].hash !== mh) {
+        grow = measureToRow(c.id, m); grow.client_rev = revNow();
+        enqueueOp("growth_points", mlid, grow);
+        revs[mlid] = { rev: grow.client_rev, hash: mh }; n++;
+      }
+    }
   }
   for (lid in revs) { // tombstones for locally deleted entities
-    if (!seen[lid] && revs[lid].hash !== "~deleted" && /^(c|e|k)_/.test(lid)) {
+    if (!seen[lid] && revs[lid].hash !== "~deleted" && /^(c|e|k|n|r|m|g)_/.test(lid)) {
       var trow = { local_id: lid, client_rev: revNow(), deleted: "true" };
       if (lid.indexOf("c_") === 0) { trow.mrn = "DEL-" + lid; }
-      enqueueOp(lid.charAt(0) === "c" ? "patients" : lid.charAt(0) === "e" ? "encounters" : "consents", lid, trow);
+      var tmap = { c: "patients", e: "encounters", k: "consents", n: "nicu_admissions", r: "nicu_rounds", m: "mar_entries", g: "growth_points" };
+      enqueueOp(tmap[lid.charAt(0)] || "patients", lid, trow);
       revs[lid] = { rev: trow.client_rev, hash: "~deleted" }; n++;
     }
   }
   lsSet(REV_KEY, revs);
+  if (idsDirty && typeof save === "function") { try { save(); } catch (e) {} }
   return n;
 }
 
@@ -208,7 +285,7 @@ function flush() {
     chain = chain.then(function () {
       var row = {}; for (var k in op.row) row[k] = op.row[k];
       row.tenant_id = tid;
-      return c.rpc(RPC[op.table], { p_row: row }).then(function (r) {
+      return c.rpc(RPC[op.table], flushParams(op.table, row)).then(function (r) {
         if (r.error) throw new Error(r.error.message || "apply failed");
         if (r.data === "stale") { stale++; pullQueued = true; }
         else done++;
@@ -237,6 +314,13 @@ function findLocal(table, lid) {
     if (table === "patients" && c.id === id) return { child: c };
     if (table === "encounters") for (j = 0; j < (c.visits || []).length; j++) if (c.visits[j].id === id) return { child: c, visit: c.visits[j] };
     if (table === "consents") for (j = 0; j < (c.consents || []).length; j++) if ((c.consents[j].id || (c.id + "_" + j)) === id) return { child: c, consent: c.consents[j], idx: j };
+    if (table === "nicu_admissions" || table === "nicu_rounds" || table === "mar_entries" || table === "growth_points") {
+      var adms = (c.nicu && c.nicu.admissions) || [], x, y;
+      if (table === "nicu_admissions") for (x = 0; x < adms.length; x++) if (adms[x].id === id) return { child: c, adm: adms[x] };
+      if (table === "nicu_rounds") for (x = 0; x < adms.length; x++) for (y = 0; y < (adms[x].rounds || []).length; y++) if (adms[x].rounds[y].id === id) return { child: c, adm: adms[x], round: adms[x].rounds[y] };
+      if (table === "mar_entries") for (x = 0; x < (c.mar || []).length; x++) if (c.mar[x].id === id) return { child: c, mar: c.mar[x] };
+      if (table === "growth_points") for (x = 0; x < (c.measures || []).length; x++) if (c.measures[x].id === id) return { child: c, measure: c.measures[x] };
+    }
   }
   return null;
 }
@@ -255,7 +339,7 @@ function pull() {
     if (since) q = q.gt("client_rev", since);
     return q.then(function (r) { if (r.error) throw r.error; return r.data || []; });
   }
-  return Promise.all([fetchTable("patients"), fetchTable("encounters"), fetchTable("consents")]).then(function (sets) {
+  return Promise.all([fetchTable("patients"), fetchTable("encounters"), fetchTable("consents"), fetchTable("nicu_admissions"), fetchTable("nicu_rounds"), fetchTable("mar_entries"), fetchTable("growth_points")]).then(function (sets) {
     var revs = lsGet(REV_KEY, {}), conflicts = lsGet(CF_KEY, []), added = 0, updated = 0, removed = 0, maxRev = since;
     function bump(r) { if (r && (!maxRev || r > maxRev)) maxRev = r; }
     sets[0].forEach(function (row) {
@@ -307,6 +391,72 @@ function pull() {
         pf.child.consents = pf.child.consents || [];
         pf.child.consents.push({ id: row.local_id.slice(2), purpose: row.purpose, status: row.status, by: row.granted_by, note: row.note, _stub: true });
         revs[row.local_id] = { rev: row.client_rev, hash: "~stub" }; added++;
+      }
+    });
+    // M5: clinical rows converge by pure LWW on client_rev (see OPERATIONS: patients = review queue, clinical = auto-LWW).
+    function clinNewer(lid, rrev) { var l = revs[lid]; return !l || (rrev || "") > (l.rev || ""); }
+    sets[3].forEach(function (row) {
+      bump(row.client_rev);
+      if (!row.local_id || row.deleted_at) return;
+      var pf3 = row.patient_local_id ? findLocal("patients", row.patient_local_id) : null;
+      if (!pf3) return;
+      var f3 = findLocal("nicu_admissions", row.local_id);
+      if (!f3) {
+        var NA = pf3.child.nicu || (pf3.child.nicu = {}); NA.admissions = NA.admissions || [];
+        NA.admissions.push({ id: row.local_id.slice(2), admittedAt: row.admitted_at, birthWtG: row.birth_weight_g, ga: row.ga_weeks, indication: row.indication, status: row.status, dischargedAt: row.discharged_at, outcome: row.outcome, rounds: [], _stub: true });
+        revs[row.local_id] = { rev: row.client_rev, hash: "~stub" }; added++;
+      } else if (clinNewer(row.local_id, row.client_rev)) {
+        f3.adm.status = row.status; f3.adm.outcome = row.outcome || f3.adm.outcome;
+        f3.adm.dischargedAt = row.discharged_at || f3.adm.dischargedAt;
+        f3.adm.indication = row.indication || f3.adm.indication;
+        revs[row.local_id] = { rev: row.client_rev, hash: hashStr(JSON.stringify(snapshotAdm(f3.adm))) }; updated++;
+      }
+    });
+    sets[4].forEach(function (row) {
+      bump(row.client_rev);
+      if (!row.local_id || row.deleted_at) return;
+      var af4 = row.admission_local_id ? findLocal("nicu_admissions", row.admission_local_id) : null;
+      if (!af4) return;
+      var f4 = findLocal("nicu_rounds", row.local_id);
+      if (!f4) {
+        af4.adm.rounds = af4.adm.rounds || [];
+        af4.adm.rounds.push({ id: row.local_id.slice(2), date: row.round_date, wtG: row.weight_g, vitals: row.vitals || {}, feeds: row.feeds || {}, events: row.events || [], note: row.note || "", _stub: true });
+        revs[row.local_id] = { rev: row.client_rev, hash: "~stub" }; added++;
+      } else if (clinNewer(row.local_id, row.client_rev)) {
+        f4.round.wtG = row.weight_g; f4.round.vitals = row.vitals || {}; f4.round.feeds = row.feeds || {};
+        f4.round.events = row.events || []; f4.round.note = row.note || "";
+        revs[row.local_id] = { rev: row.client_rev, hash: hashStr(JSON.stringify(snapshotRound(f4.round))) }; updated++;
+      }
+    });
+    sets[5].forEach(function (row) {
+      bump(row.client_rev);
+      if (!row.local_id || row.deleted_at) return;
+      var pf5 = row.patient_local_id ? findLocal("patients", row.patient_local_id) : null;
+      if (!pf5) return;
+      var f5 = findLocal("mar_entries", row.local_id);
+      if (!f5) {
+        pf5.child.mar = pf5.child.mar || [];
+        pf5.child.mar.push({ id: row.local_id.slice(2), drug: row.drug, dose: row.dose, route: row.route, freq: row.freq, controlled: !!row.controlled, scheduledAt: row.scheduled_at, status: row.status, givenAt: row.given_at, givenBy: row.given_by, witness: row.witness, note: row.note || "", logs: [], _stub: true });
+        revs[row.local_id] = { rev: row.client_rev, hash: "~stub" }; added++;
+      } else if (clinNewer(row.local_id, row.client_rev)) {
+        f5.mar.status = row.status; f5.mar.givenAt = row.given_at || f5.mar.givenAt;
+        f5.mar.givenBy = row.given_by || f5.mar.givenBy; f5.mar.witness = row.witness || f5.mar.witness;
+        revs[row.local_id] = { rev: row.client_rev, hash: hashStr(JSON.stringify(snapshotMar(f5.mar))) }; updated++;
+      }
+    });
+    sets[6].forEach(function (row) {
+      bump(row.client_rev);
+      if (!row.local_id || row.deleted_at) return;
+      var pf6 = row.patient_local_id ? findLocal("patients", row.patient_local_id) : null;
+      if (!pf6) return;
+      var f6 = findLocal("growth_points", row.local_id);
+      if (!f6) {
+        pf6.child.measures = pf6.child.measures || [];
+        pf6.child.measures.push({ id: row.local_id.slice(2), date: String(row.measured_at || "").slice(0, 10), wt: row.wt_kg, ht: row.len_cm, hc: row.hc_cm, muac: row.muac_cm, _stub: true });
+        revs[row.local_id] = { rev: row.client_rev, hash: "~stub" }; added++;
+      } else if (clinNewer(row.local_id, row.client_rev)) {
+        f6.measure.wt = row.wt_kg; f6.measure.ht = row.len_cm; f6.measure.hc = row.hc_cm; f6.measure.muac = row.muac_cm;
+        revs[row.local_id] = { rev: row.client_rev, hash: hashStr(JSON.stringify(snapshotMeasure(f6.measure))) }; updated++;
       }
     });
     lsSet(REV_KEY, revs); lsSet(CF_KEY, conflicts);

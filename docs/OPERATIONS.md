@@ -58,7 +58,22 @@ Keep one offline copy per week per clinic (USB/print-room PC).
 - Deletes are tombstones (`deleted_at`); rows are preserved for audit.
 - Double-submit guards (2.5 s) cover prescriptions, bills, registrations.
 
-## 5. Uptime monitoring
+## 5. Medication + clinical convergence (M5)
+
+- Controlled drugs follow a two-person rule: the eMAR UI requires a witness
+  and the server rejects unwitnessed controlled rows (function + CHECK).
+  Never bypass by editing rows directly — corrections are new log entries.
+- Convergence differs by data class (by design): patient demographics use
+  the review queue (§4); high-frequency clinical rows (NICU, MAR, growth)
+  converge by automatic last-writer-wins on `client_rev`. If two staff edit
+  the same dose simultaneously, the newest write wins and the loser stays in
+  the local audit trail — review the audit log after busy shifts.
+- Calculators are guidance only: every result shows its method, caps, and
+  warnings. Confirm all fluid/feed orders against unit protocol.
+- NICU rounds are append-only in the UI; a mistaken round is corrected by a
+  new round, never by deletion.
+
+## 6. Uptime monitoring
 
 - `GET /api/health` → `{status, version, time, checks{...}}` — booleans only, never
   secrets (proven by `tests/api.test.js` marker scan). Wire any monitor
@@ -69,7 +84,7 @@ Keep one offline copy per week per clinic (USB/print-room PC).
 - Vercel function logs + Supabase Postgres logs are the first triage stop;
   privacy rule: logs must never contain PHI (§2).
 
-## 6. Incidents (first-response runbook)
+## 7. Incidents (first-response runbook)
 
 1. **Contain:** revoke exposure (rotate Supabase service key / Razorpay keys in
    Vercel env + redeploy; suspend compromised memberships; pull abusive deploy).
@@ -83,7 +98,7 @@ Keep one offline copy per week per clinic (USB/print-room PC).
    isolation suite green, post-mortem within 5 days.
 5. Never pay ransomware or delete evidence; keep backups offline-protected.
 
-## 7. Maintenance cadence
+## 8. Maintenance cadence
 
 Weekly: `npm audit`, review CI; monthly: rotate webhook secret (Razorpay dash +
 Vercel env), review `audit_events` exports per tenant on request; quarterly:
