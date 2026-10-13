@@ -156,6 +156,46 @@ async function main() {
   vm.runInContext("globalThis.__pin3={sess:(DB.session||{}).userId}", sb);
   ok(!sb.__pin3.sess && /try again/.test(sb.document.getElementById("lockMsg").textContent || ""), "lockout blocks even the correct PIN");
 
+  // ---- inactivity auto-lock ----
+  vm.runInContext("DB.users=[{id:'u9',name:'Idle Test',role:'Doctor',pinSalt:'s',pinHash:'h'}]; DB.session={userId:'u9',at:'x'}; DB.settings={lockMins:'15'}; IdleLast = Date.now() - 20*60e3;", sb);
+  ok(sb.checkIdle() === true, "idle past limit locks the session");
+  vm.runInContext("globalThis.__idleLocked = !!((DB.session || {}).userId);", sb);
+  ok(sb.__idleLocked === false, "session cleared after auto-lock");
+  ok(/inactivity/.test(sb.document.getElementById("lockMsg").textContent || ""), "lock screen explains inactivity");
+  vm.runInContext("DB.session={userId:'u9'}; IdleLast = Date.now();", sb);
+  ok(sb.checkIdle() === false, "recent activity prevents lock");
+  vm.runInContext("globalThis.__idleKept = !!((DB.session || {}).userId);", sb);
+  ok(sb.__idleKept === true, "session kept when active");
+  vm.runInContext("DB.users=[]; DB.session={}; IdleLast = 0;", sb);
+  ok(sb.checkIdle() === false, "open mode never locks");
+  vm.runInContext("DB.settings={lockMins:'1'};", sb);
+  ok(sb.idleTimeoutMs() === 60000, "lockMins setting honored");
+  vm.runInContext("DB.settings={lockMins:'9999'};", sb);
+  ok(sb.idleTimeoutMs() === 480 * 60e3, "lockMins clamped to 480 max");
+
+  // ---- encrypted-backup crypto round-trip (client restore path) ----
+  const t0 = Date.now();
+  vm.runInContext(`globalThis.__bkP = (async () => {
+    try {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const pw = "correct-horse-99";
+      const enc = await encKey(pw, salt, "encrypt");
+      const pt = JSON.stringify({ children: [{ id: "c1", name: "Synthetic" }], marker: "M2-RESTORE-DRILL" });
+      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, enc, new TextEncoder().encode(pt));
+      const env = { app: "KidGrowPro", enc: "AES-GCM-256-PBKDF2-100k", salt: b64enc(salt), iv: b64enc(iv), data: b64enc(ct) };
+      const dec = await encKey(pw, b64dec(env.salt), "decrypt");
+      const rt = new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64dec(env.iv) }, dec, b64dec(env.data)));
+      let wrongRejected = false;
+      try { const bad = await encKey("wrong-password", b64dec(env.salt), "decrypt"); await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64dec(env.iv) }, bad, b64dec(env.data)); }
+      catch (e) { wrongRejected = true; }
+      return { ok: rt === pt, wrongRejected, bytes: env.data.length };
+    } catch (e) { return { ok: false, err: String((e && e.message) || e) }; }
+  })();`, sb);
+  const bk = await sb.__bkP;
+  ok(bk.ok && bk.wrongRejected, "AES-GCM backup round-trips; wrong password rejected (GCM auth)" + (bk.err ? " [" + bk.err + "]" : ""));
+  console.log("  (backup crypto drill: " + (Date.now() - t0) + "ms, " + (bk.bytes || 0) + " b64 chars)");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

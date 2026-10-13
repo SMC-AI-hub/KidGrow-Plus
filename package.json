@@ -4,10 +4,11 @@
   "private": true,
   "description": "KidGrow Pro — offline-first pediatric EMR PWA, evolving to multi-tenant SaaS",
   "scripts": {
-    "test": "node tests/cloud-offline.test.js && node tests/tenant-isolation.test.js && node tests/hardening.test.js",
+    "test": "node tests/cloud-offline.test.js && node tests/tenant-isolation.test.js && node tests/hardening.test.js && node tests/api.test.js",
     "test:offline": "node tests/cloud-offline.test.js",
     "test:isolation": "node tests/tenant-isolation.test.js",
-    "test:hardening": "node tests/hardening.test.js"
+    "test:hardening": "node tests/hardening.test.js",
+    "test:api": "node tests/api.test.js"
   },
   "devDependencies": {
     "embedded-postgres": "17.10.0-beta.17",

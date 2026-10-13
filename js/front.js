@@ -100,6 +100,31 @@ function doLogout() {
   save(); applyRole(); renderAll();
 }
 
+/* ---------------- inactivity auto-lock (M2) ----------------
+   Locks the local session after N idle minutes (default 15, 1–480 via
+   Settings → Session lock). Any click/key/touch counts as activity.
+   Supabase cloud sessions are short-lived server-side; this guards the device. */
+let IdleLast = Date.now();
+function idleTimeoutMs() {
+  const m = parseInt((DB.settings && DB.settings.lockMins) || "15", 10);
+  return Math.max(1, Math.min(480, isNaN(m) ? 15 : m)) * 60e3;
+}
+function touchIdle() { IdleLast = Date.now(); }
+function checkIdle(nowMs) {
+  if (!(DB.users || []).length) return false;      // open mode: nothing to lock
+  if (!((DB.session || {}).userId)) return false;  // already locked
+  if ((nowMs || Date.now()) - IdleLast < idleTimeoutMs()) return false;
+  log("Auto-lock", "inactivity");
+  doLogout();
+  const m = document.getElementById("lockMsg");
+  if (m) m.textContent = "🔒 Locked after inactivity.";
+  return true;
+}
+try {
+  ["click", "keydown", "touchstart"].forEach((ev) => document.addEventListener(ev, touchIdle, { passive: true }));
+  setInterval(() => { try { checkIdle(); } catch (e) {} }, 30000);
+} catch (e) {}
+
 /* ---------------- audit ---------------- */
 function log(action, detail) {
   DB.audit = DB.audit || [];

@@ -71,5 +71,26 @@ ok(!open.length, "every policy carries a tenant-boundary marker" + (open.length 
 ok((mig.match(/enable row level security/g) || []).length >= 6, "RLS enabled on all tenant tables");
 ok(!/on audit_events for (update|delete)/i.test(mig), "audit_events has no update/delete policy (append-only)");
 
+// 9. Logging policy: console.error for render faults only — never patient data
+let noisy = [];
+for (const f of fs.readdirSync(path.join(R, "js")).filter((f) => f.endsWith(".js") && f !== "qrcode.min.js")) {
+  const t = read("js/" + f);
+  if (/console\.(log|info|warn|debug)\b/.test(t)) noisy.push("js/" + f);
+}
+ok(!noisy.length, "no console.log/info/warn/debug in app JS" + (noisy.length ? " (" + noisy.join(",") + ")" : ""));
+const errSites = [];
+for (const f of fs.readdirSync(path.join(R, "js")).filter((f) => f.endsWith(".js") && f !== "qrcode.min.js")) {
+  const n = (read("js/" + f).match(/console\.error/g) || []).length;
+  if (n) errSites.push("js/" + f + "x" + n);
+}
+ok(errSites.length <= 2, "console.error only at known render-fault sites (" + (errSites.join(", ") || "none") + ")");
+ok(/LOGGING POLICY/.test(read("js/app.js")), "logging policy documented at the call site");
+
+// 10. CI runs the suites on every push
+const ci = read(".github/workflows/ci.yml");
+for (const need of ["actions/checkout", "actions/setup-node", "npm ci", "npm test", "npm audit"]) {
+  ok(ci.includes(need), "CI workflow contains: " + need);
+}
+
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

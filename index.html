@@ -329,6 +329,12 @@
             </div>
             <button class="btn btn-p" onclick="saveSettings()">💾 Save clinic profile</button>
           </div>
+          <div class="card"><h3>🔒 Session lock</h3><div class="hint">Auto-locks the app after inactivity (needs user PINs set up)</div>
+            <div class="form-grid">
+              <div><label>Lock after (minutes, 1–480)</label><input id="sLockMins" type="number" min="1" max="480" placeholder="15"></div>
+            </div>
+            <button class="btn btn-p" onclick="saveSettings()">💾 Save lock setting</button>
+          </div>
           <div class="card"><h3>👩‍⚕️ Doctors & letterheads</h3><div class="hint">Add all consulting doctors · ● selected prints on reports</div><div id="docBox"></div></div>
           <div class="card"><h3>🗄️ Data management</h3><div class="hint">All data stays on this device (offline-first, private) · App <b>v10</b></div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">

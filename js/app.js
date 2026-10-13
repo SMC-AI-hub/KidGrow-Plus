@@ -712,10 +712,11 @@ function printCertificate() {
 
 /* ================= SETTINGS / DATA ================= */
 function saveSettings() {
-  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), addr: $("sAddr").value.trim() });
+  const lm = document.getElementById("sLockMins");
+  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), addr: $("sAddr").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15") });
   save(); syncChildPicker(); renderBrand(); alert("Clinic profile saved.");
 }
-function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; $("sAddr").value = s.addr || ""; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; }
+function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; $("sAddr").value = s.addr || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; }
 function exportData() {
   DB.lastBackup = todayISO(); save();
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: "application/json" });
@@ -760,7 +761,7 @@ function callRender(name) {
   try {
     const f = (typeof window !== "undefined" && window[name]) || null;
     if (typeof f === "function") f();
-  } catch (e) { if (typeof console !== "undefined" && console.error) console.error("KidGrow render failed: " + name, e); }
+  } catch (e) { if (typeof console !== "undefined" && console.error) console.error("KidGrow render failed: " + name, e); } /* LOGGING POLICY: console.error for render faults only (page name + exception). Never log patient data — see docs/OPERATIONS.md. */
 }
 function renderAll() {
   try { if (typeof ensureDoctors === "function") ensureDoctors(); } catch (e) {}
