@@ -569,8 +569,8 @@ async function encKey(password, salt, usage) {
 }
 async function exportEncrypted() {
   if (!window.crypto || !crypto.subtle) return alert("This browser cannot encrypt (needs https/localhost). Use the JSON backup instead.");
-  const p1 = window.prompt("Password for this backup (min 4 characters):");
-  if (!p1 || p1.length < 4) return alert("Password too short — cancelled.");
+  const p1 = window.prompt("Password for this backup (min 8 characters — use a strong one, it protects patient data):");
+  if (!p1 || p1.length < 8) return alert("Password too short (min 8) — cancelled.");
   if (window.prompt("Repeat password:") !== p1) return alert("Passwords differ — cancelled.");
   try {
     const salt = crypto.getRandomValues(new Uint8Array(16));

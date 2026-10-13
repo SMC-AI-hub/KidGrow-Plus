@@ -49,14 +49,50 @@ function enforceLock() {
     document.getElementById("lockMsg").textContent = "";
   }
 }
-function doLogin() {
+/* PINs are salted hashes (SHA-256 via WebCrypto), never plaintext. Legacy plaintext
+   PINs migrate to hashes on next successful login. Honest limits: a 4-digit PIN
+   has ~13 bits of entropy — this stops casual reads, not targeted cracking.
+   The real multi-user security boundary is Supabase Auth + memberships (M3). */
+async function pinHash(pin, salt) {
+  const msg = salt + ":" + String(pin);
+  if (window.crypto && crypto.subtle) {
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
+    return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+  }
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57; // weak fallback for non-secure contexts only
+  for (let i = 0; i < msg.length; i++) { const ch = msg.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return "w$" + (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+}
+function pinSalt() {
+  try { const b = crypto.getRandomValues(new Uint8Array(16)); return [...b].map((x) => x.toString(16).padStart(2, "0")).join(""); }
+  catch (e) { return "s" + Date.now().toString(16) + Math.floor(Math.random() * 1e9).toString(16); }
+}
+function pinGuard() { try { return JSON.parse(safeGet("kidgrow_pin_guard") || "{}"); } catch (e) { return {}; } }
+function pinGuardSet(g) { try { localStorage.setItem("kidgrow_pin_guard", JSON.stringify(g)); } catch (e) {} }
+async function doLogin() {
   const u = (DB.users || []).find((x) => x.id === document.getElementById("lockUser").value);
   const pin = document.getElementById("lockPin").value;
-  if (u && String(u.pin) === String(pin)) {
+  const msg = document.getElementById("lockMsg");
+  const g = pinGuard();
+  if (g.until && Date.now() < g.until) { msg.textContent = "🔒 Too many attempts — try again in " + Math.ceil((g.until - Date.now()) / 1000) + "s."; return; }
+  let authed = false;
+  if (u && u.pinHash && u.pinSalt) authed = (await pinHash(pin, u.pinSalt)) === u.pinHash;
+  else if (u && u.pin != null && String(u.pin) === String(pin)) {
+    u.pinSalt = pinSalt(); u.pinHash = await pinHash(pin, u.pinSalt); delete u.pin; authed = true;
+  }
+  if (u && authed) {
+    pinGuardSet({});
     DB.session = { userId: u.id, at: new Date().toISOString() };
     log("Login", u.name);
     save(); applyRole(); renderAll();
-  } else document.getElementById("lockMsg").textContent = "❌ Wrong PIN — try again.";
+  } else {
+    const n = (g.n || 0) + 1;
+    pinGuardSet(n >= 5 ? { n: 0, until: Date.now() + 60000 } : { n });
+    msg.textContent = n >= 5 ? "🔒 Too many attempts — locked 60s." : "❌ Wrong PIN — try again.";
+    try { log("Login failed", (u || {}).name || "?"); save(); } catch (e) {}
+  }
 }
 function doLogout() {
   log("Logout", (currentUser() || {}).name || "");
@@ -289,7 +325,7 @@ function renderUsers() {
     </div>
   </div>`;
 }
-function saveUser() {
+async function saveUser() {
   if (!need(3, "manage users")) return;
   DB.users = DB.users || [];
   const name = document.getElementById("uName").value.trim(), role = document.getElementById("uRole").value, pin = document.getElementById("uPin").value.trim();
@@ -297,8 +333,10 @@ function saveUser() {
   if (!name) return alert("Name required.");
   if (!id && !/^\d{4,}$/.test(pin)) return alert("PIN must be 4+ digits.");
   if (id && pin && !/^\d{4,}$/.test(pin)) return alert("PIN must be 4+ digits.");
-  if (id) { const u = DB.users.find((x) => x.id === id); Object.assign(u, { name, role }); if (pin) u.pin = pin; }
-  else DB.users.push({ id: uid(), name, role, pin });
+  if (id) {
+    const u = DB.users.find((x) => x.id === id); Object.assign(u, { name, role });
+    if (pin) { u.pinSalt = pinSalt(); u.pinHash = await pinHash(pin, u.pinSalt); delete u.pin; }
+  } else { const s = pinSalt(); DB.users.push({ id: uid(), name, role, pinSalt: s, pinHash: await pinHash(pin, s) }); }
   log("User saved", `${name} (${role})`);
   save(); applyRole(); renderAll();
 }
