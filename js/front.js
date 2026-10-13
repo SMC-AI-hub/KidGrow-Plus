@@ -11,7 +11,10 @@ const ROLE_HIDE = {
 
 /* ---------------- auth ---------------- */
 function currentUser() {
-  if (!(DB.users || []).length) return { name: "Open mode", role: "Doctor", open: true };
+  if (!(DB.users || []).length) {
+    try { if (typeof CloudServerUser === "function") { var cu = CloudServerUser(); if (cu) return cu; } } catch (e) {}
+    return { name: "Open mode", role: "Doctor", open: true };
+  }
   const s = DB.session || {};
   return (DB.users || []).find((u) => u.id === s.userId) || null;
 }

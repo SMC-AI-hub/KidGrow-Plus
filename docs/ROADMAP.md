@@ -36,7 +36,7 @@ TypeScript/React migration is deferred to M8 and only if justified by team size.
   Exit: isolation suite green against real Postgres; `npm test` green.
 - **M2 — Hardening & ops (✅ DONE 2026-10-13 — 111/111 green: 45 offline + 26 isolation + 30 hardening + 10 api; client restore drill 145 ms; live PITR drill pending Supabase project).** Inactivity lock, secret/CSP roadmap step, staging env,
   backup-restore drill (Supabase PITR) with measured RTO, uptime/health checks.
-- **M3 — Core platform.** Org signup/onboarding UI, invites + roles (pediatrician,
+- **M3 — Core platform (✅ DONE 2026-10-13 — 176/176 green: 75 offline + 58 isolation + 33 hardening + 10 api; live MFA/invite timing needs staging per M3-MANUAL-TESTS).** Org signup/onboarding UI, invites + roles (pediatrician,
   nurse, pharmacist, MRD, billing, auditor…), MFA, break-glass, server audit,
   usage quotas, suspension-with-export-grace, DPDP consent/retention baseline.
 - **M4 — Web migration to relational core.** Dual-write (blob + relational),

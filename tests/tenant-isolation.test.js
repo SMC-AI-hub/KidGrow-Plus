@@ -64,7 +64,10 @@ async function main() {
   // ---- schema ----
   await owner.query(SHIM);
   await owner.query(fs.readFileSync(path.join(ROOT, "supabase/schema.sql"), "utf8"));
-  await owner.query(fs.readFileSync(path.join(ROOT, "supabase/migrations/0001_tenant_core.sql"), "utf8"));
+  const migDir = path.join(ROOT, "supabase/migrations");
+  for (const f of fs.readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort()) {
+    await owner.query(fs.readFileSync(path.join(migDir, f), "utf8"));
+  }
   await owner.query("DROP ROLE IF EXISTS app");
   await owner.query("CREATE ROLE app LOGIN PASSWORD 'app-test-pw'");
   await owner.query("GRANT CONNECT ON DATABASE postgres TO app");
@@ -146,8 +149,93 @@ async function main() {
   const mrnB = await withClaim(app, B, async () => (await app.query("SELECT name FROM patients WHERE mrn='A-001'")).rows);
   ok(mrnB.length === 1 && mrnB[0].name === "Same-MRN Other-Tenant", "MRN uniqueness is per-tenant, not global");
 
-  try { await app.end(); } catch (_) {}
-  await stop();
+  // ================= M3 (0002): quotas, lifecycle, invites, break-glass, consents =================
+  const D = "55555555-5555-5555-5555-555555555555"; // quota-tenant owner
+  const E = "66666666-6666-6666-6666-666666666666"; // invitee
+  const F = "77777777-7777-7777-7777-777777777777"; // wrong-email stranger
+  await owner.query("INSERT INTO auth.users (id, email) VALUES ($1,'owner-a@synthetic.test'),($2,'nurse-e@synthetic.test'),($3,'stranger-f@synthetic.test') ON CONFLICT (id) DO NOTHING", [A, E, F]);
+
+  // ---- quota values ----
+  const q = async (p, k) => (await owner.query("SELECT public.plan_quota($1,$2) AS v", [p, k])).rows[0].v;
+  ok((await q("solo", "users")) === "1" && (await q("clinic", "patients")) === "5000", "plan_quota returns plan limits");
+  ok((await q("enterprise", "users")) === null && (await q("trial", "patients")) === "200", "enterprise unlimited, trial capped");
+
+  // ---- member quota enforced (tA has owner+nurse = 2; solo allows 1) ----
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='solo' WHERE id=$1", [tA]));
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'doctor')", [tA, F]))) === "denied", "member insert over quota denied");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='clinic' WHERE id=$1", [tA]));
+
+  // ---- patient quota enforced (solo = 500) ----
+  const tD = await withClaim(app, D, async () => (await app.query("INSERT INTO tenants (name, plan) VALUES ('Quota Test (synthetic)', 'solo') RETURNING id")).rows[0].id);
+  const bulk = [];
+  for (let i = 0; i < 500; i++) bulk.push(`($1,'Q-${i}','Quota ${i}')`);
+  await withClaim(app, D, async () => app.query(`INSERT INTO patients (tenant_id, mrn, name) VALUES ${bulk.join(",")}`, [tD]));
+  ok(await expectDeny(withClaim(app, D, async () => app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'Q-OVER','Over')", [tD]))) === "denied", "501st patient on solo plan denied");
+  const qCount = await withClaim(app, D, async () => (await app.query("SELECT count(*) AS n FROM patients WHERE tenant_id=$1", [tD])).rows[0].n);
+  ok(qCount === "500", "quota holds exactly 500 rows");
+
+  // ---- suspension: read-only, never blind ----
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='suspended', suspended_at=now() WHERE id=$1", [tA]));
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'S-1','Susp')", [tA]))) === "denied", "suspended: owner insert denied");
+  ok((await withClaim(app, A, async () => (await app.query("UPDATE patients SET name='X' WHERE id=$1", [pA])).rowCount)) === 0, "suspended: owner update touches 0");
+  ok((await withClaim(app, A, async () => (await app.query("SELECT id FROM patients WHERE id=$1", [pA])).rows)).length === 1, "suspended: owner still reads (export-safe)");
+  ok((await withClaim(app, N, async () => (await app.query("SELECT id FROM patients")).rows)).length === 1, "suspended: members still read");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'x@y.z','nurse')", [tA]))) === "denied", "suspended: invite creation denied");
+  await withClaim(app, N, async () => app.query("INSERT INTO break_glass_events (tenant_id, actor_id, reason) VALUES ($1,$2,'Emergency care needed')", [tA, N]));
+  ok(true, "suspended: break-glass stays loggable (deliberate)");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='active', suspended_at=null WHERE id=$1", [tA]));
+
+  // ---- grace window ----
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='grace', grace_until=now()+interval '3 days' WHERE id=$1", [tA]));
+  await withClaim(app, A, async () => app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'G-1','Grace')", [tA]));
+  ok(true, "grace (valid): writes allowed");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET grace_until=now()-interval '1 day' WHERE id=$1", [tA]));
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'G-2','Late')", [tA]))) === "denied", "grace (expired): writes denied");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='active', grace_until=null WHERE id=$1", [tA]));
+
+  // ---- closed: members blind, owners keep export ----
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='closed' WHERE id=$1", [tA]));
+  ok((await withClaim(app, N, async () => (await app.query("SELECT id FROM patients")).rows)).length === 0, "closed: members see nothing");
+  ok((await withClaim(app, A, async () => (await app.query("SELECT id FROM patients")).rows)).length >= 1, "closed: owners keep read/export");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET status='active' WHERE id=$1", [tA]));
+
+  // ---- legal hold blocks delete ----
+  await withClaim(app, A, async () => app.query("UPDATE patients SET legal_hold=true WHERE id=$1", [pA]));
+  ok((await withClaim(app, A, async () => (await app.query("DELETE FROM patients WHERE id=$1", [pA])).rowCount)) === 0, "legal_hold: owner delete blocked");
+  await withClaim(app, A, async () => app.query("UPDATE patients SET legal_hold=false WHERE id=$1", [pA]));
+
+  // ---- consents: isolated, withdraw-not-erase ----
+  const cA = await withClaim(app, A, async () => (await app.query("INSERT INTO consents (tenant_id, patient_id, purpose, granted_by) VALUES ($1,$2,'care','Mother') RETURNING id", [tA, pA])).rows[0].id);
+  ok(!!cA, "consent recorded");
+  await withClaim(app, A, async () => app.query("UPDATE consents SET status='withdrawn', withdrawn_at=now() WHERE id=$1", [cA]));
+  ok((await withClaim(app, B, async () => (await app.query("SELECT id FROM consents WHERE patient_id=$1", [pA])).rows)).length === 0, "B cannot see A consents");
+  ok(await expectDeny(withClaim(app, B, async () => app.query("INSERT INTO consents (tenant_id, patient_id, purpose) VALUES ($1,$2,'care')", [tA, pA]))) === "denied", "B cannot write A consent");
+  ok((await withClaim(app, A, async () => (await app.query("DELETE FROM consents WHERE id=$1", [cA])).rowCount)) === 0, "consents cannot be deleted (withdraw only)");
+
+  // ---- break-glass rules ----
+  let shortRej = false;
+  try { await withClaim(app, N, async () => app.query("INSERT INTO break_glass_events (tenant_id, actor_id, reason) VALUES ($1,$2,'short')", [tA, N])); }
+  catch (e) { shortRej = e.code === "23514"; }
+  ok(shortRej, "break-glass rejects short reasons (min 8 chars)");
+  const bgN = await withClaim(app, N, async () => (await app.query("SELECT id FROM break_glass_events WHERE tenant_id=$1", [tA])).rows);
+  ok(bgN.length >= 1, "actor reads own break-glass rows");
+  ok((await withClaim(app, B, async () => (await app.query("SELECT id FROM break_glass_events")).rows)).length === 0, "B cannot read A break-glass");
+  ok((await withClaim(app, A, async () => (await app.query("SELECT id FROM break_glass_events WHERE tenant_id=$1", [tA])).rows)).length >= 1, "owner audits break-glass");
+
+  // ---- invites: email-bound, single-use, expiring ----
+  const inv = await withClaim(app, A, async () => (await app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'nurse-e@synthetic.test','nurse') RETURNING token", [tA])).rows[0].token);
+  ok(typeof inv === "string" && inv.length >= 32, "invite token issued");
+  ok((await withClaim(app, E, async () => (await app.query("SELECT id FROM invites")).rows)).length === 1, "invitee sees own invite");
+  ok((await withClaim(app, F, async () => (await app.query("SELECT id FROM invites")).rows)).length === 0, "wrong-email user sees no invite");
+  ok(await expectDeny(withClaim(app, F, async () => app.query("SELECT public.accept_invite($1)", [inv]))) === "denied", "wrong-email accept rejected");
+  const joined = await withClaim(app, E, async () => (await app.query("SELECT public.accept_invite($1) AS t", [inv])).rows[0].t);
+  ok(joined === tA, "invitee joins the right tenant");
+  const mE = await withClaim(app, E, async () => (await app.query("SELECT role FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tA, E])).rows);
+  ok(mE.length === 1 && mE[0].role === "nurse", "membership created with invited role");
+  ok(await expectDeny(withClaim(app, E, async () => app.query("SELECT public.accept_invite($1)", [inv]))) === "denied", "invite single-use (replay rejected)");
+  await withClaim(app, A, async () => app.query("INSERT INTO invites (tenant_id, email, role, expires_at) VALUES ($1,'nurse-e@synthetic.test','nurse', now()-interval '1 day')", [tA]));
+  const oldTok = await withClaim(app, A, async () => (await app.query("SELECT token FROM invites WHERE tenant_id=$1 AND accepted_at IS NULL ORDER BY created_at DESC LIMIT 1", [tA])).rows[0].token);
+  ok(await expectDeny(withClaim(app, E, async () => app.query("SELECT public.accept_invite($1)", [oldTok]))) === "denied", "expired invite rejected");
   console.log(`\nisolation: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

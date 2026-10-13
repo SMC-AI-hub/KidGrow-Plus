@@ -92,5 +92,33 @@ for (const need of ["actions/checkout", "actions/setup-node", "npm ci", "npm tes
   ok(ci.includes(need), "CI workflow contains: " + need);
 }
 
+// 11. JS quota mirror matches SQL plan_quota (drift = billing/security bug)
+const mig2 = read("supabase/migrations/0002_platform.sql");
+const tj = read("js/tenant.js");
+function sqlQuota(key) {
+  const m = mig2.match(new RegExp("when '" + key + "' then case p_plan([\\s\\S]*?)end"));
+  const o = {};
+  for (const x of (m ? m[1] : "").matchAll(/when '(\w+)' then (\d+)/g)) o[x[1]] = +x[2];
+  return o;
+}
+function jsQuota(v) {
+  const m = tj.match(new RegExp("var " + v + " = \\{([^}]+)\\}"));
+  const o = {};
+  for (const x of (m ? m[1] : "").matchAll(/(\w+): (\d+)/g)) o[x[1]] = +x[2];
+  return o;
+}
+ok(JSON.stringify(sqlQuota("users")) === JSON.stringify(jsQuota("u")), "quota mirror matches SQL (users)");
+ok(JSON.stringify(sqlQuota("patients")) === JSON.stringify(jsQuota("p")), "quota mirror matches SQL (patients)");
+
+// 12. Every table in every migration has RLS enabled
+let rlsOk = true, rlsDetail = [];
+for (const f of fs.readdirSync(path.join(R, "supabase/migrations")).filter((f) => f.endsWith(".sql"))) {
+  const t = read("supabase/migrations/" + f);
+  const tables = (t.match(/create table if not exists (\w+)/gi) || []).length;
+  const enables = (t.match(/enable row level security/gi) || []).length;
+  if (enables < tables) { rlsOk = false; rlsDetail.push(f); }
+}
+ok(rlsOk, "RLS enabled on every migrated table" + (rlsDetail.length ? " (" + rlsDetail.join(",") + ")" : ""));
+
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

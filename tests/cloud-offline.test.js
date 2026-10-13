@@ -196,6 +196,43 @@ async function main() {
   ok(bk.ok && bk.wrongRejected, "AES-GCM backup round-trips; wrong password rejected (GCM auth)" + (bk.err ? " [" + bk.err + "]" : ""));
   console.log("  (backup crypto drill: " + (Date.now() - t0) + "ms, " + (bk.bytes || 0) + " b64 chars)");
 
+  // ---- M3 tenant platform: pure helpers + inert-when-offline ----
+  ok(idx("js/cloud.js") < idx("js/tenant.js") && idx("js/tenant.js") < idx("js/ops.js"), "tenant.js loads between cloud and ops");
+  ok(typeof sb.Tenant === "object" && typeof sb.Tenant.boot === "function", "Tenant namespace present");
+  ok(typeof sb.BreakGlassActive === "function" && typeof sb.CloudServerUser === "function", "cross-module hooks present");
+  const TP = sb.TenantPure;
+  ok(TP.planQuota("trial", "users") === 3 && TP.planQuota("trial", "patients") === 200, "quota mirror: trial 3/200");
+  ok(TP.planQuota("solo", "users") === 1 && TP.planQuota("solo", "patients") === 500, "quota mirror: solo 1/500");
+  ok(TP.planQuota("clinic", "users") === 5 && TP.planQuota("clinic", "patients") === 5000, "quota mirror: clinic 5/5000");
+  ok(TP.planQuota("nicu", "users") === 15 && TP.planQuota("nicu", "patients") === 20000, "quota mirror: nicu 15/20000");
+  ok(TP.planQuota("hospital", "users") === 50 && TP.planQuota("hospital", "patients") === 100000, "quota mirror: hospital 50/100000");
+  ok(TP.planQuota("enterprise", "users") === null && TP.planQuota("nope", "users") === null, "quota mirror: enterprise/unknown unlimited");
+  ok(TP.quotaStatus(5, null).state === "ok" && /unlimited/.test(TP.quotaStatus(5, null).label), "quotaStatus: unlimited");
+  ok(TP.quotaStatus(40, 100).state === "ok" && TP.quotaStatus(80, 100).state === "warn" && TP.quotaStatus(100, 100).state === "full", "quotaStatus: ok/warn/full boundaries");
+  ok(TP.roleRank("owner") === "Doctor" && TP.roleRank("admin") === "Doctor" && TP.roleRank("doctor") === "Doctor", "roleRank: clinical leads");
+  ok(TP.roleRank("nurse") === "Nurse" && TP.roleRank("pharmacist") === "Nurse" && TP.roleRank("lab") === "Nurse" && TP.roleRank("mrd") === "Nurse", "roleRank: staff");
+  ok(TP.roleRank("billing") === "Frontdesk" && TP.roleRank("auditor") === "Frontdesk" && TP.roleRank("readonly") === "Frontdesk" && TP.roleRank("xyz") === "Frontdesk", "roleRank: least privilege default");
+  ok(TP.mfaNext({ aal: "aal2", hasFactors: true, role: "owner", required: ["owner"] }) === "ok", "mfa: aal2 passes");
+  ok(TP.mfaNext({ aal: "aal1", hasFactors: false, role: "nurse", required: ["owner"] }) === "ok", "mfa: non-required role passes");
+  ok(TP.mfaNext({ aal: "aal1", hasFactors: false, role: "owner", required: ["owner", "admin"] }) === "enroll", "mfa: required without factors enrolls");
+  ok(TP.mfaNext({ aal: "aal1", hasFactors: true, role: "admin", required: ["owner", "admin"] }) === "verify", "mfa: required with factors verifies");
+  ok(TP.mfaNext(null) === "ok", "mfa: null-safe");
+  const bgOK = { tenant_id: "t1", reason: "Night duty emergency case", at: NOW - 1000, until: NOW + 3600e3 };
+  ok(TP.breakGlassValid(bgOK, NOW) === true, "breakglass: valid record passes");
+  ok(TP.breakGlassValid({ ...bgOK, until: NOW - 1 }, NOW) === false, "breakglass: expired rejected");
+  ok(TP.breakGlassValid({ ...bgOK, reason: "short" }, NOW) === false, "breakglass: short reason rejected");
+  ok(TP.breakGlassValid({ ...bgOK, tenant_id: "" }, NOW) === false, "breakglass: missing tenant rejected");
+  ok(TP.breakGlassValid(null, NOW) === false, "breakglass: null-safe");
+  const ap = TP.auditPayload("t1", "u1", "patient.view", "patients", "p1", { x: 1 });
+  ok(ap.tenant_id === "t1" && ap.actor_id === "u1" && ap.action === "patient.view" && ap.detail.x === 1, "auditPayload shape");
+  ok(TP.auditPayload("t", "u", "a".repeat(200), "b".repeat(100), "c", null).action.length === 80, "auditPayload truncates long fields");
+  ok(TP.validInviteEmail("doc@hospital.org") && !TP.validInviteEmail("not-an-email"), "invite email validation");
+  ok(sb.BreakGlassActive() === false, "BreakGlassActive false with no record");
+  sb.localStorage.setItem("kidgrow_breakglass", JSON.stringify(bgOK));
+  ok(sb.BreakGlassActive() === true, "BreakGlassActive true with valid record");
+  sb.localStorage.removeItem("kidgrow_breakglass");
+  ok(sb.CloudServerUser() === null, "CloudServerUser null when cloud off");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

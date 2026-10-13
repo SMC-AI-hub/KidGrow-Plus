@@ -63,6 +63,7 @@ function accessFor(p, cache, nowMs) {
   return { ok: false, reason: "login" };
 }
 function currentAccess() {
+  try { if (typeof BreakGlassActive === "function" && BreakGlassActive()) return { ok: true, reason: "breakglass" }; } catch (e) {}
   if (profile) return accessFor(profile, null, Date.now());
   return accessFor(null, lsGet(STATUS_KEY), Date.now());
 }
@@ -322,6 +323,7 @@ function subscribe() {
 /* ---------------- public API ---------------- */
 var Cloud = {
   enabled: false,
+  sb: function () { return sb; }, // authed client for tenant.js (shared session)
   init: function () {
     if (!configured()) { Cloud.enabled = false; return; }
     Cloud.enabled = true;
