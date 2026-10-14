@@ -1,6 +1,6 @@
 /* GET /api/health — liveness + dependency presence for uptime monitors.
    NEVER echoes secrets, URLs, or key material — booleans only. */
-let VERSION = "10.5.0";
+let VERSION = "10.6.0";
 try { VERSION = require("../package.json").version || VERSION; } catch (e) {}
 
 module.exports = async function handler(req, res) {

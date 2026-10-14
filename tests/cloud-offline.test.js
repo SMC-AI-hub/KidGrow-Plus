@@ -417,6 +417,26 @@ async function main() {
   const foot = sb.docFooter("Discharge summary");
   ok(foot.includes("Discharge summary") && foot.includes("Generated") && foot.includes("confirm clinical labels"), "docFooter brands + dates");
 
+  // ---- Formulary review workflow (C1 partial) ----
+  ok(idx("js/metrics.js") < idx("js/formulary.js") && idx("js/formulary.js") < idx("js/ops.js"), "formulary loads between metrics and ops");
+  ok(typeof sb.renderFormulary === "function" && typeof sb.formularyStatus === "function", "formulary page + status fn render");
+  const DP = sb.DrugPure;
+  ok(DP.validateDrug({ id: "t", name: "T", mgkg: 10, maxDose: 100, freqs: ["OD"], defFreq: "OD", allergy: [], strengths: [{ label: "x" }] }).length === 0, "sound drug passes structural check");
+  ok(DP.validateDrug({ id: "t", name: "T" }).some((e) => /dosing basis/.test(e)), "dosing basis required");
+  ok(DP.validateDrug({ id: "t", name: "T", mgkg: 10, maxDose: 5, freqs: ["OD"], defFreq: "BD", allergy: [], strengths: [{ label: "x" }] }).some((e) => /defFreq/.test(e)), "defFreq must be offered");
+  ok(DP.validateDrug({ id: "t", name: "T", mgkg: 10, perDay: true, allergy: [], strengths: [{ label: "x" }] }).some((e) => /daily/.test(e)), "per-day drugs need maxDaily");
+  ok(DP.validateDrug({ id: "o", name: "O", info: "directions", allergy: [] }).length === 0, "info-only drugs exempt from strengths");
+  ok(DP.validateReview({}).length === 4, "review needs source + edition + by + verdict");
+  ok(DP.validateReview({ source: "Nelson", edition: "22e", by: "Ph", verdict: "approved" }).length === 0, "complete review passes");
+  ok(DP.reviewStatus("a", { a: { verdict: "approved" } }) === "reviewed", "approved = reviewed");
+  ok(DP.reviewStatus("a", { a: { verdict: "flagged" } }) === "pending" && DP.reviewStatus("b", {}) === "pending", "flagged/missing = pending");
+  ok(DP.pendingList([{ id: "a" }, { id: "b" }], { a: { verdict: "approved" } }).length === 1, "pending list filters");
+  vm.runInContext('DB.formularyReviews={para:{source:"Nelson",edition:"22e",by:"Ph",verdict:"approved",at:"2026-10-14T00:00:00Z"}};', sb);
+  ok(sb.formularyStatus("para") === "reviewed" && sb.formularyStatus("ibu") === "pending", "live status reads reviews");
+  ok(vm.runInContext("DRUGS.length", sb) === 30, "formulary holds 30 drugs");
+  const structIssues = vm.runInContext("DRUGS.map((d) => DrugPure.validateDrug(d).length)", sb);
+  ok(structIssues.every((n) => n === 0), "all 30 drugs pass structural validation");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

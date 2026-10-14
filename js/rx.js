@@ -40,7 +40,7 @@ function renderRx() {
       <div class="form-grid">
         <div><label>Weight (kg)</label><input type="number" step="0.1" min="1" value="${RXB.wt}" oninput="RXB.wt=this.value;renderRxCalc()"></div>
         <div><label>Drug</label><select onchange="RXB.drugId=this.value;RXB.stIdx=0;RXB.days='';renderRx()">
-          ${cats.map((g) => `<optgroup label="${esc(g)}">${DRUGS.filter((x) => x.cat === g).map((x) => `<option value="${x.id}"${x.id === d.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</optgroup>`).join("")}
+          ${cats.map((g) => `<optgroup label="${esc(g)}">${DRUGS.filter((x) => x.cat === g).map((x) => `<option value="${x.id}"${x.id === d.id ? " selected" : ""}>${esc(x.name)}${(typeof formularyStatus === "function" && formularyStatus(x.id) === "pending") ? " ⚠️" : ""}</option>`).join("")}</optgroup>`).join("")}
         </select></div>
         ${(d.strengths || []).length ? `<div><label>Strength</label><select onchange="RXB.stIdx=+this.value;renderRx()">${d.strengths.map((s, i) => `<option value="${i}"${i === RXB.stIdx ? " selected" : ""}>${esc(s.label)}</option>`).join("")}</select></div>` : ""}
         <div><label>Frequency</label><select onchange="RXB.freq=this.value;renderRxCalc()">${d.freqs.map((f) => `<option${f === RXB.freq ? " selected" : ""}>${f}</option>`).join("")}</select></div>
@@ -88,7 +88,7 @@ function renderRxCalc() {
   if (!calc.ok) { box.innerHTML = `<div class="alert a-amber" style="margin:8px 0 0">⚠️ <div>${esc(calc.why || "Cannot compute.")}</div></div>`; return; }
   box.innerHTML = `<div class="alert a-green" style="margin:8px 0 0">💊 <div><b style="font-size:15px">${esc(calc.take)}</b> ${RXB.freq} × ${RXB.days || d.defDays || "—"} days<br>
     <span style="font-size:12.5px">${!calc.infoOnly && calc.qtyText ? esc(calc.qtyText) + " · " : ""}Basis: ${esc(calc.basis || "")}${calc.capped ? " · capped at adult max" : ""}</span>
-    ${(calc.warns || []).map((w) => `<br><span style="font-size:12.5px">⚠️ ${esc(w)}</span>`).join("")}</div></div>`;
+    ${(calc.warns || []).map((w) => `<br><span style="font-size:12.5px">⚠️ ${esc(w)}</span>`).join("")}${(typeof formularyStatus === "function" && d && formularyStatus(d.id) === "pending") ? `<br><span style="font-size:12.5px">⚠️ Formulary entry unverified — confirm against reference.</span>` : ""}</div></div>`;
 }
 function renderRxItems() {
   const box = $("rxItems"); if (!box) return;

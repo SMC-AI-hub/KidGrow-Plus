@@ -147,5 +147,14 @@ ok(mrdSrc.includes("csvOf(") && mrdSrc.includes("auditSafe("), "MRD exports esca
 const clinSrc = read("js/clinic.js");
 ok(clinSrc.includes("with 2+ measures") && clinSrc.includes("metricsClinicalHTML"), "analytics shows denominators + clinical row");
 
+// 15. Formulary review rails (static)
+const rxSrc = read("js/rx.js");
+ok((rxSrc.match(/formularyStatus/g) || []).length >= 2, "Rx picker + calc surface review status");
+const frontSrc = read("js/front.js");
+ok(["formulary", "nicu", "mar", "calc", "mrd"].every((p) => frontSrc.includes('"' + p + '"')), "role map covers new clinical pages");
+const formSrc = read("js/formulary.js");
+ok(formSrc.includes("needSafe(2") && formSrc.includes('guardSubmit("formulary")'), "reviews are role-gated + double-submit guarded");
+ok(read("js/drugs.js").includes("ALWAYS verify"), "formulary keeps its verify warning");
+
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -1,74 +1,50 @@
-# KidGrow Pro 👶 — Paediatric Clinic Suite (IAP Standards Edition)
+# KidGrow Pro 👶 — Paediatric Clinic Suite → Multi-tenant EMR SaaS
 
-Offline-first web app for child health records (birth–18 y), built to Indian Academy
-of Pediatrics (IAP) standards. Installs as an app (PWA) on Android, iPhone, Windows —
-works fully offline after first open. No backend, no build step, no database server.
+Offline-first PWA for child health (birth–18 y) to Indian Academy of Pediatrics
+standards, evolving into a production-grade multi-tenant SaaS. Works fully
+offline after first open; syncs to Supabase (encrypted blob + relational rows)
+when online. No build step: static files + Vercel serverless API.
 
-> **Live demo:** host this folder on any static host (setup below) — or serve locally:
-> `python3 -m http.server 8080` → http://localhost:8080
-
-## ✨ What's inside (25 modules)
+## ✨ What's inside (35+ modules)
 
 | Area | Modules |
 |---|---|
-| Overview | Dashboard (hero + clinic pulse), Children registry, Newborn care, Schedule & reminders |
-| Clinical | Milestones (13 bands, 4 domains), Vaccination record (IAP ACVIP 2023-24), QR vaccine card, AEFI register, Growth (WHO/CDC/IAP), Labs & anaemia, Screening (asthma + dental), Diet planner, Visits (SOAP), Prescription (mg/kg engine), E-consent with signature |
-| Front office | Tokens & billing, Vaccine stock (auto-deduct + expiry), TV token display |
-| Insights | Analytics, Emergency dose reckoner (PALS), Parent handouts (EN/TA/HI), Reports & certificates, CSV/ABHA/JSON exports |
-| System | Users + PIN roles + audit trail, Settings (clinic profile, logo, letterheads) |
+| Overview | Dashboard (hero + pulse + NICU/MAR/growth cards), Children registry, Newborn care, Schedule & reminders |
+| Clinical | Milestones, Vaccination (IAP ACVIP) + QR card, AEFI, Growth (WHO/CDC/IAP) + alerts, Labs, Screening, Diet, Visits (SOAP), Prescription (mg/kg engine + formulary review), E-consent, NICU longitudinal, eMAR, Clinical calculators, Formulary review |
+| Front office | Tokens & billing, Vaccine stock, TV display |
+| Insights | Analytics (defined denominators), Emergency reckoner, Handouts (EN/TA/HI), Reports & certificates, MRD registers, CSV/ABHA/JSON exports |
+| Platform | Multi-tenant orgs + invites + MFA, break-glass, quotas, lifecycle, DPDP consents, dual-write sync with conflict queue, FHIR R4 read API |
 
-Plus: demo clinic data on first run, Tamil + Hindi parent handouts, WhatsApp reminder
-sharing, print-ready Rx / receipts / certificates, dark mode.
+## 🚀 Quickstart
 
-## 🚀 Host it free (2 minutes)
+```bash
+# run locally (any static server)
+python3 -m http.server 8080   # → http://localhost:8080
 
-Any static host works — the app is just HTML/CSS/JS:
+# tests (Node 18+; Postgres suite spins up embedded PG17 automatically)
+npm ci && npm test            # 384 green: 209 offline + 97 isolation + 52 hardening + 26 api
+```
 
-- **Netlify Drop:** unzip → drag the folder onto https://app.netlify.com/drop (no account needed) → instant `https://…netlify.app` link
-- **GitHub Pages:** push this repo → Settings → Pages → Deploy from branch → `https://<you>.github.io/<repo>/`
-- **Cloudflare Pages / Vercel / any web space:** upload the folder as-is (needs HTTPS for installable mode)
+Cloud features need `SUPABASE_URL` + `SUPABASE_ANON_KEY` (PWA config) and, for
+billing, Razorpay keys (see `PRODUCTION-SETUP.md`). Staging fixtures:
+`supabase/seed-staging.sql` (**staging only**, synthetic data).
 
-## 📲 Install as an app
+## 🏗️ How it's built
 
-- **Android (Chrome):** ⋮ → Install app · **iPhone (Safari):** Share → Add to Home Screen
-- **Windows (Chrome/Edge):** Install icon in the address bar
+- `index.html` + `js/*` — the app (vanilla JS, one file per module, `sw.js` offline shell).
+- `supabase/migrations/0001–0004.sql` — tenants, RLS, quotas, sync RPCs, clinical tables.
+- `api/*` — Vercel functions: health, billing, FHIR facade.
+- `tests/*` — four suites; `docs/` — audit, roadmap, runbooks, M7 validation pack.
 
-## 🔒 Data & privacy
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
+Security/runbooks: [docs/OPERATIONS.md](docs/OPERATIONS.md) ·
+Status: [docs/ROADMAP.md](docs/ROADMAP.md) · Changes: [CHANGELOG.md](CHANGELOG.md)
 
-All records stay in the browser (localStorage) on the clinic's own device —
-nothing is uploaded anywhere. Use Dashboard → Export backup regularly; the app
-also keeps an automatic backup copy and validates every import.
+## ⚠️ Safety notes
 
-## 🛠️ Tech
+- **No real patients before M7 sign-off** ([validation pack](docs/M7-VALIDATION-PACK.md)):
+  pen-test, clinician UAT, witnessed restore drill, legal review.
+- Calculators + formulary are guidance only until a pharmacist verifies them (M7).
+- Synthetic fixtures only in dev/test — never commit real PHI.
 
-Vanilla HTML + CSS + JS, zero dependencies, zero build. PWA via `manifest.json` +
-`sw.js` (offline-first, background refresh, update banner, app shortcuts).
-`serve.py` is a tiny no-cache dev server. `tools/build_refs.py` regenerates the
-growth references (below) from official sources.
-
-## 📈 Growth suite — accuracy notes
-
-| Age | Reference | Data |
-|---|---|---|
-| 0–5 y | WHO MGRS 2006 (exact daily LMS) | weight, length/height, BMI, head circ., MUAC (≥3 mo), weight-for-length 45–110 cm, weight-for-height 65–120 cm |
-| 2–20 y | CDC 2000 + 2022 extended BMI (exact LMS, alternative view) | weight, stature, BMI |
-| 5–18 y | IAP 2015-aligned screening curves (default) + IAP adult-equiv BMI lines 23/27 | weight, height, BMI |
-| Preterm | Corrected age to 24 mo + PMA tracking | LBW / preterm classes |
-
-Methods: LMS z-scores with the WHO restricted-SD adjustment beyond ±3;
-length/height auto-adjusted ±0.7 cm per WHO rule; weight-for-height as the
-primary wasting metric <5 y; SAM/MAM triage with oedema + appetite;
-CDC %BMIp95 obesity classes; growth-velocity analysis against standard norms;
-Tanner/SMR staging with precocious/delayed puberty flags; upper:lower segment
-ratio + arm-span screening; mid-parental height target band on charts.
-
-Fenton 2013 data are license-only (ucalgary.ca/fenton) — preterm infants below
-term-equivalent age are directed to official NICU charts; post-discharge
-assessment uses corrected age on exact WHO standards.
-
-*Screening aid — clinical judgement prevails. Confirm diagnostic labels on
-official printed charts.*
-
-## 📄 License
-
-Apache License 2.0 — see LICENSE file.
+License: Apache-2.0.

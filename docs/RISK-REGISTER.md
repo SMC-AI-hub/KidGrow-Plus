@@ -28,7 +28,7 @@ output encoding consistent in report paths (`clinicHeader`, `childHeader`).
 
 | ID | Risk | Severity | Evidence | Mitigation / plan | Status |
 |---|---|---|---|---|---|
-| C1 | Drug doses lack **per-drug versioned source**; no pharmacist sign-off trail | 🟠 | `drugs.js` header cites "IAP/Nelson/formularies" generically | Add `source`+`version` per drug, formulary review workflow, clinician UAT gate (M5; **blocks** SaaS prescribing claims) | planned |
+| C1 | Drug doses lack **per-drug versioned source**; no pharmacist sign-off trail | 🟠 | `drugs.js` header cites "IAP/Nelson/formularies" generically | ✅ per-drug source/edition review workflow + Rx ⚠️ badges + structural validation of all 30 drugs (v10.6.0); content verification + UAT gate still open — **blocks** SaaS prescribing claims until M7 pharmacist sign-off | 🛠️ partial |
 | C2 | Neonatal dosing essentially absent; age bands are coarse | 🟠 | `ageMinM` only; no GA/weight-band tables | ✅ neonatal fluids/feeds/nutrition validated + tested (M5); drug GA/PNA bands + independent validation still open (M7 gate) | 🛠️ partial |
 | C3 | Fenton curves are **fitted approximations** (transcribed percentiles) | 🟡 | `tools/build_refs.py` header (honestly documented) | Label fitted curves in UI; never compute precise Fenton z-scores for diagnosis (M5) | planned |
 | C4 | No record versioning/amendment history; silent overwrite possible | 🟡 | `save()` replaces whole DB | ✅ client_rev ordering + apply_* LWW + conflict queue + server audit writer (M4, tested); per-field version history with M5 modules | 🛠️ partial |
