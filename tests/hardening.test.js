@@ -135,5 +135,17 @@ ok(!nicuSrc.includes("splice(") && nicuSrc.includes("outcome is required"), "NIC
 const growthSrc = read("js/growth.js");
 ok(growthSrc.includes("function growthAlerts(") && growthSrc.includes("confirm on chart"), "growth alerts point back to official charts");
 
+// 14. M6 interop + reporting rails (static)
+const fhirSrc = read("api/fhir.js");
+ok(fhirSrc.includes('!== "GET"') && fhirSrc.includes("405"), "FHIR facade is GET-only");
+ok(!/SERVICE_ROLE|SERVICE_KEY|service_role/i.test(fhirSrc), "FHIR uses no service keys");
+ok(fhirSrc.includes('tenant_id: "eq." + tenant') && fhirSrc.includes("tenant query param"), "tenant always scoped upstream");
+ok(fhirSrc.includes("Authorization: auth"), "caller JWT forwarded (RLS enforced upstream)");
+ok(Object.keys(require(path.join(R, "api/fhir.js")).TABLES || {}).length === 5, "FHIR exposes exactly 5 whitelisted resources");
+const mrdSrc = read("js/mrd.js");
+ok(mrdSrc.includes("csvOf(") && mrdSrc.includes("auditSafe("), "MRD exports escape + audit");
+const clinSrc = read("js/clinic.js");
+ok(clinSrc.includes("with 2+ measures") && clinSrc.includes("metricsClinicalHTML"), "analytics shows denominators + clinical row");
+
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -36,7 +36,7 @@ output encoding consistent in report paths (`clinicHeader`, `childHeader`).
 | C6 | No duplicate-order / double-submit protection | 🟢 | forms submit directly | ✅ outbox opIds + server replay-safe LWW + 2.5s double-submit guards on rx/bill/registration (M4, tested) | ✅ done |
 | C7 | Growth/dose calculators unvalidated by independent clinicians | 🟡 | no UAT evidence | Clinician validation protocol required before any clinical-use claim (M7 gate) | planned |
 | C8 | Retention/legal-hold/deletion workflows absent (India: 3-yr+ record rules vary) | 🟡 | no retention code | ✅ legal_hold delete-block + retain_until + consents + notice template (M3, tested); retention automation + counsel sign-off pending | 🛠️ partial |
-| G1 | M1 direct-write RLS policies check membership only (no write-gate/role check); enforcement lives on the RPC path | 🟡 | `p_ins/p_upd/e_ins…` lack `tenant_write_ok` + role checks; M5 clinical tables already use the stricter shape | Tighten M1 policies to the 0004 shape after auditing app direct-write paths (M6 governance) | planned |
+| G1 | M1 direct-write policies: re-audit 2026-10-14 found 0002 already enforces `tenant_write_ok` (+quota trigger) on direct writes — original premise wrong | 🟢 | M1 isolation tests prove suspended/grace/quota denial on direct INSERT | ✅ closed-invalid; residual (any active member may chart) accepted — matches clinic workflow, viewer role is UI-level | ✅ done |
 
 ## C. Standing policies (non-negotiable)
 

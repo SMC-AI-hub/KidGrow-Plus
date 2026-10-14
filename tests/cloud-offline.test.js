@@ -383,6 +383,40 @@ async function main() {
   vm.runInContext("DB.children[0].measures.push({date:'2026-10-10',wt:2.0});", sb);
   ok(sb.growthAlertsHTML().includes("M5 Kid"), "dashboard flags the weight drop");
 
+  // ---- M6: MRD registers, denominator'd metrics, tenant brand ----
+  ok(idx("js/calc.js") < idx("js/mrd.js") && idx("js/metrics.js") < idx("js/ops.js"), "mrd/metrics load between calc and ops");
+  ok(typeof sb.renderMrd === "function" && typeof sb.metricsClinicalHTML === "function", "MRD page + clinical metrics render");
+  const MR = sb.MrdPure, MT = sb.MetricsPure;
+  vm.runInContext(`DB.children=[
+    {id:'d1',name:'Reg A',dob:'2026-10-01',sex:'boy',birthWt:3,gest:39,measures:[{date:'2026-10-02',wt:3},{date:'2026-10-03',wt:3.1}],
+     nicu:{admissions:[{id:'na1',admittedAt:'2026-10-02T08:00',status:'discharged',dischargedAt:'2026-10-05T10:00',outcome:'stable',indication:'TTN',birthWtG:3000}]},
+     mar:[{logs:[{at:'2026-10-10T08:00',status:'given'}]}]},
+    {id:'d2',name:'Reg B',dob:'2026-09-20',sex:'girl',measures:[{date:'2026-10-01',wt:2.5}],
+     nicu:{admissions:[{id:'na2',admittedAt:'2026-10-08T08:00',status:'admitted',indication:'RDS'}]},mar:[]}];`, sb);
+  const kids6 = vm.runInContext("DB.children", sb);
+  const R6 = MR.buildRegisters(kids6, "2026-10-01", "2026-10-31");
+  ok(R6.births.length === 1 && R6.admissions.length === 2 && R6.discharges.length === 1 && R6.deaths.length === 0, "registers count the month");
+  ok(R6.births[0].name === "Reg A" && R6.discharges[0].ref === "discharged", "register rows carry detail");
+  ok(R6.admissions[0].date === "2026-10-02" && R6.admissions[1].date === "2026-10-08", "registers sort by date");
+  const R6b = MR.buildRegisters(kids6, "2026-10-06", "2026-10-31");
+  ok(R6b.births.length === 0 && R6b.admissions.length === 1 && R6b.discharges.length === 0, "range filter excludes September + early October");
+  ok(MR.regCsvRows("T", [{ date: "d", name: "n", sex: "s", ref: "r", detail: "x" }]).length === 3, "CSV rows: title + header + data");
+  ok(MT.rate(1, 2).pct === 50 && MT.rate(0, 5).pct === 0, "rate percents");
+  ok(MT.rate(1, 0).pct === null && MT.rate(1, 0).n === 1, "zero denominator yields null, keeps n");
+  ok(MT.withMinMeasures(kids6, 2) === 1, "measures denominator counts");
+  const ns = MT.nicuStats(kids6, "2026-10-10");
+  ok(ns.admitted === 1 && ns.avgLos === 3 && ns.dis30 === 1 && /30 d/.test(ns.period), "NICU stats + period");
+  const ms = MT.marStats(kids6, "2026-10-10");
+  ok(ms.n === 1 && ms.d === 1 && ms.pct === 100 && ms.period === "2026-10-10", "MAR day stats");
+  const g0 = MT.growthAlertCounts(kids6, "2026-10-13");
+  ok(g0.screened === 2 && g0.red === 0 && g0.amber === 0, "steady growth is quiet");
+  vm.runInContext("DB.children[1].measures.push({date:'2026-10-11',wt:2.0});", sb);
+  ok(MT.growthAlertCounts(kids6, "2026-10-13").red === 1, "metrics flag the drop");
+  const brand = sb.Tenant._brand();
+  ok(brand && brand.name === "" && brand.prefix === "", "brand accessor safe offline");
+  const foot = sb.docFooter("Discharge summary");
+  ok(foot.includes("Discharge summary") && foot.includes("Generated") && foot.includes("confirm clinical labels"), "docFooter brands + dates");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

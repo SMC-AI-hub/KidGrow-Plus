@@ -296,8 +296,8 @@ function renderAnalytics() {
   $("anStats").innerHTML = `
     <div class="stat" style="--ac:var(--teal)"><div><div class="n">${cov.fic}/${cov.total}</div><div class="l">Fully immunised for age</div></div><div class="e">🛡️</div></div>
     <div class="stat" style="--ac:${cov.dtpDrop.pct !== null && cov.dtpDrop.pct > 10 ? "var(--red)" : "var(--green)"}"><div><div class="n">${d(cov.dtpDrop)}</div><div class="l">DTP1→DTP3 dropout (goal &lt;10%)</div></div><div class="e">📉</div></div>
-    <div class="stat" style="--ac:${nut.sam ? "var(--red)" : "var(--green)"}"><div><div class="n">${nut.sam + nut.mam}</div><div class="l">SAM+MAM now (${nut.sam} SAM)</div></div><div class="e">⚠️</div></div>
-    <div class="stat" style="--ac:${falt.length ? "var(--amber)" : "var(--green)"}"><div><div class="n">${falt.length}</div><div class="l">Growth-faltering alerts</div></div><div class="e">🚨</div></div>`;
+    <div class="stat" style="--ac:${nut.sam ? "var(--red)" : "var(--green)"}"><div><div class="n">${nut.sam + nut.mam}</div><div class="l">SAM+MAM now (${nut.sam} SAM, of ${nut.n} screened)</div></div><div class="e">⚠️</div></div>
+    <div class="stat" style="--ac:${falt.length ? "var(--amber)" : "var(--green)"}"><div><div class="n">${falt.length}</div><div class="l">Growth-faltering alerts (of ${(typeof MetricsPure !== "undefined" ? MetricsPure.withMinMeasures(DB.children, 2) : "?")} with 2+ measures)</div></div><div class="e">🚨</div></div>`;
   const gLabel = { bcg: "BCG", opv: "OPV", hepb: "Hepatitis B", dtp: "DTP / combos", ipv: "Polio (IPV)", hib: "Hib", rota: "Rotavirus", pcv: "Pneumococcal", flu: "Influenza", mmr: "MMR / MR", typhoid: "Typhoid", vita: "Vitamin A", hepa: "Hepatitis A", je: "Japanese encephalitis", varicella: "Varicella", tdap: "Tdap / Td", hpv: "HPV" };
   const pools = Object.keys(cov.pool).filter((g) => cov.pool[g].eligible > 0)
     .sort((a, b) => (cov.pool[a].pct ?? 101) - (cov.pool[b].pct ?? 101));
@@ -326,5 +326,6 @@ function renderAnalytics() {
       <div style="flex:1;text-align:center"><div style="font-size:12px;font-weight:800">${v.n}</div>
       <div style="background:var(--blue);border-radius:6px 6px 0 0;height:${Math.round((v.n / vmx) * 70)}px;min-height:${v.n ? 6 : 0}px"></div>
       <div style="font-size:11px;color:var(--muted)">${v.month.slice(5)}/${v.month.slice(2, 4)}</div></div>`).join("")}</div>`;
+  if ($("anClin") && typeof metricsClinicalHTML === "function") $("anClin").innerHTML = metricsClinicalHTML();
   if (typeof renderMgmt === "function") renderMgmt();
 }

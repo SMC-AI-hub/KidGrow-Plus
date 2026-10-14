@@ -443,6 +443,7 @@ var Tenant = {
   _mfaLater: function () { var m = $("mMfa"); if (m) m.remove(); },
   requestBreakGlass: bgModal, _bgGo: bgGo, _bgEnd: bgEnd, auditView: auditView,
   current: function () { return T.current; }, role: function () { return T.role; },
+  _brand: function () { try { var s = T.settings || {}, t = T.tenant || {}; return { name: s.display_name || t.name || "", prefix: s.mrn_prefix || "" }; } catch (e) { return { name: "", prefix: "" }; } },
   boot: function () {
     var n = 0;
     var iv = setInterval(function () {

@@ -180,7 +180,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch
 function sb() { try { return (typeof Cloud !== "undefined" && Cloud._sb) ? Cloud._sb() : null; } catch (e) { return null; } }
 function tenantId() { try { return (typeof Cloud !== "undefined" && Cloud.tenantId) ? Cloud.tenantId() : null; } catch (e) { return null; } }
 function live() { try { return !!(typeof Cloud !== "undefined" && Cloud.enabled && Cloud.user && Cloud.user() && tenantId() && sb()); } catch (e) { return false; } }
-function mrnPrefix() { try { if (typeof Tenant !== "undefined" && Tenant._prefix) return Tenant._prefix(); } catch (e) {} return ""; }
+function mrnPrefix() { try { if (typeof Tenant !== "undefined" && Tenant._brand) return Tenant._brand().prefix || ""; } catch (e) {} return ""; }
 
 /* ---------------- scan: diff local DB -> outbox (dual-write detector) ---------------- */
 function enqueueOp(table, localId, row) {

@@ -73,7 +73,20 @@ Keep one offline copy per week per clinic (USB/print-room PC).
 - NICU rounds are append-only in the UI; a mistaken round is corrected by a
   new round, never by deletion.
 
-## 6. Uptime monitoring
+## 6. FHIR read API (`/api/fhir/*`)
+
+- GET-only facade over Supabase PostgREST; exactly 5 resources
+  (Patient, Encounter, Observation, MedicationAdministration, Consent).
+- Every call needs the caller's user JWT (`Authorization: Bearer`) plus
+  `?tenant=<uuid>`; RLS is enforced upstream by Postgres, never in the
+  facade. No service keys exist in this path — if a key ever appears in
+  code or logs, rotate immediately and treat as an incident (§8).
+- Soft-deleted rows are excluded; `_count` clamps to 1–100.
+- Upstream failures return generic 502 (no PHI, no internals in bodies).
+- Live end-to-end queries need staging (see M3 manual-test pattern);
+  mappers + guards are covered by `tests/api.test.js`.
+
+## 7. Uptime monitoring
 
 - `GET /api/health` → `{status, version, time, checks{...}}` — booleans only, never
   secrets (proven by `tests/api.test.js` marker scan). Wire any monitor
@@ -84,7 +97,7 @@ Keep one offline copy per week per clinic (USB/print-room PC).
 - Vercel function logs + Supabase Postgres logs are the first triage stop;
   privacy rule: logs must never contain PHI (§2).
 
-## 7. Incidents (first-response runbook)
+## 8. Incidents (first-response runbook)
 
 1. **Contain:** revoke exposure (rotate Supabase service key / Razorpay keys in
    Vercel env + redeploy; suspend compromised memberships; pull abusive deploy).
@@ -98,7 +111,7 @@ Keep one offline copy per week per clinic (USB/print-room PC).
    isolation suite green, post-mortem within 5 days.
 5. Never pay ransomware or delete evidence; keep backups offline-protected.
 
-## 8. Maintenance cadence
+## 9. Maintenance cadence
 
 Weekly: `npm audit`, review CI; monthly: rotate webhook secret (Razorpay dash +
 Vercel env), review `audit_events` exports per tenant on request; quarterly:
