@@ -5,7 +5,7 @@
 --   psql "$STAGING_DB" -v staging_ok='YES' -v owner_uid='<auth.users uuid>' -v doc_uid='<auth.users uuid>' -f supabase/seed-staging.sql
 -- =====================================================================
 \set ON_ERROR_STOP on
-select case when :'staging_ok' = 'YES' then 'staging guard ok' else 1/0 end;
+do $$ begin if :'staging_ok' <> 'YES' then raise exception 'staging guard: pass -v staging_ok=YES'; end if; end $$;
 
 -- Demo tenant ---------------------------------------------------------
 insert into tenants (id, name, status, plan) values
@@ -29,13 +29,16 @@ insert into patients (tenant_id, local_id, mrn, name, dob, sex, ga_at_birth_week
   ('11111111-1111-1111-1111-111111111111', 'c_s4', 'SYN-0004', 'Synth Anaya', '2026-10-01', 'female', 40, 3300, '{"mother":"Synth Lata"}', '[]', '2026-10-03T10:00:00Z')
 on conflict (tenant_id, local_id) do nothing;
 
-insert into encounters (tenant_id, local_id, patient_local_id, kind, status, started_at, client_rev) values
-  ('11111111-1111-1111-1111-111111111111', 'e_s1', 'c_s1', 'opd', 'closed', '2026-10-05T09:00:00Z', '2026-10-05T09:00:00Z'),
-  ('11111111-1111-1111-1111-111111111111', 'e_s2', 'c_s3', 'nicu', 'open', '2026-10-08T08:00:00Z', '2026-10-08T08:00:00Z')
+insert into encounters (tenant_id, local_id, patient_id, kind, status, started_at, client_rev)
+select '11111111-1111-1111-1111-111111111111', x.local_id, p.id, x.kind, x.status, x.started_at::timestamptz, x.client_rev::timestamptz
+from (values ('e_s1','c_s1','opd','closed','2026-10-05T09:00:00Z','2026-10-05T09:00:00Z'),
+             ('e_s2','c_s3','nicu','open','2026-10-08T08:00:00Z','2026-10-08T08:00:00Z')) as x(local_id, plid, kind, status, started_at, client_rev)
+join patients p on p.tenant_id = '11111111-1111-1111-1111-111111111111' and p.local_id = x.plid
 on conflict (tenant_id, local_id) do nothing;
 
-insert into consents (tenant_id, local_id, patient_local_id, purpose, status, granted_by, client_rev) values
-  ('11111111-1111-1111-1111-111111111111', 'k_s1', 'c_s1', 'care', 'granted', 'Synth Meera', '2026-10-01T10:00:00Z')
+insert into consents (tenant_id, local_id, patient_id, purpose, status, granted_by, client_rev)
+select '11111111-1111-1111-1111-111111111111', 'k_s1', p.id, 'care', 'granted', 'Synth Meera', '2026-10-01T10:00:00Z'
+from patients p where p.tenant_id = '11111111-1111-1111-1111-111111111111' and p.local_id = 'c_s1'
 on conflict (tenant_id, local_id) do nothing;
 
 -- NICU + MAR + growth -------------------------------------------------
