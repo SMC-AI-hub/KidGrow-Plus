@@ -197,13 +197,21 @@ function vaxCodeOptions() {
 function stockDeduct(code, brand, batch, childName) {
   const lots = stockLots().filter((l) => (+l.qty || 0) > 0);
   if (!lots.length) return null;
+  // Never auto-consume expired lots (FEFO sort would otherwise pick them FIRST).
+  const today = (typeof todayISO === "function") ? todayISO() : "";
+  const fresh = lots.filter((l) => !(l.expiry || "") || (today && l.expiry >= today) || !today);
+  if (!fresh.length) {
+    try { if (typeof toast === "function") toast("⚠️ Stock on hand is expired — dose recorded, NO stock deducted. Quarantine the lot."); } catch (e) {}
+    stockLog(`⚠️ expired-only stock blocked · ${childName || ""} · ${code || brand || batch || ""}`.trim(), "", "", 0);
+    return null;
+  }
   const eq = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
   const byExp = (arr) => arr.sort((a, b) => (a.expiry || "9999").localeCompare(b.expiry || "9999"))[0];
   let hit = null;
-  if (code && batch) hit = byExp(lots.filter((l) => l.code === code && eq(l.batch, batch)));
-  if (!hit && code && brand) hit = byExp(lots.filter((l) => l.code === code && eq(l.brand, brand)));
-  if (!hit && batch) hit = byExp(lots.filter((l) => eq(l.batch, batch)));
-  if (!hit && brand) hit = byExp(lots.filter((l) => eq(l.brand, brand)));
+  if (code && batch) hit = byExp(fresh.filter((l) => l.code === code && eq(l.batch, batch)));
+  if (!hit && code && brand) hit = byExp(fresh.filter((l) => l.code === code && eq(l.brand, brand)));
+  if (!hit && batch) hit = byExp(fresh.filter((l) => eq(l.batch, batch)));
+  if (!hit && brand) hit = byExp(fresh.filter((l) => eq(l.brand, brand)));
   if (!hit) return null;
   hit.qty = (+hit.qty || 1) - 1; hit.updated = todayISO();
   stockLog(`Auto −1 · ${childName || ""} · ${code || hit.name || ""}`.trim(), hit.id, `${hit.name}${hit.batch ? " · " + hit.batch : ""}`, -1);

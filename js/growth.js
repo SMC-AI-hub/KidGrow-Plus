@@ -63,8 +63,14 @@ function fmtPct(p) {
 }
 function zStr(z) { if (!(z >= -99 && z <= 99)) return "—"; return (z >= 0 ? "+" : "") + z.toFixed(2); }
 function gInd() { const m = { wt: "wfa", ht: "lhfa", hc: "hc", bmi: "bmi" }; const v = DB.gTab || "wfa"; return m[v] || v; }
-function sxB(sex) { return sex === "boy" ? "b" : sex === "girl" ? "g" : sex; }  // WHO/CDC table keys
-function sxW(sex) { return sex === "b" ? "boy" : sex === "g" ? "girl" : sex; }     // IAP table keys
+function sxB(sex) { // WHO/CDC table keys; tolerant of server/import variants (male/female)
+  if (sex === "g" || sex === "girl" || sex === "female" || sex === "f") return "g";
+  return "b"; // boy/male/m + other/unknown fallback (boys ref; flagged for clinical sign-off)
+}
+function sxW(sex) { // IAP table keys
+  if (sex === "girl" || sex === "g" || sex === "female" || sex === "f") return "girl";
+  return "boy";
+}
 
 /* ---------------- age engine ---------------- */
 function gestDays(c) { const g = parseFloat(c.gest); return g > 20 && g < 45 ? Math.round(g * 7) : 280; }
