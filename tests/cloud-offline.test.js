@@ -363,6 +363,22 @@ async function main() {
   ok(sb.growthAlerts([{ date: "2026-02-01", wt: 3 }, { date: "2026-06-01", wt: 3 }], "2026-01-15", "2026-10-13").some((a) => /no weight gain/.test(a.msg)), "stagnation under 1y fires");
   ok(sb.growthAlerts([{ date: "2026-10-01", wt: 2.4 }], "2026-09-01", "2026-10-13", () => ({ waz: -2.5, haz: 0 })).some((a) => /WAZ/.test(a.msg)), "low WAZ alerts");
   ok(sb.growthAlerts([{ date: "2026-10-01", wt: 3.2, ht: 50 }], "2026-09-01", "2026-10-13", () => ({ waz: 0, haz: 0.5 })).length === 0, "healthy growth is quiet");
+
+  // ---- growth numeric validity + sex tolerance + stock expiry guard ----
+  ok(sb.sxB("male") === "b" && sb.sxB("female") === "g" && sb.sxB("other") === "b" && sb.sxB("boy") === "b", "sxB tolerates server/import sex codes");
+  ok(sb.sxW("male") === "boy" && sb.sxW("female") === "girl" && sb.sxW("g") === "girl", "sxW tolerates server/import sex codes");
+  ok(sb.whoAgeZ("male", "wfa", 365, 9.5).z === sb.whoAgeZ("boy", "wfa", 365, 9.5).z, "sex male matches boy reference");
+  ok(Math.abs(sb.whoAgeZ("boy", "wfa", 365, vm.runInContext("lmsAt(WHO_REF.wfa.b,365).M", sb)).z) < 1e-6, "WHO median -> z=0");
+  ok((() => { const d = vm.runInContext("WHO_REF.lhfa.b.M[731]-WHO_REF.lhfa.b.M[730]", sb); return d > -0.70 && d < -0.64; })(), "WHO length-height step at 24mo");
+  const ga1 = sb.growthAge({ dob: "2024-01-01", gest: "32" }, "2024-04-10");
+  ok(ga1.useCorr === true && ga1.corrD === 44 && ga1.pmaD === 324, "corrected age GA32+100d");
+  const ga2 = sb.growthAge({ dob: "2024-01-01", gest: "32" }, "2024-01-31");
+  ok(ga2.useCorr === false && ga2.corrNeg === true && ga2.corrD === 30, "negative correction never used");
+  vm.runInContext("DB.vaxstock=[{id:'e1',code:'BCG',batch:'B1',qty:5,expiry:'2020-01-01'},{id:'f1',code:'BCG',batch:'B2',qty:5,expiry:'2030-01-01'}];", sb);
+  ok(sb.stockDeduct("BCG", "", "B1", "Kid") === null, "expired lot never auto-deducted");
+  const sdd = sb.stockDeduct("BCG", "", "B2", "Kid");
+  ok(sdd && sdd.id === "f1" && sdd.qty === 4, "fresh lot deducts");
+  ok(vm.runInContext("DB.vaxstock.find(l=>l.id==='e1').qty", sb) === 5, "expired qty untouched");
   const arow = SP.admToRow("m5", { id: "a1", admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36, status: "admitted", indication: "RDS" });
   ok(arow.local_id === "n_a1" && arow.patient_local_id === "c_m5" && arow.birth_weight_g === 2400, "admToRow maps");
   const rrow = SP.roundToRow("a1", { id: "r1", date: "2026-10-07", wtG: 2450, vitals: { spo2: 94 } });
