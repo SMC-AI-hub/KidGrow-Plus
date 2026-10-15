@@ -26,11 +26,14 @@ live. Realistic timeline: **3–6 weeks**, most of it waiting on humans.
 ## Phase 1 — Staging backend (Day 1–2, ~1 hour)
 
 1. Supabase → New project `kidgrow-staging` (region: Mumbai/South Asia), free tier.
-2. In the project: **SQL Editor → New query**, then paste and run each migration **in order** (each must report success):
+2. In the project: **SQL Editor → New query**, then paste and run the base schema
+   first, then each migration **in order** (each must report success):
+   - `supabase/schema.sql` (profiles/billing base + signup trigger — don't skip!)
    - `supabase/migrations/0001_tenant_core.sql`
    - `supabase/migrations/0002_platform.sql`
    - `supabase/migrations/0003_sync.sql`
    - `supabase/migrations/0004_clinical.sql`
+   - `supabase/migrations/0005_billing.sql`
 3. **Authentication → Users → Add user** (email + password, auto-confirm ON): create `owner@staging.test` and `doctor@staging.test`. Copy both UUIDs.
 4. Seed synthetic fixtures. Easiest path — Supabase SQL Editor:
    - Open `supabase/seed-staging.sql`, replace `:owner_uid` and `:doc_uid` with the two UUIDs, replace the `:staging_ok` guard line's check by just deleting that `select ... 1/0` line, run it.
@@ -59,7 +62,7 @@ Run all four once Phase 2 is done; track in [M7-VALIDATION-PACK.md](M7-VALIDATIO
 
 ## Phase 4 — Production + pilot (Week 5–6)
 
-1. Supabase → New project `kidgrow-prod` (paid tier for PITR backups). Run migrations 0001–0004. **No seed script. No synthetic data.**
+1. Supabase → New project `kidgrow-prod` (paid tier for PITR backups). Run `supabase/schema.sql`, then migrations 0001–0005. **No seed script. No synthetic data.**
 2. Vercel → second project `kidgrow-prod` → production branch `main`, prod env vars, **live** Razorpay keys + webhook.
 3. `js/config.js` on `main` gets the PROD public values (one small commit → push → CI → auto-deploy).
 4. Sign [M7-GO-NOGO.md](M7-GO-NOGO.md), then pilot: **one clinic, ≤100 patients, 2-week hypercare** (daily log review).

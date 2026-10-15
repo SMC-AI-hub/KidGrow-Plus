@@ -297,6 +297,26 @@ async function main() {
   const bSees = await withClaim(app, B, async () => (await app.query("SELECT count(*)::int AS n FROM mar_entries WHERE tenant_id=$1", [tA])).rows[0].n);
   ok(aSees === 1 && bSees === 0, "clinical SELECT isolated by tenant");
 
+  // ================= 0005: billing profiles + trial provisioning =================
+  const ep = await withClaim(app, A, async () => (await app.query("SELECT public.ensure_profile() AS r")).rows[0].r);
+  const trialDays = (Date.parse(ep.trial_ends_at) - Date.now()) / 864e5;
+  ok(ep.id === A && ep.sub_status === "trialing" && trialDays > 13.9 && trialDays <= 14.01, "ensure_profile provisions a 14-day trial");
+  const ep2 = await withClaim(app, A, async () => (await app.query("SELECT public.ensure_profile() AS r")).rows[0].r);
+  const profN = await withClaim(app, A, async () => (await app.query("SELECT count(*)::int AS n FROM profiles WHERE id=$1", [A])).rows[0].n);
+  ok(ep2.id === A && profN === 1, "ensure_profile is idempotent");
+  ok(await expectDeny(app.query("SELECT public.ensure_profile()")) === "denied", "ensure_profile without login rejected");
+  const bSeesProf = await withClaim(app, B, async () => (await app.query("SELECT count(*)::int AS n FROM profiles WHERE id=$1", [A])).rows[0].n);
+  ok(bSeesProf === 0, "profiles are owner-readable only");
+  ok(await expectDeny(withClaim(app, B, async () => app.query("INSERT INTO profiles (id) VALUES ($1)", [B]))) === "denied", "direct profile insert denied");
+  const selfGrant = await withClaim(app, A, async () => app.query("UPDATE profiles SET sub_status='active', trial_ends_at='2099-01-01' WHERE id=$1", [A]));
+  ok(selfGrant.rowCount === 0, "self-grant to active affects no rows (no update policy)");
+  const stAfter = await withClaim(app, A, async () => (await app.query("SELECT sub_status FROM profiles WHERE id=$1", [A])).rows[0].sub_status);
+  ok(stAfter === "trialing", "failed self-grant changed nothing");
+  ok(await expectDeny(owner.query("UPDATE profiles SET sub_status='gold' WHERE id=$1", [A])) === "error:23514", "junk sub_status violates CHECK");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO subscription_events (user_id, event) VALUES ($1,'x')", [A]))) === "denied", "direct subscription_events insert denied");
+  const seOwn = await withClaim(app, A, async () => (await app.query("SELECT count(*)::int AS n FROM subscription_events WHERE user_id=$1", [A])).rows[0].n);
+  ok(seOwn === 0, "owner can read own (empty) subscription events");
+
   try { await app.end(); } catch (_) {}
   await stop();
   console.log(`\nisolation: ${pass} passed, ${fail} failed`);

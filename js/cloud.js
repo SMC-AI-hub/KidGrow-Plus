@@ -185,14 +185,26 @@ function fetchStatus() {
   return sb.auth.getSession().then(function (r) {
     session = (r.data && r.data.session) || null;
     if (!session) { profile = null; enforceGate(); renderCloudCard(); return null; }
-    return sb.from("profiles").select("*").eq("id", session.user.id).maybeSingle().then(function (pr) {
-      if (pr.error) throw pr.error;
-      profile = pr.data;
-      var a = accessFor(profile, null, Date.now());
-      lsSet(STATUS_KEY, { ok: a.ok, reason: a.reason, verifiedAt: Date.now(), email: session.user.email });
-      enforceGate(); renderCloudCard();
-      return a;
-    });
+    var loadProfile = function () {
+      return sb.from("profiles").select("*").eq("id", session.user.id).maybeSingle().then(function (pr) {
+        if (pr.error) throw pr.error;
+        profile = pr.data;
+        var a = accessFor(profile, null, Date.now());
+        lsSet(STATUS_KEY, { ok: a.ok, reason: a.reason, verifiedAt: Date.now(), email: session.user.email });
+        enforceGate(); renderCloudCard();
+        return a;
+      });
+    };
+    // Provision the trial row if this login is the first (0005). If the RPC
+    // is missing or fails, fall through to a plain select: a stale backend
+    // must never lock out a paying user.
+    try {
+      if (sb && typeof sb.rpc === "function") {
+        var ensured = sb.rpc("ensure_profile");
+        if (ensured && typeof ensured.then === "function") return ensured.then(loadProfile, loadProfile);
+      }
+    } catch (e) {}
+    return loadProfile();
   }).catch(function (e) {
     // Offline or transient: fall back to cached status, gate still enforced.
     enforceGate(); renderCloudCard();
