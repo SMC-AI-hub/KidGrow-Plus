@@ -36,7 +36,7 @@ async function main() {
   await health({}, r2);
   ok(r2._s === 200 && r2._b.checks.supabaseConfigured === false && !("supabaseLive" in r2._b.checks), "health degrades cleanly with no env");
   // ---- M6 FHIR read facade ----
-  const fhir = require("../api/fhir.js");
+  const fhir = require("../api/fhir/[[...slug]].js");
   const FM = fhir.mappers;
   const fp = FM.fhirPatient({ local_id: "c_1", mrn: "CC-1", name: "Aarav", sex: "male", dob: "2023-01-02", ga_at_birth_weeks: 38.5, birth_weight_g: 3100 });
   ok(fp.resourceType === "Patient" && fp.id === "c_1" && fp.identifier[0].value === "CC-1" && fp.gender === "male" && fp.birthDate === "2023-01-02", "Patient maps identity");

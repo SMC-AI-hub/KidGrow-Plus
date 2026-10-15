@@ -105,8 +105,10 @@ async function handler(req, res) {
   if ((req.method || "GET") !== "GET") { res.status(405).json({ resourceType: "OperationOutcome", issue: [{ severity: "error", code: "not-supported", diagnostics: "FHIR facade is read-only" }] }); return; }
   let u;
   try { u = new URL(req.url || "/api/fhir/metadata", "http://x"); } catch (e) { res.status(400).json({ error: "bad request" }); return; }
+  const slug = req.query && req.query.slug;
+  const slug0 = Array.isArray(slug) ? slug[0] : slug;
   const parts = u.pathname.replace(/\/$/, "").split("/");
-  const resource = parts[parts.length - 1] === "fhir" ? "metadata" : parts[parts.length - 1];
+  const resource = slug0 || (parts[parts.length - 1] === "fhir" ? "metadata" : parts[parts.length - 1]);
   if (resource === "metadata" || resource === "metadata.json") { res.status(200).json(metadata()); return; }
   if (!TABLES[resource]) { res.status(404).json({ resourceType: "OperationOutcome", issue: [{ severity: "error", code: "not-found", diagnostics: "unknown resource" }] }); return; }
   const tenant = u.searchParams.get("tenant") || "";

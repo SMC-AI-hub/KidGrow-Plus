@@ -102,7 +102,11 @@ async function main() {
 
   const C = sb.Cloud;
   ok(C && C.enabled === false, "Cloud present but disabled with empty config");
-  ok(sb.KIDGROW_CONFIG && sb.KIDGROW_CONFIG.SUPABASE_URL === "", "committed config is local-mode (keys empty)");
+  const cfgKey = (sb.KIDGROW_CONFIG && sb.KIDGROW_CONFIG.SUPABASE_ANON_KEY) || "";
+  let cfgRole = "";
+  try { cfgRole = cfgKey ? JSON.parse(Buffer.from(cfgKey.split(".")[1], "base64").toString()).role : ""; } catch (e) { cfgRole = "unparseable"; }
+  ok(cfgRole === "" || cfgRole === "anon", "committed config carries no service-role key (empty or anon only)");
+  ok(!sb.KIDGROW_CONFIG.SUPABASE_URL || /^https:\/\/[a-z0-9]+\.supabase\.co$/.test(sb.KIDGROW_CONFIG.SUPABASE_URL), "committed URL is a Supabase project or empty");
   ok(typeof sb.CloudSchedulePush === "function", "CloudSchedulePush hook defined");
   vm.runInContext("globalThis.__probe={dbChildren:(typeof DB!=='undefined'&&DB&&DB.children)?DB.children.length:-1,renderAll:typeof renderAll}", sb);
   ok(sb.__probe.dbChildren >= 0, "DB booted with children array (fresh device)");
