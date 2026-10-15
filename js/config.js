@@ -6,8 +6,8 @@
    Vercel env vars — never in this file.
    ===================================================================== */
 window.KIDGROW_CONFIG = {
-  SUPABASE_URL: "",        // e.g. "https://xyzcompany.supabase.co"
-  SUPABASE_ANON_KEY: "",   // Supabase → Settings → API → anon public key
+  SUPABASE_URL: "https://bubnidgejmbzkevxvthl.supabase.co",        // e.g. "https://xyzcompany.supabase.co"
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1Ym5pZGdlam1iemtldnh2dGhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjgxODAsImV4cCI6MjEwNzY0NDE4MH0.snE07RKn10WdnTGIdxV90ElQh8C9nPnAoCIsM8cmW4I",   // Supabase → Settings → API → anon public key
   RAZORPAY_KEY_ID: "",     // Razorpay → Settings → API Keys → Key ID (rzp_live_xxx)
   PLAN_NAME: "KidGrow Pro Monthly",
   PLAN_PRICE: "₹499/month",
