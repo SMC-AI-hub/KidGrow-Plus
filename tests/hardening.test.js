@@ -43,8 +43,16 @@ let hits = [];
     if (e.isDirectory()) { walk(p); continue; }
     if (!/\.(js|json|md|sql|html|py|example)$/.test(e.name)) continue;
     const t = fs.readFileSync(p, "utf8");
-    const pats = [/github_pat_[A-Za-z0-9_]+/, /rzp_(live|test)_[A-Za-z0-9]{6,}/, /eyJ[A-Za-z0-9_-]{20,}/, /BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY/, /whsec_[A-Za-z0-9]{6,}/];
-    for (const re of pats) { const m = t.match(re); if (m) hits.push(path.relative(R, p) + ":" + m[0].slice(0, 18) + "…"); }
+    const pats = [/github_pat_[A-Za-z0-9_]+/, /rzp_(live|test)_[A-Za-z0-9]{6,}/, /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/, /BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY/, /whsec_[A-Za-z0-9]{6,}/];
+    for (const re of pats) {
+      const m = t.match(re); if (!m) continue;
+      if (m[0].startsWith("eyJ")) {
+        let role = "";
+        try { role = JSON.parse(Buffer.from(m[0].split(".")[1], "base64").toString()).role || ""; } catch (e) {}
+        if (role === "anon") continue; // anon keys are public by design (ship in config.js)
+      }
+      hits.push(path.relative(R, p) + ":" + m[0].slice(0, 18) + "…");
+    }
   }
 })(R);
 ok(!hits.length, "secret scan clean" + (hits.length ? " (" + hits.join(", ") + ")" : ""));
@@ -136,12 +144,12 @@ const growthSrc = read("js/growth.js");
 ok(growthSrc.includes("function growthAlerts(") && growthSrc.includes("confirm on chart"), "growth alerts point back to official charts");
 
 // 14. M6 interop + reporting rails (static)
-const fhirSrc = read("api/fhir.js");
+const fhirSrc = read("api/fhir/[[...slug]].js");
 ok(fhirSrc.includes('!== "GET"') && fhirSrc.includes("405"), "FHIR facade is GET-only");
 ok(!/SERVICE_ROLE|SERVICE_KEY|service_role/i.test(fhirSrc), "FHIR uses no service keys");
 ok(fhirSrc.includes('tenant_id: "eq." + tenant') && fhirSrc.includes("tenant query param"), "tenant always scoped upstream");
 ok(fhirSrc.includes("Authorization: auth"), "caller JWT forwarded (RLS enforced upstream)");
-ok(Object.keys(require(path.join(R, "api/fhir.js")).TABLES || {}).length === 5, "FHIR exposes exactly 5 whitelisted resources");
+ok(Object.keys(require(path.join(R, "api/fhir/[[...slug]].js")).TABLES || {}).length === 5, "FHIR exposes exactly 5 whitelisted resources");
 const mrdSrc = read("js/mrd.js");
 ok(mrdSrc.includes("csvOf(") && mrdSrc.includes("auditSafe("), "MRD exports escape + audit");
 const clinSrc = read("js/clinic.js");
