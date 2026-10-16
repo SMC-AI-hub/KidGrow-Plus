@@ -471,15 +471,16 @@ async function main() {
   ok(sb.document.getElementById("dashClinic").innerHTML.includes("clinic overview"), "dashboard renders role panel");
 
   // ---- billing center ----
-  ok(vm.runInContext("TITLES.pricing+'|'+TITLES.billing", sb) === "Plans & Pricing|Billing & Subscription", "billing pages titled");
-  ok(vm.runInContext("RENDER_FOR.pricing+','+RENDER_FOR.billing", sb) === "renderPricing,renderBilling", "billing pages wired to renderers");
-  ok(html.includes('data-page="pricing"') && html.includes('data-page="billing"') && html.includes('id="billBody"') && html.includes('id="pricingBody"'), "billing nav + sections exist");
+  ok(vm.runInContext("TITLES.billing", sb) === "Subscription & Billing" && vm.runInContext("TITLES.pricing", sb) === undefined, "merged page titled, old route gone");
+  ok(vm.runInContext("RENDER_FOR.billing", sb) === "renderBilling" && vm.runInContext("RENDER_FOR.pricing", sb) === undefined, "merged page wired, old renderer unwired");
+  ok(!html.includes('data-page="pricing"') && html.includes('data-page="billing"') && html.includes('id="billBody"') && !html.includes('pricingBody') && !html.includes('pg-pricing'), "one nav entry + one section after merge");
   vm.runInContext("DB.users=[{id:'uN',name:'Nurse Ned',role:'Nurse'},{id:'uP2',name:'Pharma',role:'Pharmacist'},{id:'uF2',name:'Front',role:'Frontdesk'}]; DB.session={userId:'uN'};", sb);
   ok(sb.roleBlock("billing") === true, "nurse blocked from billing");
   vm.runInContext("DB.session={userId:'uP2'};", sb);
   ok(sb.roleBlock("billing") === true, "pharmacist blocked from billing");
   vm.runInContext("DB.session={userId:'uF2'};", sb);
-  ok(sb.roleBlock("billing") === true && sb.roleBlock("pricing") === false, "frontdesk blocked from billing, sees pricing");
+  ok(sb.roleBlock("billing") === true, "frontdesk blocked from merged subscription page");
+  ok(vm.runInContext("ROUTE_ALIASES.pricing", sb) === "billing", "old pricing route aliases to billing");
   vm.runInContext("DB.users=[{id:'uD2',name:'Doc',role:'Doctor'},{id:'uA2',name:'Admin',role:'Admin'}]; DB.session={userId:'uD2'};", sb);
   ok(sb.roleBlock("billing") === false, "doctor opens billing");
   vm.runInContext("DB.session={userId:'uA2'};", sb);
@@ -497,11 +498,18 @@ async function main() {
   ok(bh.includes("b-green") && bh.includes("b-red") && bh.includes("https://rzp.io/x"), "invoices show paid/failed + link");
   ok(C._billInfoHTML({ profile: {} }, { ok: true, reason: "trial", daysLeft: 5 }).includes("Subscribe now"), "trial sees subscribe CTA");
   ok(C._billInfoHTML(null, { ok: false, reason: "expired" }).includes("Could not load live billing details"), "error state degrades gracefully");
-  ok(typeof C.cancelSub === "function" && typeof C.refreshBilling === "function" && typeof sb.renderBilling === "function" && typeof sb.renderPricing === "function", "billing API exposed");
+  ok(typeof C.cancelSub === "function" && typeof C.refreshBilling === "function" && typeof sb.renderBilling === "function" && typeof sb.subscriptionPitchHTML === "function" && typeof sb.renderPricing === "undefined", "billing API exposed, old renderer gone");
   sb.renderBilling();
   ok(sb.document.getElementById("billBody").innerHTML.includes("not configured"), "billing explains cloud-off state");
-  sb.renderPricing();
-  ok(sb.document.getElementById("pricingBody").innerHTML.includes("free trial") && sb.document.getElementById("pricingBody").innerHTML.includes("per clinic, per month"), "pricing renders logged-out CTA");
+  sb.Cloud.enabled = true;
+  sb.renderBilling();
+  const billPitch = sb.document.getElementById("billBody").innerHTML;
+  ok(billPitch.includes("free trial") && billPitch.includes("per clinic, per month"), "logged-out billing shows the pitch");
+  sb.Cloud.enabled = false;
+  ok(sb.subscriptionPitchHTML(false).includes("Start") && sb.subscriptionPitchHTML(true).includes("Subscribe now"), "pitch CTA adapts to auth state");
+  sb.scrollTo = sb.scrollTo || (() => {});
+  sb.go("pricing");
+  ok(sb.document.getElementById("pageTitle").textContent === "Subscription & Billing", "old pricing route lands on merged page");
 
   // ---- NICU discharge summary + handover ----
   const nkAdmDone = { id: "admDone", admittedAt: "2026-10-02T08:00", dischargedAt: "2026-10-05T10:00", status: "discharged", outcome: "stable", indication: "RDS <script>", birthWtG: 2400, ga: 36, fuNote: "review after 3 days", rounds: [{ id: "r1", date: "2026-10-02", wtG: 2400, feeds: { totalMl: 60 }, events: ["CPAP"], note: "settling" }, { id: "r2", date: "2026-10-04", wtG: 2480, feeds: { totalMl: 180 }, events: ["CPAP", "phototherapy"], note: "better <x>" }] };

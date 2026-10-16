@@ -385,12 +385,9 @@ function billInfoHTML(info, a) {
 function renderBilling() {
   var el = $("billBody"); if (!el) return;
   if (!Cloud.enabled) { el.innerHTML = '<div class="card"><h3>💳 Billing</h3><div class="hint">Cloud is not configured on this device.</div></div>'; return; }
-  if (!session) {
-    el.innerHTML = '<div class="card"><h3>💳 Billing</h3><div class="hint">Sign in to manage your subscription and invoices.</div>'
-      + '<button class="btn btn-p btn-sm" onclick="Cloud.showAuth(\'login\')">Sign in</button></div>';
-    return;
-  }
+  if (!session) { el.innerHTML = subscriptionPitchHTML(false); return; }
   var a = currentAccess();
+  if (!a.ok && a.reason !== "pending") { el.innerHTML = subscriptionPitchHTML(true); return; }
   if (!billCache) {
     el.innerHTML = billStatusCard(a) + '<div class="hint">Loading billing details…</div>';
     fetch("/api/billing-info", { headers: { Authorization: "Bearer " + session.access_token } })
@@ -419,25 +416,20 @@ function cancelSub() {
     })
     .catch(function (e) { toast(e.message || "Could not cancel."); });
 }
-function renderPricing() {
-  var el = $("pricingBody"); if (!el) return;
-  var cta = "";
-  if (!session) {
-    cta = '<button class="btn btn-p" style="width:100%" onclick="Cloud.showAuth(\'signup\')">Start ' + TRIAL_DAYS + '-day free trial</button>'
+// Pure pitch card for visitors + expired accounts. Subscribed/trial/pending users
+// never see this — renderBilling shows them the management view instead.
+function subscriptionPitchHTML(authed) {
+  var cta = authed
+    ? '<button class="btn btn-p" style="width:100%" onclick="Cloud.subscribe()">Subscribe now</button>'
+    : '<button class="btn btn-p" style="width:100%" onclick="Cloud.showAuth(\'signup\')">Start ' + TRIAL_DAYS + '-day free trial</button>'
       + '<div style="margin-top:10px;font-size:13px">Have an account? <a href="#" onclick="Cloud.showAuth(\'login\');return false">Sign in</a></div>';
-  } else {
-    var a = currentAccess();
-    if (a.ok && (a.reason === "active" || a.reason === "past_due")) cta = '<div class="alert a-green">✅ <div>You are subscribed. Manage everything from <a href="#" onclick="go(\'billing\');return false">Billing</a>.</div></div>';
-    else if (a.ok && a.reason === "trial") cta = '<div class="alert a-blue">🎁 <div>Trial active — <b>' + a.daysLeft + ' day(s) left</b>.</div></div><button class="btn btn-p" style="width:100%;margin-top:8px" onclick="Cloud.subscribe()">Subscribe now</button>';
-    else cta = '<button class="btn btn-p" style="width:100%" onclick="Cloud.subscribe()">Subscribe now</button>';
-  }
-  el.innerHTML = '<div class="card" style="max-width:520px;margin:0 auto"><div style="text-align:center"><div style="font-size:40px">💎</div><h2 style="margin:4px 0">' + esc(PLAN_NAME) + '</h2>'
+  return '<div class="card" style="max-width:520px;margin:0 auto"><div style="text-align:center"><div style="font-size:40px">💎</div><h2 style="margin:4px 0">' + esc(PLAN_NAME) + '</h2>'
     + '<div style="font-size:30px;font-weight:800;color:var(--navy)">' + esc(PLAN_PRICE || "—") + '</div><div class="hint">per clinic, per month · cancel anytime</div></div>'
     + '<div style="font-size:14px;margin:14px 0">✓ Unlimited children & records<br>✓ Automatic cloud backup + multi-device sync<br>✓ WhatsApp reminders & vaccine alerts<br>✓ Growth charts (WHO/CDC) & eMAR<br>✓ Works offline — syncs when online</div>'
     + cta + "</div>"
     + '<div class="card" style="max-width:520px;margin:12px auto"><h3>Questions</h3><dl class="kv">'
     + "<dt>Free trial?</dt><dd>" + TRIAL_DAYS + " days, full access, no card required.</dd>"
-    + "<dt>Cancel?</dt><dd>Anytime from Billing — access runs till period end.</dd>"
+    + "<dt>Cancel?</dt><dd>Anytime in one tap on this page — access runs till period end.</dd>"
     + "<dt>Payment fails?</dt><dd>We retry automatically; you keep access meanwhile.</dd>"
     + "<dt>My data?</dt><dd>Yours. Export anytime; GST invoices emailed per payment.</dd>"
     + "</dl></div>";
@@ -495,7 +487,7 @@ var Cloud = {
 };
 window.Cloud = Cloud;
 window.renderBilling = renderBilling;
-window.renderPricing = renderPricing;
+window.subscriptionPitchHTML = subscriptionPitchHTML;
 window.CloudSchedulePush = schedulePush;
 
 })();

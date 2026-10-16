@@ -56,5 +56,5 @@ trail, self-grant impossible (0005, proven live). Missing product area: public
 pricing page, plan comparison, billing history, invoice list (Razorpay emails
 invoices today), in-app plan change/cancel, dunning UX for past_due,
 trial→paid onboarding checklist. Proposed: billing center page (status,
-history, invoices via Razorpay API, plan change, cancel) + pricing page. Est. M.
+history, invoices via Razorpay API, plan change, cancel) + pitch section for visitors (v10.10.7: merged into the billing page — no separate pricing route). Est. M.
 Plan-change proration + GST invoices via Razorpay; no card data touches us.

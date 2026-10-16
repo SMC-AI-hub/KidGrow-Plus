@@ -1,5 +1,16 @@
 # Changelog
 
+## v10.10.7 — 2026-10-16 — Pricing + Billing merged into one Subscription page
+- 💳 The separate Plans & Pricing page is gone — one **Subscription** entry
+  (System section) serves both states: visitors/expired accounts see the
+  pitch (price, features, trial/subscribe CTA, FAQ); trial/active/past-due
+  accounts see status, invoices, subscribe/update/cancel. The duplicated
+  "You are subscribed — manage from Billing" block is deleted.
+- Old links keep working: `#pricing` and `go('pricing')` redirect to the
+  merged page via `ROUTE_ALIASES`; role rules unchanged (Frontdesk/Nurse/
+  Pharmacist still blocked — pitch CTAs are owner actions).
+- Tests: 593/593 (396 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.10.6 — 2026-10-16 — Atomic restore + undo import + centralized schedule version
 - 🛡️ Every restore path (JSON + encrypted) now funnels through one validated
   funnel: validate-first with per-child checks, a rich confirm preview
