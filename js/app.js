@@ -48,6 +48,7 @@ function parseDB(raw) {
     if (!d || !Array.isArray(d.children)) return null;
     const merged = Object.assign({ children: [], activeId: null, settings: {}, msBand: null, gTab: "wt" }, d);
     merged.children.forEach(normalizeChild);
+    ensureMrns(merged.children);
     if (!merged.children.some((c) => c.id === merged.activeId)) merged.activeId = (merged.children[0] || {}).id || null;
     return merged;
   } catch (e) { return null; }
@@ -149,7 +150,7 @@ function pushRecentId(id) {
 function seedDemo() {
   const dob = "2025-01-15";
   const c = {
-    id: uid(), name: "Aarav Sharma", sex: "boy", dob, blood: "B+", birthWt: 2.9, gest: 39,
+    id: uid(), name: "Aarav Sharma", sex: "boy", dob, mrn: "0001", blood: "B+", birthWt: 2.9, gest: 39,
     father: "Rohit Sharma", mother: "Priya Sharma", fHt: 172, mHt: 160, phone: "98765 43210",
     ped: "Dr. A. Sharma", allergy: "None known",
     measures: [], vaccines: {}, milestones: {}, visits: []
@@ -266,6 +267,14 @@ function seedDemo() {
 const TITLES = { dashboard: "Dashboard", billing: "Subscription & Billing", children: "Children", nb: "Newborn Care", schedule: "Schedule & Reminders", milestones: "Milestone Assessment", vaccines: "Vaccination Digital Record", card: "Digital Vaccine Card", aefi: "AEFI Register", growth: "Growth Assessment (IAP / WHO)", labs: "Labs & Anaemia", screen: "Screening Suite", diet: "Diet Planner", hand: "Parent Handouts", visits: "Visits & Clinical Notes", timeline: "Patient Timeline", rx: "Prescription", consent: "E-Consent", nicu: "NICU", mar: "eMAR", calc: "Calculators", mrd: "MRD Registers", formulary: "Formulary Review", front: "Frontdesk — Tokens & Billing", analytics: "Clinic Analytics", emg: "Emergency Ready-Reckoner", reports: "Reports & Certificates", export: "Data & Exports", users: "Users & Audit", settings: "Settings", stock: "Vaccine Stock & Ledger", display: "Token Display" };
 const ROUTE_ALIASES = { pricing: "billing" }; // merged pages: old route → canonical (deep links keep working)
 const RENDER_FOR = { dashboard: "renderDashboard", billing: "renderBilling", children: "renderChildren", nb: "renderNB", schedule: "renderSchedule", milestones: "renderMilestones", vaccines: "renderVaccines", card: "renderCard", aefi: "renderAefi", growth: "renderGrowth", labs: "renderLabs", screen: "renderScreen", diet: "renderDiet", hand: "renderHand", visits: "renderVisits", timeline: "renderTimeline", rx: "renderRx", consent: "renderConsent", nicu: "renderNicu", mar: "renderMar", calc: "renderCalc", mrd: "renderMrd", formulary: "renderFormulary", front: "renderFront", analytics: "renderAnalytics", emg: "renderEmergency", export: "renderExport", users: "renderUsers", stock: "renderStock", display: "renderDisplay" };
+function toast(m) {
+  try {
+    let t = document.getElementById("appToast");
+    if (!t) { t = document.createElement("div"); t.id = "appToast"; t.style.cssText = "position:fixed;left:50%;bottom:64px;transform:translateX(-50%);background:#0c2340;color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;z-index:10002;box-shadow:0 10px 30px rgba(0,0,0,.4);max-width:92vw;text-align:center"; document.body.appendChild(t); }
+    t.textContent = m; t.style.display = "block";
+    clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = "none"; }, 3400);
+  } catch (e) {}
+}
 function go(page) {
   page = (typeof ROUTE_ALIASES !== "undefined" && ROUTE_ALIASES[page]) || page;
   if (typeof roleBlock === "function" && roleBlock(page)) { alert("🔒 Your role cannot open this page."); return; }
@@ -282,15 +291,18 @@ document.querySelectorAll("#sideNav button, #mobNav button").forEach((b) => b.ad
 document.addEventListener("keydown", globalSlashKey); // "/" jumps to patient search from anywhere
 
 /* ---------------- Theme + sidebar ---------------- */
+const THEME_ORDER = ["light", "sunrise", "dark"];
 function applyTheme() {
   let t = (DB.settings || {}).theme;
-  if (!t) { try { t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } catch (e) { t = "light"; } }
+  if (!t || !THEME_ORDER.includes(t)) t = "sunrise"; // fresh installs start on Sunrise; saved prefs untouched
   document.documentElement.dataset.theme = t;
-  const b = document.getElementById("themeToggle"); if (b) b.textContent = t === "dark" ? "☀️" : "🌙";
-  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === "dark" ? "#0a1424" : "#0e7c7b";
+  const b = document.getElementById("themeToggle");
+  if (b) { b.textContent = t === "dark" ? "☀️" : t === "sunrise" ? "🌞" : "🌙"; b.title = `Theme: ${t} (tap to change)`; }
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === "dark" ? "#0a1424" : t === "sunrise" ? "#f6f1e6" : "#0e7c7b";
 }
 function toggleTheme() {
-  DB.settings.theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  const cur = document.documentElement.dataset.theme;
+  DB.settings.theme = THEME_ORDER[(THEME_ORDER.indexOf(cur) + 1) % THEME_ORDER.length] || "light";
   save(); applyTheme();
 }
 function renderBrand() {
@@ -421,6 +433,16 @@ function openChildModal(id) {
   $("cPed").value = c?.ped || ""; $("cAllergy").value = c?.allergy || ""; $("cAbha").value = c?.abha || "";
   openModal("mChild");
 }
+/* ---------------- MRN (medical record number, auto-assigned) ---------------- */
+function nextMrn(kids) {
+  let mx = 0;
+  (kids || []).forEach((c) => { const n = parseInt(String((c && c.mrn) || "").replace(/\D/g, ""), 10); if (n > mx) mx = n; });
+  return String(mx + 1).padStart(4, "0");
+}
+function ensureMrns(kids) {
+  (kids || []).forEach((c) => { if (c && !c.mrn) c.mrn = nextMrn(kids); });
+  return kids;
+}
 function saveChild() {
   if (typeof guardSubmit === "function" && !guardSubmit("child")) return; // M4: no duplicate registrations
   const name = $("cName").value.trim(), dob = $("cDob").value;
@@ -431,7 +453,7 @@ function saveChild() {
   if (dups.length && !confirm(`⚠️ Possible duplicate record:\n${dups.slice(0, 3).map((d) => `• ${d.c.name} (DOB ${fmtDate(d.c.dob)}) — ${d.why}`).join("\n")}\n\nSave anyway?`)) return;
   const data = { name, sex: $("cSex").value, dob, blood: $("cBlood").value, birthWt: parseFloat($("cBirthWt").value) || "", gest: $("cGest").value, birthLen: parseFloat($("cBirthLen").value) || "", birthHC: parseFloat($("cBirthHC").value) || "", father: $("cFather").value.trim(), mother: $("cMother").value.trim(), fHt: parseFloat($("cFHt").value) || "", mHt: parseFloat($("cMHt").value) || "", phone: $("cPhone").value.trim(), abha: $("cAbha").value.trim(), ped: $("cPed").value.trim(), allergy: $("cAllergy").value.trim() };
   if (id) { const ex = DB.children.find((x) => x.id === id); if (ex) normalizeChild(Object.assign(ex, data)); }
-  else DB.children.push(normalizeChild(Object.assign({ id: uid(), created: todayISO() }, data)));
+  else DB.children.push(normalizeChild(Object.assign({ id: uid(), created: todayISO(), mrn: nextMrn(DB.children) }, data)));
   if (!DB.activeId) DB.activeId = DB.children[0].id;
   auditSafe(id ? "Child updated" : "Child registered", name);
   save(); closeModal("mChild"); syncChildPicker(); renderAll();
@@ -452,6 +474,7 @@ function childHay(c) {
     parents: `${c.father || ""} ${c.mother || ""}`.toLowerCase(),
     digits: String(c.phone || "").replace(/\D/g, ""),
     abha: String(c.abha || "").replace(/\D/g, ""),
+    mrn: String(c.mrn || "").toLowerCase(),
     dob: String(c.dob || ""),
   };
 }
@@ -472,6 +495,7 @@ function matchChildren(q, kids, recentIds) {
       else if (h.name.includes(t)) { s = 40; w = "name"; }
       if (t.length >= 2 && h.parents.includes(t) && s < 25) { s = 25; w = "parent"; }
       if (td.length >= 3 && h.digits.includes(td) && s < 50) { s = 50; w = "phone"; }
+      if (t.length >= 2 && h.mrn.includes(t) && s < 45) { s = 45; w = "MRN"; }
       if (td.length >= 4 && h.abha.includes(td) && s < 30) { s = 30; w = "ABHA"; }
       if (td.length >= 4 && h.dob.includes(t) && s < 20) { s = 20; w = "DOB"; }
       if (!s) { okAll = false; break; }
@@ -567,7 +591,7 @@ function renderChildren() {
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
         <div class="avatar" style="width:48px;height:48px;font-size:18px">${esc(c.name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase())}</div>
         <div><b style="font-size:16px;color:var(--navy)">${esc(c.name)}</b><br>
-        <span style="font-size:12.5px;color:var(--muted)">${c.sex === "boy" ? "♂ Boy" : "♀ Girl"} · ${ageStr(a)} · DOB ${fmtDate(c.dob)}</span></div>
+        <span style="font-size:12.5px;color:var(--muted)">${c.sex === "boy" ? "♂ Boy" : "♀ Girl"} · ${ageStr(a)} · DOB ${fmtDate(c.dob)}${c.mrn ? ` · MRN ${esc(c.mrn)}` : ""}</span></div>
       </div>
       ${whyLine}
       <dl class="kv" style="margin-bottom:10px">
@@ -1121,27 +1145,191 @@ function roleDashHTML(role) {
     + (conf ? `<div style="font-size:13px">🔀 <b>${conf} sync conflict(s)</b> need review.</div>` : "")
     + `<div style="margin-top:8px"><button class="btn btn-p btn-sm" onclick="go('front')">Open queue →</button> <button class="btn btn-o btn-sm" onclick="go('timeline')">Timeline →</button></div></div>`;
 }
-function renderDashboard() {
+/* ---------------- Sunrise home: clinic-level data (pure) ---------------- */
+function homeStatsData(children, tokens, appts, today) {
+  const t = today || todayISO();
+  const todToks = (tokens || []).filter((x) => x.date === t);
+  const todAppts = (appts || []).filter((a) => a.date === t);
+  const seen = todToks.filter((x) => x.status === "done").length + todAppts.filter((a) => a.done).length;
+  const due = (typeof clinicDueList === "function") ? clinicDueList(children, t) : [];
+  const wk = addDays(t, 7), soon2 = addDays(t, 2);
+  const dueWeek = due.filter((i) => i.due <= wk).length;
+  const dueSoon = due.filter((i) => (i.band === "due14" || i.band === "upcoming") && i.due <= soon2).length;
+  const overdueKids = new Set(due.filter((i) => i.band === "defaulter" || i.band === "overdue").map((i) => i.childId)).size;
+  let flags = 0;
+  try { flags = (typeof falteringFlags === "function" ? falteringFlags(children) : []).length; } catch (e) { flags = 0; }
+  const patients = todToks.length + todAppts.length;
+  return { patients, seen, waiting: patients - seen, dueWeek, dueSoon, overdueKids, flags };
+}
+function homeQueueRows(tokens, appts, children, today) {
+  const t = today || todayISO(), byId = {};
+  (children || []).forEach((c) => { byId[c.id] = c; });
+  const sub = (c) => {
+    if (!c) return "";
+    try {
+      let s = ageStr(ageBetween(c.dob));
+      const lm = latestMeasure(c); if (lm && lm.wt) s += ` · ${lm.wt} kg`;
+      return s;
+    } catch (e) { return ""; }
+  };
+  const rows = [];
+  (tokens || []).filter((x) => x.date === t).forEach((x) => {
+    const c = byId[x.childId];
+    rows.push({ key: "t:" + x.id, time: x.time || "", tag: x.n != null ? "#" + x.n : "", name: x.name || (c && c.name) || "—",
+      sub: sub(c), reason: x.reason || "General", status: x.status || "waiting", childId: x.childId || "" });
+  });
+  (appts || []).filter((a) => a.date === t).forEach((a) => {
+    const c = byId[a.childId];
+    rows.push({ key: "a:" + a.id, time: a.time || "", tag: "", name: (c && c.name) || "—",
+      sub: sub(c), reason: a.type || "Visit", status: a.done ? "done" : "booked", childId: a.childId || "" });
+  });
+  rows.sort((a, b) => (a.time || "99").localeCompare(b.time || "99"));
+  return rows;
+}
+function queueStatusBadge(st) {
+  const m = { waiting: ["b-amber", "Waiting"], in: ["b-green", "In consult"], booked: ["b-teal", "Booked"], done: ["b-gray", "Done"] };
+  const b = m[st] || ["b-gray", st || "—"];
+  return `<span class="badge ${b[0]}">${esc(b[1])}</span>`;
+}
+function homeQueueHTML(rows) {
+  if (!rows.length) return `<div class="empty"><div class="big">🕘</div>No tokens or appointments today.<br><button class="btn btn-p btn-sm" style="margin-top:10px" onclick="go('front')">Open frontdesk →</button></div>`;
+  return `<div style="overflow:auto"><table class="tbl"><tr><th>Time</th><th>Child</th><th>Reason</th><th>Status</th><th></th></tr>${rows.map((r) => {
+    const act = !r.childId ? "" : (r.status === "waiting" || r.status === "booked")
+      ? `<button class="btn btn-p btn-xs" onclick="queueStart('${r.key}')">Start</button> <a href="#" onclick="queueOpen('${r.key}');return false">Open</a>`
+      : r.status === "in" ? `<a href="#" onclick="queueOpen('${r.key}');return false">Open</a>` : "";
+    return `<tr style="${r.status === "done" ? "opacity:.55" : ""}"><td>${esc(r.time || "—")}${r.tag ? `<br><b>${esc(r.tag)}</b>` : ""}</td>`
+      + `<td><b>${esc(r.name)}</b>${r.sub ? `<br><span style="font-size:11.5px;color:var(--muted)">${esc(r.sub)}</span>` : ""}</td>`
+      + `<td>${esc(r.reason)}</td><td>${queueStatusBadge(r.status)}</td><td style="white-space:nowrap">${act}</td></tr>`;
+  }).join("")}</table></div>`;
+}
+function queueFind(key) {
+  const [kind, id] = String(key || "").split(":");
+  const row = kind === "t" ? (DB.tokens || []).find((x) => x.id === id) : (DB.appts || []).find((a) => a.id === id);
+  return row && row.childId ? row : null;
+}
+function queueOpen(key) {
+  const row = queueFind(key); if (!row) return;
+  setActive(row.childId); go("timeline");
+}
+function queueStart(key) {
+  const row = queueFind(key); if (!row) return;
+  setActive(row.childId); openVisitModal();
+}
+function homeAlertsData(o) {
+  o = o || {};
+  const out = [];
+  if (o.overdueKids > 0) out.push({ sev: "red", title: `${o.overdueKids} children overdue`, body: "for vaccines", cta: "Send WhatsApp reminders", page: "schedule" });
+  if (o.flags > 0) out.push({ sev: "amber", title: `${o.flags} growth red flags`, body: "z-drop ≥ 1 between visits", cta: "Review list", page: "analytics" });
+  if (o.stockN > 0) out.push({ sev: "amber", title: "Vaccine stock low", body: o.stockDetail || "lots under reorder level", cta: "Open stock", page: "stock" });
+  if (o.labsN > 0) out.push({ sev: "blue", title: `${o.labsN} lab results`, body: "awaiting review (last 60 days)", cta: "Open labs", page: "labs" });
+  return out;
+}
+function homeAlertsHTML(list) {
+  if (!list || !list.length) return `<div class="alert a-green" style="margin:0">✅ <div><b>All clear</b> — nothing needs review.</div></div>`;
+  const cls = { red: "a-red", amber: "a-amber", blue: "a-blue" };
+  return list.map((a) => `<div class="alert ${cls[a.sev] || "a-amber"}" style="margin:0 0 10px"><div><b>${esc(a.title)}</b> ${esc(a.body)}<br><a href="#" onclick="go('${a.page}');return false">${esc(a.cta)} →</a></div></div>`).join("");
+}
+function homeStatsHTML(s) {
+  const card = (ac, n, l, sub, page, aria) => `<div class="stat" style="--ac:${ac};cursor:pointer" tabindex="0" role="button" aria-label="${aria}" onclick="go('${page}')" onkeydown="if(event.key==='Enter')go('${page}')"><div><div class="n">${n}</div><div class="l">${l}</div><div style="font-size:11.5px;color:var(--muted)">${sub}</div></div></div>`;
+  return card("var(--blue)", s.patients, "Patients today", `${s.seen} seen · ${s.waiting} waiting`, "front", "Open frontdesk")
+    + card("var(--teal)", s.dueWeek, "Vaccines due this week", `${s.dueSoon} due in 2 days`, "schedule", "Open schedule")
+    + card(s.overdueKids ? "var(--red)" : "var(--green)", s.overdueKids, "Overdue defaulters", s.overdueKids ? "Send reminders" : "None overdue", "schedule", "Open due list")
+    + card(s.flags ? "var(--amber)" : "var(--green)", s.flags, "Growth red flags", s.flags ? "Review needed" : "All clear", "analytics", "Open analytics");
+}
+/* ---------------- dashboard search + visit entry ---------------- */
+function startVisit() {
   const c = child();
-  if (!c) { $("dashStats").innerHTML = ""; const hz = $("dashHero"); if (hz) hz.innerHTML = ""; return; }
-  const a = ageBetween(c.dob), vs = vaccineSummary(c), lm = latestMeasure(c);
-  const bi = bandForAge(a.months), b = MILESTONES[bi];
-  let ach = 0; b.items.forEach((_, ii) => { if (c.milestones[bi + "_" + ii] === "A") ach++; });
-  $("dashChildTag").textContent = `${c.name} · ${ageStr(a)}`;
-  { const hz = $("dashHero");
-    if (hz) { const _S = DB.settings || {}, logoHtml = _S.logo ? `<img src="${_S.logo}" alt="clinic logo">` : `<span class="ph">👶</span>`; const hr = new Date().getHours(), greet = hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
-      hz.innerHTML = `<div class="hero-top"><div class="hero-logo">${logoHtml}</div><div><div class="hero-eyebrow">${esc(fmtDate(todayISO()))} · ${esc((DB.settings || {}).clinic || "KidGrow Pro")}</div>
-        <h2>${greet}, ${esc(greetName())} 👋</h2>
-        <div class="hero-sub">Active child: <b>${esc(c.name)}</b> · ${esc(ageStr(a))} · 💉 ${vs.done}/${vs.total} vaccines${vs.overdue ? ` · <b>${vs.overdue} overdue</b>` : ""}</div></div></div>
-        <div class="hero-actions"><button class="btn btn-p btn-sm" onclick="openGrowthModal()">+ Record growth</button>
-        <button class="btn btn-o btn-sm" onclick="openVisitModal()">+ Visit note</button>
-        <button class="btn btn-o btn-sm" onclick="openApptModal()">+ Book visit</button>
-        <button class="btn btn-o btn-sm" onclick="go('front')">🎟️ Frontdesk</button></div>`; } }
+  if (!c) { toast("Select a patient first — search above or open Patients."); go("children"); return; }
+  openVisitModal();
+}
+function dashSearchHTML(q, kids, recentIds) {
+  q = (q || "").trim();
+  if (q.length < 2) return "";
+  const hits = matchChildren(q, kids, recentIds).slice(0, 6);
+  return hits.length ? hits.map((h) => `<button class="sr-row" onclick="dashPick('${h.c.id}')"><b>${esc(h.c.name)}</b><span style="font-size:12px;color:var(--muted)">${esc(ageStr(ageBetween(h.c.dob)))}${h.c.mrn ? ` · MRN ${esc(h.c.mrn)}` : ""}</span><span class="why">${esc(h.why.join(" · "))}</span></button>`).join("")
+    : `<div class="empty" style="padding:12px">No matches for “${esc(q)}”.<br><button class="btn btn-p btn-sm" style="margin-top:8px" onclick="openChildModal()">+ Register this child</button></div>`;
+}
+function dashSearch() {
+  const inp = $("dashSearch"), box = $("dashSearchRes");
+  if (!inp || !box) return;
+  const html = dashSearchHTML(inp.value, DB.children, getRecentIds());
+  box.style.display = html ? "" : "none";
+  box.innerHTML = html;
+}
+function dashSearchKey(e) {
+  if (!e || !e.key) return;
+  const inp = $("dashSearch");
+  if (!inp) return;
+  if (e.key === "Enter") {
+    const hits = matchChildren((inp.value || "").trim(), DB.children, getRecentIds());
+    if (hits.length) { e.preventDefault(); dashPick(hits[0].c.id); }
+  } else if (e.key === "Escape") { inp.value = ""; dashSearch(); }
+}
+function dashPick(id) {
+  setActive(id);
+  const s = $("dashSearch"); if (s) s.value = "";
+  const r = $("dashSearchRes"); if (r) { r.innerHTML = ""; r.style.display = "none"; }
+  const c = child();
+  if (c) toast(`Active patient: ${c.name}`);
+}
+function renderDashHome() {
+  const t = todayISO(), c = child();
+  const hz = $("dashHero");
+  if (hz) {
+    const _S = DB.settings || {}, logoHtml = _S.logo ? `<img src="${_S.logo}" alt="clinic logo">` : `<span class="ph">👶</span>`;
+    const hr = new Date().getHours(), greet = hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
+    let sub = "Search for a patient or pick from today's queue below.";
+    if (c) {
+      let vs = { done: 0, total: 0, overdue: 0 };
+      try { vs = vaccineSummary(c); } catch (e) {}
+      sub = `Active child: <b>${esc(c.name)}</b> · ${esc(ageStr(ageBetween(c.dob)))}${c.mrn ? ` · MRN ${esc(c.mrn)}` : ""} · 💉 ${vs.done}/${vs.total} vaccines${vs.overdue ? ` · <b>${vs.overdue} overdue</b>` : ""}`;
+    }
+    hz.innerHTML = `<div class="hero-top"><div class="hero-logo">${logoHtml}</div><div><div class="hero-eyebrow">${esc(fmtDate(t))} · ${esc((DB.settings || {}).clinic || "KidGrow Pro")} · what needs you today</div>
+      <h2>${greet}, ${esc(greetName())} 👋</h2><div class="hero-sub">${sub}</div></div></div>
+      <div class="hero-search search-wrap"><input id="dashSearch" placeholder="🔍 Search name, parent, phone, MRN…" autocomplete="off" oninput="dashSearch()" onkeydown="dashSearchKey(event)"><div id="dashSearchRes" class="search-res" style="display:none"></div></div>
+      <div class="hero-actions"><button class="btn btn-p btn-sm" onclick="startVisit()">+ Start visit</button>
+      <button class="btn btn-o btn-sm" onclick="openChildModal()">+ Register child</button></div>
+      <div class="hero-actions" style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="openGrowthModal()">+ Record growth</button>
+      <button class="btn btn-o btn-sm" onclick="openVisitModal()">+ Visit note</button>
+      <button class="btn btn-o btn-sm" onclick="openApptModal()">+ Book visit</button>
+      <button class="btn btn-o btn-sm" onclick="go('front')">🎟️ Frontdesk</button></div>`;
+  }
+  const hs = homeStatsData(DB.children, DB.tokens, DB.appts, t);
+  $("dashHome").innerHTML = homeStatsHTML(hs);
+  $("dashQueue").innerHTML = homeQueueHTML(homeQueueRows(DB.tokens, DB.appts, DB.children, t));
+  let stockN = 0, stockDetail = "";
+  try {
+    const sa = (typeof stockAlerts === "function") ? stockAlerts(t) : null;
+    if (sa) {
+      stockN = sa.expired.length + sa.out.length + sa.low.length;
+      const bits = [];
+      if (sa.expired.length) bits.push(`${sa.expired.length} expired`);
+      if (sa.out.length + sa.low.length) bits.push(`${sa.out.length + sa.low.length} under reorder`);
+      if (sa.expiring.length) bits.push(`${sa.expiring.length} expiring soon`);
+      stockDetail = bits.join(" · ");
+    }
+  } catch (e) {}
+  let labsN = 0;
+  try { labsN = (typeof labsPending === "function") ? labsPending(DB.children, t) : 0; } catch (e) {}
+  $("dashAlerts").innerHTML = homeAlertsHTML(homeAlertsData({ overdueKids: hs.overdueKids, flags: hs.flags, stockN, stockDetail, labsN }));
+  $("dashChildTag").textContent = c ? `${c.name} · ${ageStr(ageBetween(c.dob))}` : "No patient selected";
+}
+function renderDashboard() {
+  renderDashHome();
   const _role = myAppRole();
   const _clinicExtra = CLINICAL_ROLES.includes(_role)
     ? (clinicPulseHTML() + (typeof nicuCensusHTML === "function" ? nicuCensusHTML() : "") + (typeof marDueHTML === "function" ? marDueHTML() : "") + (typeof growthAlertsHTML === "function" ? growthAlertsHTML() : ""))
     : "";
   $("dashClinic").innerHTML = roleDashHTML(_role) + _clinicExtra;
+  const c = child();
+  if (!c) {
+    $("dashStats").innerHTML = "";
+    ["dashVac", "dashGrowth", "dashMs", "dashVisits"].forEach((id) => { $(id).innerHTML = `<div class="empty">Select a patient above to see details.</div>`; });
+    return;
+  }
+  const a = ageBetween(c.dob), vs = vaccineSummary(c), lm = latestMeasure(c);
+  const bi = bandForAge(a.months), b = MILESTONES[bi];
+  let ach = 0; b.items.forEach((_, ii) => { if (c.milestones[bi + "_" + ii] === "A") ach++; });
   $("dashStats").innerHTML = `
     <div class="stat" style="--ac:var(--blue);cursor:pointer" tabindex="0" role="button" aria-label="Open Children" onclick="go('children')" onkeydown="if(event.key==='Enter')go('children')"><div><div class="n">${ageStr(a)}</div><div class="l">Age · ${c.sex === "boy" ? "Boy" : "Girl"}</div></div><div class="e">🎂</div></div>
     <div class="stat" style="--ac:var(--teal);cursor:pointer" tabindex="0" role="button" aria-label="Open vaccination record" onclick="go('vaccines')" onkeydown="if(event.key==='Enter')go('vaccines')"><div><div class="n">${vs.done}/${vs.total}</div><div class="l">Vaccines · ${vs.pct}%</div></div><div class="e">💉</div></div>
@@ -1274,6 +1462,7 @@ function buildDbFromBackup(d) {
   ["appts", "tokens", "bills", "users", "audit"].forEach((k) => { if (!Array.isArray(out[k])) out[k] = []; });
   if (!out.settings || typeof out.settings !== "object") out.settings = freshDb().settings;
   if (!out.session || typeof out.session !== "object") out.session = {};
+  ensureMrns(out.children);
   return out;
 }
 // Single funnel for every restore path (JSON + encrypted): validate → confirm →

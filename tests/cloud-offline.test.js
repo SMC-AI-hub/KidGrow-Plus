@@ -822,6 +822,95 @@ async function main() {
   const dStats = sb.document.getElementById("dashStats").innerHTML;
   ok(dStats.includes("go('vaccines')") && dStats.includes("go('milestones')") && dStats.includes("go('growth')") && dStats.includes("go('children')"), "stat cards drill into their screens");
 
+  // ---- v10.11.0: Sunrise home (stats + queue + alerts + search + MRN + lab review) ----
+  vm.runInContext(`DB.children=[
+    normalizeChild({id:'h1',name:'Hari Patel',sex:'boy',dob:'2024-06-01',phone:'98111 22222',mrn:'0007',vaccines:{}}),
+    normalizeChild({id:'h2',name:'Ira Patel',sex:'girl',dob:'2022-01-15',phone:'98111 33333',mrn:'0008',vaccines:{}})];
+  DB.activeId='h1';
+  DB.tokens=[{id:'tk1',n:1,date:todayISO(),time:'09:00',childId:'h1',name:'Hari Patel',reason:'Fever',status:'waiting'},{id:'tk2',n:2,date:todayISO(),time:'09:20',childId:'h2',name:'Ira Patel',reason:'Review',status:'done'}];
+  DB.appts=[{id:'ap1',date:todayISO(),time:'10:00',childId:'h2',type:'Newborn check',done:false}];`, sb);
+  const hKids = vm.runInContext("DB.children", sb), hDay = vm.runInContext("todayISO()", sb);
+  const hs = sb.homeStatsData(hKids, vm.runInContext("DB.tokens", sb), vm.runInContext("DB.appts", sb), hDay);
+  ok(hs.patients === 3 && hs.seen === 1 && hs.waiting === 2, "home stats count queue + seen");
+  ok(hs.overdueKids === 2 && hs.dueWeek >= 2 && hs.flags === 0, "home stats dues rich, flags zero without measures");
+  const hq = sb.homeQueueRows(vm.runInContext("DB.tokens", sb), vm.runInContext("DB.appts", sb), hKids, hDay);
+  ok(hq.map((r) => r.key).join(",") === "t:tk1,t:tk2,a:ap1", "queue merges tokens + appts in time order");
+  ok(hq[0].name === "Hari Patel" && hq[0].status === "waiting" && hq[2].status === "booked", "queue rows carry child + status");
+  const hqH = sb.homeQueueHTML(hq);
+  ok((hqH.match(/queueStart/g) || []).length === 2 && hqH.includes("#1") && hqH.includes("Waiting"), "queue actions only on actionable rows");
+  ok(sb.homeQueueHTML([]).includes("Open frontdesk"), "empty queue guides to frontdesk");
+  const ha = sb.homeAlertsData({ overdueKids: 11, flags: 5, stockN: 2, stockDetail: "2 under reorder", labsN: 3 });
+  ok(ha.length === 4 && ha[0].page === "schedule" && ha[1].page === "analytics", "all four alert kinds route to their lists");
+  ok(sb.homeAlertsHTML([]).includes("All clear"), "no alerts shows all-clear");
+  ok(sb.homeAlertsHTML(ha).includes("WhatsApp") && sb.homeAlertsHTML(ha).includes("11 children overdue"), "alerts render with honest counts");
+  const hstH = sb.homeStatsHTML(hs);
+  ok(hstH.includes("Patients today") && hstH.includes("go('front')") && hstH.includes("go('analytics')"), "stat cards drill down");
+  // dashboard search (pure core; inputs live in JS-rendered hero)
+  const dsH = sb.dashSearchHTML("hari", hKids, []);
+  ok(dsH.includes("Hari Patel") && dsH.includes("MRN 0007") && !dsH.includes("Ira Patel"), "dash search ranks + shows MRN");
+  ok(sb.dashSearchHTML("x", hKids, []) === "" && sb.dashSearchHTML("zzzqqq", hKids, []).includes("Register this child"), "short query blank, no-match offers register");
+  sb.dashPick("h2");
+  ok(vm.runInContext("DB.activeId", sb) === "h2", "dash pick activates child");
+  // start visit: both branches (empty roster = no patient; child() falls back to [0] otherwise)
+  vm.runInContext("DB.__keep=DB.children; DB.children=[]; DB.activeId=null;", sb);
+  sb.startVisit();
+  ok(sb.document.getElementById("pageTitle").textContent === "Children", "start visit without patient routes to Patients");
+  vm.runInContext("DB.children=DB.__keep; delete DB.__keep; DB.activeId='h1';", sb);
+  sb.startVisit();
+  ok(sb.document.getElementById("vsDate").value === hDay, "start visit opens note for active child");
+  // queue actions
+  sb.queueOpen("t:tk1");
+  ok(vm.runInContext("DB.activeId", sb) === "h1" && sb.document.getElementById("pageTitle").textContent === "Patient Timeline", "queue open jumps to profile");
+  sb.queueStart("a:ap1");
+  ok(vm.runInContext("DB.activeId", sb) === "h2" && sb.document.getElementById("vsDate").value === hDay, "queue start begins visit note");
+  ok(sb.queueFind("x:zz") === null, "bogus queue key resolves to nothing");
+  // MRN
+  ok(sb.nextMrn([{ mrn: "0007" }, { mrn: "0009" }, {}]) === "0010" && sb.nextMrn([]) === "0001", "MRN sequencing skips gaps");
+  const mrnKids = [{ mrn: "0003" }, {}];
+  sb.ensureMrns(mrnKids);
+  ok(mrnKids[0].mrn === "0003" && mrnKids[1].mrn === "0004", "backfill preserves + assigns");
+  ok(sb.matchChildren("0007", hKids)[0].c.id === "h1" && sb.matchChildren("0007", hKids)[0].why.includes("MRN"), "type-ahead finds MRN");
+  // labs reviewed
+  vm.runInContext(`DB.children[0].labs=[{id:'l1',date:todayISO(),hb:'10',rev:''},{id:'l2',date:addDays(todayISO(),-100),hb:'9',rev:''},{id:'l3',date:todayISO(),hb:'11',rev:'2026-10-01'}]; DB.activeId='h1';`, sb);
+  ok(sb.labsPending(hKids, hDay) === 1, "pending counts recent unreviewed only");
+  sb.toggleLabRev("l1");
+  ok(vm.runInContext("DB.children[0].labs[0].rev", sb) === hDay, "review stamps date");
+  sb.toggleLabRev("l1");
+  ok(vm.runInContext("DB.children[0].labs[0].rev", sb) === "", "review toggles back");
+  // theme
+  sb.document.documentElement.dataset.theme = "light";
+  sb.toggleTheme();
+  ok(vm.runInContext("DB.settings.theme", sb) === "sunrise", "toggle advances light → sunrise");
+  sb.toggleTheme(); sb.toggleTheme();
+  ok(vm.runInContext("DB.settings.theme", sb) === "light", "toggle cycles dark → light");
+  vm.runInContext("DB.settings.theme='';", sb);
+  sb.applyTheme();
+  ok(sb.document.documentElement.dataset.theme === "sunrise", "fresh installs default to sunrise");
+  const css = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
+  ok(css.includes('[data-theme="sunrise"]') && css.includes("--bg:#f6f1e6") && css.includes(".sr-row"), "sunrise theme + search styles shipped");
+  // full dashboard render, with and without active child
+  vm.runInContext("DB.activeId='h1';", sb);
+  sb.renderDashboard();
+  ok(sb.document.getElementById("dashHome").innerHTML.includes("Patients today"), "dashboard renders clinic stats");
+  ok(sb.document.getElementById("dashQueue").innerHTML.includes("#1"), "dashboard renders queue");
+  ok(sb.document.getElementById("dashAlerts").innerHTML.includes("children overdue"), "dashboard renders alerts");
+  ok(sb.document.getElementById("dashHero").innerHTML.includes("Start visit") && sb.document.getElementById("dashHero").innerHTML.includes("dashSearch"), "hero has search + visit entry");
+  ok(sb.document.getElementById("dashHero").innerHTML.includes("MRN 0007"), "hero shows active MRN");
+  vm.runInContext("DB.__keep=DB.children; DB.children=[]; DB.activeId=null;", sb);
+  sb.renderDashboard();
+  ok(sb.document.getElementById("dashHome").innerHTML.includes("Patients today"), "clinic stats survive empty roster");
+  ok(sb.document.getElementById("dashVac").innerHTML.includes("Select a patient above"), "patient cards degrade gracefully");
+  ok(sb.document.getElementById("dashChildTag").textContent === "No patient selected", "tag shows no-selection state");
+  vm.runInContext("DB.children=DB.__keep; delete DB.__keep; DB.activeId='h1';", sb);
+  // saveChild assigns MRN (after the double-submit window)
+  await new Promise((r) => setTimeout(r, 2600));
+  sb.document.getElementById("cId").value = "";
+  sb.document.getElementById("cName").value = "Mira Nair";
+  sb.document.getElementById("cDob").value = "2023-05-05";
+  sb.document.getElementById("cPhone").value = "";
+  sb.saveChild();
+  ok(/^\d{4}$/.test(vm.runInContext("DB.children[DB.children.length-1].mrn", sb)), "registration auto-assigns MRN");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
