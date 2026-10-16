@@ -175,7 +175,7 @@ function renderCard() {
         <div class="qrbox" style="text-align:center">${qrSVG(code)}<div style="font-size:11px;color:var(--muted)">Scan to verify / import</div></div>
       </div>
       <table class="tbl" style="margin-top:10px"><tr><th>Visit</th><th>Vaccine</th><th>Given</th><th>✓</th></tr>${given}${ex}</table>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:6px">IAP ACVIP 2023-24 schedule · ${esc(DB.settings.doctor || "")} · Generated ${fmtDate(todayISO())}</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:6px">${VAX_SCHEDULE_VERSION} schedule · ${esc(DB.settings.doctor || "")} · Generated ${fmtDate(todayISO())}</div>
     </div>
     <div style="height:16px"></div>
     <div class="card no-print"><h3>📥 Import a record</h3>

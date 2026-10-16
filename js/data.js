@@ -11,6 +11,7 @@
    official printed IAP/WHO charts & clinical judgement.
    ===================================================================== */
 
+const VAX_SCHEDULE_VERSION = "IAP ACVIP 2023-24"; // single source of truth — update only after clinical review (G12)
 const VACCINE_SCHEDULE = [
   {
     id: "birth", label: "At Birth", sub: "Within 24 hours", dueDays: 0, dueMonths: 0,

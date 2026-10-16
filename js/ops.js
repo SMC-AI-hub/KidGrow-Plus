@@ -671,9 +671,7 @@ async function importEncrypted(file) {
     const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64dec(env.iv) }, aes, b64dec(env.data));
     const d = JSON.parse(new TextDecoder().decode(pt));
     if (!d || !Array.isArray(d.children)) throw new Error("backup has no children");
-    if (!confirm(`Restore backup with ${d.children.length} child record(s)? This replaces current data.`)) return;
-    DB = d; save(); renderAll();
-    alert("Backup restored.");
+    applyBackupObject(d, "Encrypted backup");
   } catch (e) { alert("Could not restore: " + (e && e.message ? e.message : e)); }
 }
 

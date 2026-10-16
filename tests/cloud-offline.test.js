@@ -769,6 +769,51 @@ async function main() {
   sb.renderChildren();
   ok(ccBox.children.length === 1 && ccBox.children[0].innerHTML.includes("matched: parent"), "card shows why it matched");
 
+  // ---- v10.10.6: atomic restore + undo + version stamp ----
+  const bkValid = { children: [{ id: "b1", name: "Backup Kid", dob: "2021-01-01", visits: [{ id: "v1" }], measures: [{ date: "2026-01-01" }], vaccines: { BCG: {} } }], lastBackup: "2026-09-01" };
+  const bv = sb.validateBackup(bkValid);
+  ok(bv.ok && bv.stats.children === 1 && bv.stats.visits === 1 && bv.stats.measures === 1 && bv.stats.vaccines === 1 && bv.stats.asOf === "2026-09-01", "valid backup passes with full stats");
+  ok(!sb.validateBackup(null).ok && !sb.validateBackup({}).ok && !sb.validateBackup({ children: [{ id: "x" }] }).ok, "garbage backups rejected");
+  const built = sb.buildDbFromBackup({ children: [] });
+  ok(Array.isArray(built.tokens) && built.settings.clinic === "" && Array.isArray(built.children), "restore fills defaults for keys missing from old backups");
+  const builtKid = sb.buildDbFromBackup({ children: [{ id: "b9", name: "N", dob: "2020-01-01" }] }).children[0];
+  ok(Array.isArray(builtKid.visits) && Array.isArray(builtKid.measures) && builtKid.vaccines && builtKid.milestones, "restored children normalized");
+  vm.runInContext(`DB.children=[{id:'cur1',name:'Current Kid',dob:'2022-02-02',sex:'boy',vaccines:{},visits:[],measures:[],milestones:{}}]; DB.activeId='cur1'; DB.tokens=[{id:'t9'}];`, sb);
+  ok(sb.applyBackupObject(bkValid, "test") === false, "restore cancelled when confirm declined");
+  ok(vm.runInContext("DB.children.length", sb) === 1, "cancelled restore changes nothing");
+  const cfOrig = sb.confirm;
+  sb.confirm = () => true;
+  ok(sb.applyBackupObject(bkValid, "test") === true, "restore applies when confirmed");
+  ok(vm.runInContext("DB.children.length", sb) === 1 && vm.runInContext("DB.children[0].id", sb) === "b1", "clean-slate replace swaps children");
+  ok(vm.runInContext("DB.tokens.length", sb) === 0, "stale keys do not survive a replace");
+  ok(vm.runInContext("JSON.parse(localStorage.getItem('kidgrow_pro_v1_prev')).children[0].id", sb) === "cur1", "pre-import fallback stashed");
+  sb.confirm = () => false;
+  sb.undoLastImport();
+  ok(vm.runInContext("DB.children[0].id", sb) === "b1", "undo cancelled when confirm declined");
+  sb.confirm = () => true;
+  sb.undoLastImport();
+  ok(vm.runInContext("DB.children[0].id", sb) === "cur1", "undo restores pre-import data");
+  vm.runInContext("localStorage.removeItem('kidgrow_pro_v1_prev');", sb);
+  sb.undoLastImport();
+  ok(vm.runInContext("DB.children[0].id", sb) === "cur1", "undo with no fallback changes nothing");
+  sb.confirm = cfOrig;
+  ok(vm.runInContext("VAX_SCHEDULE_VERSION", sb) === "IAP ACVIP 2023-24", "schedule version centralized");
+  const strayVer = [];
+  for (const f of fs.readdirSync(path.join(R, "js"))) {
+    if (!f.endsWith(".js") || f === "data.js") continue;
+    if (fs.readFileSync(path.join(R, "js", f), "utf8").includes("2023-24")) strayVer.push(f);
+  }
+  ok(!strayVer.length, "no hardcoded schedule year outside data.js" + (strayVer.length ? ": " + strayVer.join(",") : ""));
+  const fakeSpans = [{ textContent: "" }, { textContent: "" }];
+  const dqaOrig = sb.document.querySelectorAll;
+  sb.document.querySelectorAll = () => fakeSpans;
+  ok(sb.applyRefVersions() === 2 && fakeSpans[0].textContent === "IAP ACVIP 2023-24", "boot stamps version into placeholders");
+  sb.document.querySelectorAll = dqaOrig;
+  vm.runInContext(`DB.children=[normalizeChild({id:'d1',name:'Dash Kid',sex:'boy',dob:'2024-01-01'})]; DB.activeId='d1';`, sb);
+  sb.renderDashboard();
+  const dStats = sb.document.getElementById("dashStats").innerHTML;
+  ok(dStats.includes("go('vaccines')") && dStats.includes("go('milestones')") && dStats.includes("go('growth')") && dStats.includes("go('children')"), "stat cards drill into their screens");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
