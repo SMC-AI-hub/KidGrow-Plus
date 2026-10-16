@@ -318,6 +318,63 @@ function applyNavMini() {
 function toggleNav() {
   DB.settings.navMini = !document.body.classList.contains("nav-mini");
   save(); applyNavMini();
+  const f = document.getElementById("navFilter"); // mini mode hides the filter — clear it so nothing stays hidden
+  if (f) { f.value = ""; filterNav(""); }
+}
+
+/* ---------------- Collapsible nav sections + filter ---------------- */
+const NAV_SECS = ["overview", "flow", "clinical", "insights", "system"];
+const NAV_SEC_DEFAULT_CLOSED = ["insights", "system"]; // rarely-daily sections start collapsed
+function navSecCollapsed() {
+  try { return JSON.parse(localStorage.getItem("kgNavCol") || "null") || [...NAV_SEC_DEFAULT_CLOSED]; }
+  catch (e) { return [...NAV_SEC_DEFAULT_CLOSED]; }
+}
+function setNavSecCollapsed(sec, closed) {
+  const arr = navSecCollapsed().filter((s) => s !== sec);
+  if (closed) arr.push(sec);
+  try { localStorage.setItem("kgNavCol", JSON.stringify(arr)); } catch (e) {}
+}
+function toggleNavSec(sec) {
+  const box = document.querySelector(`.navsec[data-sec="${sec}"]`);
+  if (!box) return;
+  box.classList.toggle("closed");
+  setNavSecCollapsed(sec, box.classList.contains("closed"));
+}
+function navMatch(label, q) {
+  q = (q || "").trim().toLowerCase();
+  if (!q) return true;
+  return String(label || "").toLowerCase().includes(q);
+}
+function filterNav(q) {
+  const query = (q || "").trim().toLowerCase();
+  document.querySelectorAll("#sideNav .navsec").forEach((box) => {
+    let vis = 0;
+    box.querySelectorAll("button[data-page]").forEach((b) => {
+      const blocked = (typeof roleBlock === "function") ? roleBlock(b.dataset.page) : false;
+      const show = !blocked && navMatch(b.textContent, query);
+      b.style.display = show ? "" : "none";
+      if (show) vis++;
+    });
+    if (query) box.classList.remove("closed"); // auto-expand while filtering
+    box.style.display = vis ? "" : "none";
+  });
+  refreshNavSecs();
+}
+/* Hide sections whose buttons are all hidden (role filter). Called on boot + after applyRole. */
+function refreshNavSecs() {
+  document.querySelectorAll("#sideNav .navsec").forEach((box) => {
+    const any = [...box.querySelectorAll("button[data-page]")].some((b) => b.style.display !== "none");
+    box.style.display = any ? "" : "none";
+  });
+}
+function restoreNavSecs() {
+  const closed = navSecCollapsed();
+  const f = document.getElementById("navFilter");
+  const q = f ? f.value : "";
+  document.querySelectorAll("#sideNav .navsec").forEach((box) => {
+    box.classList.toggle("closed", !q && closed.includes(box.dataset.sec));
+  });
+  refreshNavSecs();
 }
 
 /* ---------------- Child picker / CRUD ---------------- */
