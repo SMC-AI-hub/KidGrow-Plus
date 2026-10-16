@@ -1,5 +1,20 @@
 # Changelog
 
+## v10.10.6 — 2026-10-16 — Atomic restore + undo import + centralized schedule version
+- 🛡️ Every restore path (JSON + encrypted) now funnels through one validated
+  funnel: validate-first with per-child checks, a rich confirm preview
+  (children · visits · measurements · vaccine entries · backup date), clean-
+  slate replace (stale keys no longer survive a "replace all"), and an
+  automatic pre-import fallback. New **↩ Undo last import** (Data page +
+  Settings) rolls back one mistaken restore.
+- 🏷️ Vaccine schedule version centralized to `VAX_SCHEDULE_VERSION`
+  ("IAP ACVIP 2023-24", data.js — update only after clinical review); all
+  print footers, handouts, certificates and static page footers draw from it.
+  A test fails if the year is hardcoded anywhere else.
+- 📊 Dashboard stat cards now drill into their screens (Children ·
+  Vaccines · Milestones · Growth), keyboard-accessible with Enter.
+- Tests: 590/590 (393 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.10.5 — 2026-10-16 — Type-ahead patient search + duplicate-registration guard (Build A)
 - 🔍 Children-page search is now ranked type-ahead: every word must match
   across name, parents, phone (digit-normalized), ABHA and DOB year, with

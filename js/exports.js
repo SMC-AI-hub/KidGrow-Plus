@@ -112,8 +112,10 @@ function renderExport() {
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-o btn-sm" onclick="exportData()">⬇ JSON backup</button>
     <button class="btn btn-p btn-sm" onclick="exportEncrypted()">🔐 Encrypted backup</button>
     <button class="btn btn-o btn-sm" onclick="document.getElementById('encFile').click()">🔓 Restore encrypted</button>
+    <button class="btn btn-o btn-sm" onclick="undoLastImport()">↩ Undo last import</button>
     <input type="file" id="encFile" accept=".kgenc,.json" style="display:none" onchange="importEncrypted(this.files[0]);this.value=''"></div>
-    <div class="hint">${(typeof backupAgeLine === "function") ? backupAgeLine() : ""}</div></div>
+    <div class="hint">${(typeof backupAgeLine === "function") ? backupAgeLine() : ""}</div>
+    <div class="hint">${(typeof undoImportLine === "function") ? undoImportLine() : ""}</div></div>
   <div class="hint" style="margin-top:8px">ABDM gateway upload itself needs a registered Health Information Provider + patient consent — these files are integration-ready for that step.</div>`;
 }
 function dlUip() { downloadFile(`uip_register_${todayISO()}.csv`, uipCsv(DB.children), "text/csv"); auditSafe("Export", "UIP register"); }

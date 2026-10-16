@@ -101,7 +101,7 @@
       </div>
     </nav>
     <div id="userChip"></div>
-    <div class="side-foot"><b>KidGrow Pro v10</b> · Oct 2026<br>IAP ACVIP 2023-24 · WHO MGRS 2006 (0–5y) · IAP 2015 (5–18y)<br>Screening aid — clinical judgement prevails.</div>
+    <div class="side-foot"><b>KidGrow Pro v10</b> · Oct 2026<br><span data-vaxver>IAP ACVIP 2023-24</span> · WHO MGRS 2006 (0–5y) · IAP 2015 (5–18y)<br>Screening aid — clinical judgement prevails.</div>
   </aside>
 
   <!-- ============ MAIN ============ -->
@@ -408,9 +408,10 @@
               <button class="btn btn-o" onclick="exportData()">⬇ Export backup (JSON)</button>
               <button class="btn btn-p btn-sm" id="installAppBtn" style="display:none" onclick="installApp()">📲 Install app</button>
               <button class="btn btn-o" onclick="document.getElementById('importFile').click()">⬆ Import backup</button>
+              <button class="btn btn-o" onclick="undoLastImport()">↩ Undo last import</button>
               <button class="btn btn-danger" onclick="factoryReset()">🗑 Wipe all data</button>
             </div>
-            <div class="footer-note">Tip: export a backup monthly. Importing replaces current data. Growth references: WHO MGRS 2006 (0–5 y) + IAP 2015 (5–18 y); vaccines: IAP ACVIP 2023-24. Always confirm on official charts before labelling malnutrition/obesity.</div>
+            <div class="footer-note">Tip: export a backup monthly. Importing replaces current data. Growth references: WHO MGRS 2006 (0–5 y) + IAP 2015 (5–18 y); vaccines: <span data-vaxver>IAP ACVIP 2023-24</span>. Always confirm on official charts before labelling malnutrition/obesity.</div>
           </div>
         </div>
       </section>
