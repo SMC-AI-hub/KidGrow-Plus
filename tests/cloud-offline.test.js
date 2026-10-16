@@ -379,6 +379,24 @@ async function main() {
   const sdd = sb.stockDeduct("BCG", "", "B2", "Kid");
   ok(sdd && sdd.id === "f1" && sdd.qty === 4, "fresh lot deducts");
   ok(vm.runInContext("DB.vaxstock.find(l=>l.id==='e1').qty", sb) === 5, "expired qty untouched");
+
+  // ---- dup-dose guard ----
+  const dck = { vaccines: { BCG: { date: "2026-01-10", batch: "B1" } }, extraVac: [{ id: "x1", name: "Flu", date: "2026-02-01" }] };
+  ok(sb.vaxDupCheck(dck, "OPV0", "2026-01-10").dup === false, "new code passes dup check");
+  const dd1 = sb.vaxDupCheck(dck, "BCG", "2026-01-10");
+  ok(dd1.dup === true && dd1.sameDay === true, "same code+date flagged");
+  const dd2 = sb.vaxDupCheck(dck, "BCG", "2026-03-01");
+  ok(dd2.dup === true && dd2.sameDay === false, "same code new date flagged as overwrite");
+  ok(sb.extraDupCheck(dck, "flu", "2026-02-01", "newid").dup === true, "extra same name+date (case-insensitive) flagged");
+  ok(sb.extraDupCheck(dck, "Flu", "2026-02-01", "x1").dup === false, "extra self-edit exempt");
+  ok(sb.extraDupCheck(dck, "Flu", "2027-02-01", "newid").dup === false, "extra different date passes");
+  vm.runInContext("DB.children=[{id:'dx1',name:'Dup Kid',dob:'2025-01-01',sex:'boy',vaccines:{BCG:{date:'2026-01-10',batch:'B1'}},extraVac:[]}]; DB.activeId='dx1'; VAX_EDITING=null;", sb);
+  vm.runInContext("document.getElementById('vCode').value='BCG'; document.getElementById('vDate').value='2026-01-10';", sb);
+  sb.saveVaccine();
+  ok(vm.runInContext("DB.children[0].vaccines.BCG.batch", sb) === "B1", "same-day overwrite blocked, record intact");
+  vm.runInContext("document.getElementById('vDate').value='2026-05-01';", sb);
+  sb.saveVaccine(); // confirm() stubbed false -> overwrite declined
+  ok(vm.runInContext("DB.children[0].vaccines.BCG.date", sb) === "2026-01-10", "overwrite requires confirm, declined in test");
   const arow = SP.admToRow("m5", { id: "a1", admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36, status: "admitted", indication: "RDS" });
   ok(arow.local_id === "n_a1" && arow.patient_local_id === "c_m5" && arow.birth_weight_g === 2400, "admToRow maps");
   const rrow = SP.roundToRow("a1", { id: "r1", date: "2026-10-07", wtG: 2450, vitals: { spo2: 94 } });

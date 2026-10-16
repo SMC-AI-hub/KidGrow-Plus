@@ -420,6 +420,7 @@ function openVacModal(visitId, code) {
   const c = child(); const v = VACCINE_SCHEDULE.find((x) => x.id === visitId);
   const vx = v.vaccines.find((x) => x.code === code);
   const r = c.vaccines[code] || {};
+  VAX_EDITING = c.vaccines[code] ? { code, date: c.vaccines[code].date || "" } : null;
   $("vacModalTitle").textContent = `${vx.name} — ${vx.dose}`;
   $("vacModalSub").textContent = `${v.label} visit · due ${fmtDate(dueDateFor(c, v))} · ${vx.route}`;
   $("vCode").value = code; $("vVisit").value = visitId;
@@ -441,9 +442,35 @@ function openVacModal(visitId, code) {
   $("vClearBtn").style.display = r.date ? "" : "none";
   openModal("mVac");
 }
+function vaxDupCheck(c, code, dateISO) {
+  const ex = ((c || {}).vaccines || {})[code];
+  if (!ex) return { dup: false };
+  return { dup: true, sameDay: (ex.date || "") === (dateISO || ""), existing: ex };
+}
+function extraDupCheck(c, name, dateISO, selfId) {
+  const hit = ((c || {}).extraVac || []).find((v) => v.id !== selfId &&
+    String(v.name || "").trim().toLowerCase() === String(name || "").trim().toLowerCase() &&
+    (v.date || "") === (dateISO || ""));
+  return hit ? { dup: true, existing: hit } : { dup: false };
+}
+let VAX_EDITING = null; // {code, date} snapshot when modal opened on an existing record
 function saveVaccine() {
   const c = child(), code = $("vCode").value;
   if (!$("vDate").value) return alert("Date given is required.");
+  const date = $("vDate").value;
+  // dup-dose guard: same code+date blocked; same code new date needs explicit confirm.
+  // The record being edited (same code+date as modal-open) is exempt.
+  const codes = [code];
+  document.querySelectorAll(".vSib:checked").forEach((cb) => codes.push(cb.value));
+  const same = [], diff = [];
+  codes.forEach((cd) => {
+    if (VAX_EDITING && cd === VAX_EDITING.code && date === VAX_EDITING.date) return;
+    const d = vaxDupCheck(c, cd, date);
+    if (d.dup) (d.sameDay ? same : diff).push({ cd, ex: d.existing });
+  });
+  if (same.length) return alert("⚠️ Already recorded: " + same.map((s) => `${s.cd} on ${fmtDate(s.ex.date)}${s.ex.batch ? " (batch " + s.ex.batch + ")" : ""}`).join("; ") + ". Same-day duplicate blocked — delete the existing entry first if this is a correction.");
+  if (diff.length && !confirm("Overwrite existing record(s)?\n" + diff.map((s) => `• ${s.cd}: recorded ${fmtDate(s.ex.date)}${s.ex.batch ? " (batch " + s.ex.batch + ")" : ""}`).join("\n") + "\n\nOK = replace with the new entry. Cancel = keep existing.")) return;
+  VAX_EDITING = null;
   const bm = matchBrand(code, $("vBrand").value, $("vMfr").value);
   const rec = (aer) => ({ date: $("vDate").value, brand: bm.brand, mfr: bm.mfr, batch: $("vBatch").value.trim(), site: $("vSite").value.trim(), by: $("vBy").value.trim(), aer, note: $("vNote").value.trim() });
   const _newVx = [];
