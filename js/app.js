@@ -92,6 +92,46 @@ function normalizeChild(c) {
   return c;
 }
 function child() { return normalizeChild(DB.children.find((c) => c.id === DB.activeId) || DB.children[0] || null); }
+
+/* ================= PATIENT HEADER (unified, every clinical screen) ================= */
+const PH_SLOTS = ["visits", "rx", "vaccines", "growth", "labs", "aefi", "nicu", "mar", "nb", "screen", "diet", "consent"];
+function patientHeaderData(c) {
+  if (!c) return null;
+  const ms = [...(c.measures || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const lastW = ms.find((m) => m.wt > 0);
+  const t = todayISO();
+  const tok = (DB.tokens || []).filter((x) => x.date === t && x.childId === c.id && (x.status === "waiting" || x.status === "in"))
+    .sort((a, b) => (a.n || 0) - (b.n || 0))[0] || null;
+  let overdue = 0;
+  try { overdue = vaccineSummary(c).overdue || 0; } catch (e) {}
+  let red = [];
+  try { red = growthAlerts(c.measures || [], c.dob, t).filter((a) => a.level === "red"); } catch (e) {}
+  return {
+    name: c.name || "", age: ageStr(ageBetween(c.dob)), dob: c.dob || "",
+    sex: c.sex === "boy" ? "♂ Boy" : c.sex === "girl" ? "♀ Girl" : "",
+    allergy: (c.allergy || "").trim(),
+    wt: lastW ? lastW.wt : null, wtDate: lastW ? lastW.date : "",
+    token: tok ? { n: tok.n, status: tok.status, reason: tok.reason || "" } : null,
+    overdue, growthRed: red.length
+  };
+}
+function patientHeaderHTML(c) {
+  const d = patientHeaderData(c);
+  if (!d) return "";
+  const bits = [];
+  bits.push(`<b style="font-size:15px;color:var(--navy)">${esc(d.name)}</b> <span style="color:var(--muted);font-size:12.5px">${esc(d.sex)}${d.sex ? " · " : ""}${esc(d.age)} · DOB ${esc(fmtDate(d.dob))}</span>`);
+  bits.push(d.allergy ? `<span class="badge b-red">⚠️ ${esc(d.allergy)}</span>` : `<span class="badge b-green">No known allergy</span>`);
+  if (d.wt != null) bits.push(`<span class="badge b-teal">⚖️ ${esc(String(d.wt))} kg <span style="font-weight:400">(${esc(fmtDate(d.wtDate))})</span></span>`);
+  if (d.token) bits.push(`<span class="badge ${d.token.status === "in" ? "b-green" : "b-amber"}">🎫 Token #${esc(String(d.token.n))} · ${esc(d.token.status)}${d.token.reason ? " · " + esc(d.token.reason) : ""}</span>`);
+  if (d.overdue) bits.push(`<span class="badge b-red">💉 ${d.overdue} overdue</span>`);
+  if (d.growthRed) bits.push(`<span class="badge b-red">📉 growth flag</span>`);
+  return `<div class="card ph-card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${bits.join("")}</div></div>`;
+}
+function renderPatientHeaders() {
+  const c = (typeof child === "function") ? child() : null;
+  const html = patientHeaderHTML(c);
+  PH_SLOTS.forEach((s) => { const el = document.getElementById("ph-" + s); if (el) el.innerHTML = html; });
+}
 function setActive(id) { DB.activeId = id; DB.msBand = null; save(); syncChildPicker(); renderAll(); }
 
 /* ---------------- Demo seed ---------------- */
@@ -799,7 +839,7 @@ function renderAll() {
   if (!child() && DB.children.length) DB.activeId = DB.children[0].id;
   DB.appts = DB.appts || []; DB.tokens = DB.tokens || []; DB.bills = DB.bills || []; DB.users = DB.users || []; DB.audit = DB.audit || []; DB.session = DB.session || {};
   try { syncChildPicker(); } catch (e) {}
-  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock"].forEach(callRender);
+  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
 }
 window.addEventListener("resize", () => drawGrowthChart());
 
