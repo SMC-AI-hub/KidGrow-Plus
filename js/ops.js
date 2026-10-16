@@ -436,12 +436,40 @@ function renderDisplay() {
         <div class="disp-card nums"><div><b>${d.waiting.length}</b><small>waiting</small></div><div><b>${d.done}</b><small>done</small></div></div>
       </div>
     </div>
-    <div class="disp-foot no-print">
-      <button class="btn btn-o btn-sm" onclick="toggleDispMute()">${OPS.mute ? "🔇 Unmute bell" : "🔔 Mute bell"}</button>
-      <button class="btn btn-o btn-sm" onclick="document.getElementById('pg-display').requestFullscreen()">⛶ Full screen</button>
-      <span style="font-size:12px;opacity:.7">Auto-refreshes · press Esc to exit full screen</span>
-    </div></div>`;
+    ${displayFootHTML()}</div>`;
   tickDispClock();
+}
+/* Footer is a pure builder (tested) so the exit path can't silently regress. */
+function displayFootHTML() {
+  return `<div class="disp-foot no-print">
+      <button class="btn btn-o btn-sm" onclick="exitDisplay()">← Exit display</button>
+      <button class="btn btn-o btn-sm" onclick="toggleDispMute()">${OPS.mute ? "🔇 Unmute bell" : "🔔 Mute bell"}</button>
+      <button class="btn btn-o btn-sm" onclick="dispFullscreen()">⛶ Full screen</button>
+      <span style="font-size:12px;opacity:.7">Auto-refreshes · press Esc to exit</span>
+    </div>`;
+}
+/* The display page hides all app chrome (kiosk CSS) — this + Esc are the way back. */
+function exitDisplay() {
+  try {
+    const pg = document.getElementById("pg-display");
+    if (!pg || !pg.classList.contains("active")) return;
+    if (document.querySelector && document.querySelector(".modal-bg.open")) return;
+    if (typeof go === "function") go("dashboard");
+  } catch (e) {}
+}
+function displayEscHandler(e) {
+  if ((e && e.key) !== "Escape") return;
+  exitDisplay();
+}
+function dispFullscreen() {
+  try {
+    const el = document.getElementById("pg-display");
+    const p = el && el.requestFullscreen ? el.requestFullscreen() : null;
+    if (p && p.catch) p.catch(() => { try { toast("Full screen was blocked by the browser."); } catch (e) {} });
+  } catch (e) {}
+}
+if (typeof document !== "undefined" && document.addEventListener) {
+  document.addEventListener("keydown", displayEscHandler);
 }
 function tickDispClock() {
   const el = document.getElementById("dispClock");

@@ -1,5 +1,12 @@
 # Changelog
 
+## v10.10.3 — 2026-10-16 — Token Display exit (kiosk-trap fix)
+- 🐛 The Display page hides all app chrome but offered no way back — users were
+  stuck. Added a visible ← Exit display button, Esc-to-exit (works alongside
+  fullscreen: first Esc leaves fullscreen, second returns to Dashboard), and a
+  browser-blocked-fullscreen notice. Footer extracted as a tested pure builder.
+- Tests: 540/540 (343 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.10.2 — 2026-10-16 — Workflow-grouped navigation (8 sections, all 33 routes mapped)
 - 🗂️ Menu regrouped around work: Home · Patients · Clinic ops · Clinical care ·
   Immunization (vaccines + card + AEFI + stock together) · Specialty (NICU/eMAR) ·
