@@ -1149,7 +1149,18 @@ document.querySelectorAll(".modal-bg").forEach((m) => m.addEventListener("click"
 function printPage(id) {
   document.querySelectorAll(".page").forEach((p) => p.classList.remove("printing"));
   $(id).classList.add("printing");
-  if (id === "pg-growth") setTimeout(() => window.print(), 150); else window.print();
+  const go = () => { if (id === "pg-growth") setTimeout(() => window.print(), 150); else window.print(); };
+  try {
+    if (typeof Promise === "undefined") { go(); return; }
+    // Wait for embedded images (e.g. the six growth charts) to decode before
+    // opening the print dialog, so print preview never captures blank charts.
+    const imgs = [...($(id).querySelectorAll("img") || [])].filter((im) => !im.complete);
+    if (!imgs.length) { go(); return Promise.resolve(); }
+    return Promise.race([
+      Promise.all(imgs.map((im) => (typeof im.decode === "function" ? im.decode().catch(() => {}) : Promise.resolve()))),
+      new Promise((res) => setTimeout(res, 1500)),
+    ]).then(go, go);
+  } catch (e) { go(); return Promise.resolve(); }
 }
 function callRender(name) {
   try {

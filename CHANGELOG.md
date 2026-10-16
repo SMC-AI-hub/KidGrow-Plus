@@ -1,5 +1,19 @@
 # Changelog
 
+## v10.10.4 — 2026-10-16 — Comprehensive growth report: all charts guaranteed + full detail
+- 🐛 The comprehensive report could reach the printer before its six chart
+  images finished decoding, so print/PDF sometimes showed fewer charts.
+  `printPage` now waits for embedded images to decode (1.5 s safety timeout)
+  before opening the print dialog — all call sites benefit.
+- 📈 Report is now truly comprehensive: per-chart latest-%ile/z/grade
+  captions, full measurement history, interval-by-interval velocity with
+  norms, Tanner puberty snapshot + mid-parental target height, and a
+  references & methods note (WHO 0–5 exact · CDC/IAP 5–18 · ±0.7 cm rule ·
+  corrected-age rule). Missing charts render an explicit placeholder instead
+  of silent gaps; header shows an honest "n of 6" count.
+- Growth toolbar clarified: "Growth sheet (1 page)" vs "Full report (all charts)".
+- Tests: 553/553 (356 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.10.3 — 2026-10-16 — Token Display exit (kiosk-trap fix)
 - 🐛 The Display page hides all app chrome but offered no way back — users were
   stuck. Added a visible ← Exit display button, Esc-to-exit (works alongside
