@@ -501,6 +501,38 @@ async function main() {
   ok(sb.document.getElementById("billBody").innerHTML.includes("not configured"), "billing explains cloud-off state");
   sb.renderPricing();
   ok(sb.document.getElementById("pricingBody").innerHTML.includes("free trial") && sb.document.getElementById("pricingBody").innerHTML.includes("per clinic, per month"), "pricing renders logged-out CTA");
+
+  // ---- NICU discharge summary + handover ----
+  const nkAdmDone = { id: "admDone", admittedAt: "2026-10-02T08:00", dischargedAt: "2026-10-05T10:00", status: "discharged", outcome: "stable", indication: "RDS <script>", birthWtG: 2400, ga: 36, fuNote: "review after 3 days", rounds: [{ id: "r1", date: "2026-10-02", wtG: 2400, feeds: { totalMl: 60 }, events: ["CPAP"], note: "settling" }, { id: "r2", date: "2026-10-04", wtG: 2480, feeds: { totalMl: 180 }, events: ["CPAP", "phototherapy"], note: "better <x>" }] };
+  const nkAdmAct = { id: "admAct", admittedAt: "2026-10-08T08:00", status: "admitted", indication: "sepsis watch", birthWtG: 2500, ga: 37, rounds: [] };
+  const nkKid = { id: "nk1", name: "NICU Nina", dob: "2026-10-01", sex: "girl", father: "F", mother: "M", nicu: { admissions: [nkAdmAct, nkAdmDone] } };
+  ok(NP.dischargeSummaryData(nkKid, nkAdmAct, "2026-10-10") === null, "no summary while admitted");
+  const nsd = NP.dischargeSummaryData(nkKid, nkAdmDone, "2026-10-10");
+  ok(nsd.los === 4 && nsd.nRounds === 2, "summary aggregates LOS + rounds");
+  ok(nsd.wt.first === 2400 && nsd.wt.last === 2480 && nsd.wt.delta === 80, "summary weight trend +80g");
+  ok(nsd.events.length === 2 && nsd.events.includes("phototherapy"), "summary dedupes events");
+  ok(NP.weightTrend([]) === null && NP.outcomeLabel("referred").includes("transferred") && NP.outcomeLabel("") === "—", "trend/label edge cases");
+  const nsh = NP.dischargeSummaryHTML(nkKid, nkAdmDone, nsd);
+  ok(nsh.includes("NICU discharge summary") && nsh.includes("Stable — discharged home") && nsh.includes("review after 3 days"), "summary shows outcome + follow-up");
+  ok(!nsh.includes("<script>") && !nsh.includes("<x>") && nsh.includes("RDS"), "summary escapes clinical text");
+  ok(nsh.includes("Computer-assisted record") && nsh.includes("2026-10-04"), "summary branded + lists rounds");
+  ok(NP.dischargeSummaryHTML(nkKid, nkAdmAct, null) === "", "no summary HTML without data");
+  const nhList = NP.censusList([nkKid]);
+  ok(nhList.length === 1 && nhList[0].adm.id === "admAct", "handover census = active only");
+  const nhh = NP.handoverHTML(nhList, "2026-10-10");
+  ok(nhh.includes("shift handover") && nhh.includes("sepsis watch") && nhh.includes("DOL 10") && nhh.includes("round due"), "handover flags due round");
+  ok(NP.handoverHTML([], "2026-10-10").includes("census is clear"), "handover empty state");
+  ok(typeof sb.printNicuSummary === "function" && typeof sb.printNicuHandover === "function", "NICU print fns exposed");
+  vm.runInContext(`DB.children=${JSON.stringify([nkKid])}; DB.activeId='nk1';`, sb);
+  sb.printNicuSummary("admDone");
+  ok(sb.document.getElementById("nicuPrint").innerHTML.includes("NICU discharge summary"), "print summary fills doc");
+  sb.document.getElementById("nicuPrint").innerHTML = "";
+  sb.printNicuSummary("admAct");
+  ok(sb.document.getElementById("nicuPrint").innerHTML === "", "print summary refuses active admission");
+  sb.printNicuHandover();
+  ok(sb.document.getElementById("nicuPrint").innerHTML.includes("shift handover"), "print handover fills doc");
+  sb.renderNicu();
+  ok(sb.document.getElementById("nicuBox").innerHTML.includes("Shift handover") && sb.document.getElementById("nicuBox").innerHTML.includes("Discharge summary"), "NICU page offers both documents");
   vm.runInContext("DB.users=[]; DB.session={}; DB.tokens=[]; DB.bills=[]; DB.appts=[];", sb);
   const arow = SP.admToRow("m5", { id: "a1", admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36, status: "admitted", indication: "RDS" });
   ok(arow.local_id === "n_a1" && arow.patient_local_id === "c_m5" && arow.birth_weight_g === 2400, "admToRow maps");
