@@ -1,5 +1,36 @@
 # Changelog
 
+## v10.10.0 — 2026-10-16 — NICU documents + catch-up planner + lot picker
+- 🖨️ NICU discharge summary + shift handover (printable, letterhead, branded footer).
+  Follow-up advice captured at discharge; summaries refuse while still admitted.
+- 📋 Catch-up planner on the Vaccines page: missed doses sequenced with
+  earliest-possible dates (≥28 d between visits + after same-series doses),
+  one-tap Record, rotavirus eligibility flag, IAP-verify disclaimer. Exact
+  per-antigen minimum intervals quarantined for M7 pediatric sign-off.
+- 💉 Stock lot picker in both dose modals (qty/expiry badges, expired lots
+  visible-but-disabled, given-elsewhere opt-out, batch autofill). Fixes combo
+  over-deduction: one shot = exactly one deduction, lot ID stamped on record.
+- Tests: 522/522 (325 offline + 107 isolation + 52 hardening + 38 api).
+
+## v10.9.0 — 2026-10-16 — Billing center
+- 💎 Pricing page (public) + 💳 Billing page (Doctor/Admin only): live
+  subscription status, renews date, invoice table, past-due recovery,
+  cancel-at-period-end (access runs to term, webhook flips status).
+- Server: `api/billing-info` + `api/cancel-subscription` (authed, tenant-safe).
+- Tests: 482/482.
+
+## v10.8.0 — 2026-10-16 — Consult workflow: dup-dose guard → header → timeline → role dashboards
+- Unified patient header on 12 clinical screens; unified patient timeline;
+  per-role dashboards (doctor/nurse/pharmacist/reception/admin) with first-name
+  greeting; same-day duplicate-dose block + overwrite confirm.
+- Tests: 413/413 → 450/450.
+
+## v10.7.0 — 2026-10-15 — Go-live hardening + clinical validation
+- FHIR subpath routing fix, billing schema-order fix, hostname-aware
+  staging/prod config, EMR usability audit (11/20 strict), sex-tolerant growth
+  refs, expired-stock guard.
+- Tests: 385/385 → 405/405.
+
 ## v10.6.0 — 2026-10-14 — Formulary review + handoff
 - 📚 Formulary review workflow (C1 → partial): per-drug source/edition sign-off page,
   ⚠️ unverified badges in the prescription picker + dose calc, structural validation
