@@ -362,3 +362,6 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
 /* unified patient header (one per clinical screen) */
 .ph-card{padding:8px 12px;margin-bottom:12px;border-left:4px solid var(--teal)}
 .ph-card:empty{display:none}
+/* role dashboard stat rows */
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}
+@media(max-width:700px){.statrow{grid-template-columns:1fr}}

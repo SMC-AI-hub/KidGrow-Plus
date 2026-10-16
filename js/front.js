@@ -3,10 +3,12 @@
    PIN login + roles · audit trail · token queue ·
    billing & receipts · users management.
    ===================================================== */
-const ROLE_RANK = { Doctor: 3, Nurse: 2, Frontdesk: 1 };
+const ROLE_RANK = { Doctor: 3, Admin: 3, Nurse: 2, Pharmacist: 2, Frontdesk: 1 };
 const ROLE_HIDE = {
   Frontdesk: ["milestones", "growth", "visits", "timeline", "rx", "analytics", "reports", "users", "settings", "nb", "labs", "aefi", "screen", "diet", "consent", "export", "nicu", "mar", "calc", "mrd", "formulary"],
   Nurse: ["users", "settings"],
+  Pharmacist: ["users", "settings", "front", "export", "mrd"],
+  Admin: [],
 };
 
 /* ---------------- auth ---------------- */
@@ -21,7 +23,7 @@ function currentUser() {
 function myRank() { const u = currentUser(); return u ? (ROLE_RANK[u.role] || 0) : 0; }
 function need(rank, what) {
   if (myRank() >= rank) return true;
-  alert(`🔒 ${what ? what[0].toUpperCase() + what.slice(1) : "This action"} needs ${rank === 3 ? "Doctor" : "Nurse or Doctor"} access.`);
+  alert(`🔒 ${what ? what[0].toUpperCase() + what.slice(1) : "This action"} needs ${rank === 3 ? "Doctor or Admin" : "Nurse, Pharmacist, Doctor or Admin"} access.`);
   return false;
 }
 function roleBlock(page) {
@@ -336,7 +338,7 @@ function renderUsers() {
       <div class="form-grid">
         <input type="hidden" id="uId">
         <div><label>Name</label><input id="uName" placeholder="e.g. Dr. Sharma"></div>
-        <div><label>Role</label><select id="uRole"><option>Doctor</option><option>Nurse</option><option>Frontdesk</option></select></div>
+        <div><label>Role</label><select id="uRole"><option>Doctor</option><option>Nurse</option><option>Pharmacist</option><option>Frontdesk</option><option>Admin</option></select></div>
         <div><label>PIN (4+ digits)</label><input id="uPin" type="password" inputmode="numeric" placeholder="••••"></div>
         <div style="align-self:end"><button class="btn btn-p btn-sm" onclick="saveUser()">＋ Save user</button></div>
       </div>
