@@ -71,10 +71,90 @@ function censusList(children) {
   });
   return out;
 }
+function numG(v) { var n = +v; return (v == null || v === "" || isNaN(n)) ? null : n; }
+function weightTrend(rounds) {
+  var wts = (rounds || []).map(function (r) { return numG(r && r.wtG); }).filter(function (w) { return w != null; });
+  if (!wts.length) return null;
+  return { first: wts[0], last: wts[wts.length - 1], delta: wts[wts.length - 1] - wts[0] };
+}
+function eventsUnion(rounds) {
+  var seen = {}, out = [];
+  (rounds || []).forEach(function (r) {
+    (r.events || []).forEach(function (e) {
+      e = String(e || "").trim();
+      if (e && !seen[e]) { seen[e] = 1; out.push(e); }
+    });
+  });
+  return out;
+}
+function outcomeLabel(o) {
+  return o === "stable" ? "Stable — discharged home"
+    : o === "against advice" ? "Discharge against medical advice"
+    : o === "referred" ? "Referred / transferred to higher centre"
+    : o === "expired" ? "Expired" : (o || "—");
+}
+// null for active admissions — summaries print only after discharge.
+function dischargeSummaryData(c, adm, today) {
+  if (!adm || adm.status === "admitted") return null;
+  var rounds = adm.rounds || [];
+  return {
+    admitted: String(adm.admittedAt || "").slice(0, 10),
+    discharged: String(adm.dischargedAt || "").slice(0, 10),
+    los: losDays(adm.admittedAt, adm.dischargedAt, today),
+    nRounds: rounds.length,
+    wt: weightTrend(rounds),
+    events: eventsUnion(rounds),
+    outcome: adm.outcome || ""
+  };
+}
+function roundRowsHTML(rounds) {
+  return (rounds || []).map(function (r) {
+    return "<tr><td>" + esc(r.date) + "</td><td>" + esc(r.wtG || "—") + "</td><td>" + esc((r.feeds && r.feeds.totalMl) || "—") + "</td><td>" + esc((r.events || []).join(", ") || "—") + "</td><td>" + esc(r.note || "") + "</td></tr>";
+  }).join("");
+}
+function dischargeSummaryHTML(c, adm, d) {
+  if (!d) return "";
+  var wtLine = d.wt
+    ? ("First recorded " + d.wt.first + " g → last " + d.wt.last + " g (" + (d.wt.delta >= 0 ? "+" : "") + d.wt.delta + " g)")
+    : "No weights recorded";
+  return clinicHeader() + childHeader(c)
+    + "<div class='doc-title'>NICU discharge summary</div>"
+    + "<dl class='kv'><dt>Admitted</dt><dd>" + esc(fmtDate(d.admitted)) + " · " + esc(adm.indication || "—") + "</dd>"
+    + "<dt>Discharged</dt><dd>" + esc(fmtDate(d.discharged)) + " · LOS " + d.los + " day(s) · " + d.nRounds + " round(s)</dd>"
+    + "<dt>Birth wt / GA</dt><dd>" + (adm.birthWtG ? esc(String(adm.birthWtG)) + " g" : "—") + (adm.ga ? " · " + esc(String(adm.ga)) + " wk" : "") + "</dd>"
+    + "<dt>Weight course</dt><dd>" + esc(wtLine) + "</dd>"
+    + "<dt>Events</dt><dd>" + (d.events.length ? esc(d.events.join(", ")) : "none recorded") + "</dd>"
+    + "<dt>Outcome</dt><dd><b>" + esc(outcomeLabel(d.outcome)) + "</b></dd></dl>"
+    + ((adm.rounds || []).length ? "<table class='tbl'><tr><th>Date</th><th>Wt(g)</th><th>Feeds(mL)</th><th>Events</th><th>Note</th></tr>" + roundRowsHTML(adm.rounds) + "</table>" : "")
+    + (adm.fuNote ? "<div style='margin-top:10px;font-size:13.5px'><b>Follow-up:</b> " + esc(adm.fuNote) + "</div>" : "")
+    + docFooter("NICU discharge summary");
+}
+function handoverHTML(entries, today) {
+  var head = clinicHeader() + "<div class='doc-title'>NICU shift handover — " + esc(fmtDate(today)) + "</div>";
+  if (!entries || !entries.length) {
+    return head + "<div class='card'><div class='hint'>No active NICU admissions — census is clear.</div></div>" + docFooter("NICU handover");
+  }
+  var rows = entries.map(function (e) {
+    var c = e.child, a = e.adm, rounds = a.rounds || [], last = rounds[rounds.length - 1] || null;
+    var due = !rounds.some(function (r) { return r && r.date === today; });
+    var dol = (c.dob && today) ? (dayDiff(c.dob, today) + 1) : "—";
+    var lastCell = last
+      ? esc(last.date) + " · " + (last.wtG ? esc(String(last.wtG)) + " g" : "no wt") + ((last.feeds && last.feeds.totalMl) ? " · " + esc(String(last.feeds.totalMl)) + " mL" : "") + ((last.events || []).length ? "<br>" + esc(last.events.join(", ")) : "")
+      : "no rounds yet";
+    return "<tr><td><b>" + esc(c.name) + "</b><br><span style='font-size:12px'>DOL " + dol + " · day " + losDays(a.admittedAt, null, today) + "</span></td>"
+      + "<td>" + esc(a.indication || "—") + "<br><span style='font-size:12px'>" + (a.birthWtG ? esc(String(a.birthWtG)) + " g" : "") + (a.ga ? " · " + esc(String(a.ga)) + " wk" : "") + "</span></td>"
+      + "<td style='font-size:12.5px'>" + lastCell + "</td>"
+      + "<td>" + (due ? "<b style='color:var(--red)'>round due</b>" : "✅") + "</td></tr>";
+  }).join("");
+  return head + "<table class='tbl'><tr><th>Baby</th><th>Indication</th><th>Last round</th><th>Status</th></tr>" + rows + "</table>" + docFooter("NICU handover");
+}
 window.NicuPure = {
   losDays: losDays, activeAdmissions: activeAdmissions, roundsDue: roundsDue,
   admissionValid: admissionValid, dischargeValid: dischargeValid, roundValid: roundValid,
-  feedGuide: feedGuide, censusList: censusList
+  feedGuide: feedGuide, censusList: censusList,
+  weightTrend: weightTrend, eventsUnion: eventsUnion, outcomeLabel: outcomeLabel,
+  dischargeSummaryData: dischargeSummaryData, dischargeSummaryHTML: dischargeSummaryHTML,
+  handoverHTML: handoverHTML
 };
 
 /* ---------------- data helpers ---------------- */
@@ -119,14 +199,16 @@ function renderNicu() {
           "<div><label>Round note</label><input id='nrNote' placeholder='stable, advancing feeds'></div>" +
           "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap'><button class='btn btn-p btn-sm' onclick='saveNicuRound()'>+ Save round</button>" +
           "<button class='btn btn-o btn-sm' onclick='showDischarge()'>Discharge…</button></div><div id='disBox'></div>"
-        : "<div class='hint'>Outcome: " + esc(a.outcome || "—") + " · discharged " + esc(String(a.dischargedAt || "").slice(0, 10)) + "</div>") +
+        : "<div class='hint'>Outcome: " + esc(a.outcome || "—") + " · discharged " + esc(String(a.dischargedAt || "").slice(0, 10)) + "</div>" +
+          "<div style='margin-top:8px'><button class='btn btn-o btn-sm' onclick=\"printNicuSummary('" + a.id + "')\">🖨️ Discharge summary</button></div>") +
       "</div>";
   }).join("");
   var dol = c.dob ? dayDiff(c.dob, today) + 1 : 1;
   var lm = (typeof latestMeasure === "function") ? latestMeasure(c) : null;
   var fg = feedGuide(dol, (lm && lm.wt) || (c.birthWt ? +c.birthWt : 0));
   box.innerHTML = "<div class='card'><h3>🏥 NICU — " + esc(c.name) + "</h3>" +
-    "<div class='hint'>Day of life " + dol + " · feed guide: <b>" + fg.mlPerKg + " mL/kg/day</b> (≈" + fg.totalMl + " mL/day, " + fg.perFeedQ3h + " mL q3h) — " + esc(fg.note) + "</div></div>" +
+    "<div class='hint'>Day of life " + dol + " · feed guide: <b>" + fg.mlPerKg + " mL/kg/day</b> (≈" + fg.totalMl + " mL/day, " + fg.perFeedQ3h + " mL q3h) — " + esc(fg.note) + "</div>" +
+    "<div style='margin-top:8px'><button class='btn btn-o btn-sm' onclick='printNicuHandover()'>🖨️ Shift handover</button></div></div>" +
     (act ? "" : "<div class='card'><h3>+ New admission</h3><div class='form-grid'>" +
       "<div><label>Admitted (date/time)</label><input type='datetime-local' id='naAt'></div>" +
       "<div><label>Birth weight (g)</label><input type='number' id='naWt' placeholder='2400'></div>" +
@@ -171,6 +253,7 @@ window.showDischarge = function () {
   var box = $("disBox"); if (!box) return;
   box.innerHTML = "<div class='form-grid' style='margin-top:8px'><div><label>Discharged (date/time)</label><input type='datetime-local' id='ndAt'></div>" +
     "<div><label>Outcome</label><select id='ndOut'><option value=''>—</option><option>stable</option><option>against advice</option><option>referred</option><option>expired</option></select></div></div>" +
+    "<div style='margin-top:6px'><label>Follow-up advice (optional — prints on summary)</label><input id='ndFu' placeholder='review after 3 days; exclusive breastfeeds; warmth'></div>" +
     "<button class='btn btn-d btn-sm' style='margin-top:8px' onclick='dischargeNicu()'>Confirm discharge</button>";
 };
 window.dischargeNicu = function () {
@@ -181,8 +264,28 @@ window.dischargeNicu = function () {
   if (errs.length) { alert(errs.join("\n")); return; }
   act.status = trial.outcome === "expired" ? "expired" : trial.outcome === "referred" ? "transferred" : "discharged";
   act.dischargedAt = trial.dischargedAt; act.outcome = trial.outcome;
+  var fuEl = $("ndFu"); act.fuNote = (fuEl && fuEl.value) ? fuEl.value.trim() : "";
   try { if (typeof auditSafe === "function") auditSafe("NICU discharge", c.name + " — " + act.outcome); } catch (e) {}
   save(); renderAll();
+};
+window.printNicuSummary = function (admId) {
+  var box = $("nicuPrint"); if (!box) return;
+  var c = child(); if (!c) return;
+  var adm = (nicuOf(c).admissions || []).filter(function (a) { return a.id === admId; })[0];
+  if (!adm) return;
+  if (adm.status === "admitted") { alert("This baby is still admitted — the discharge summary prints after discharge."); return; }
+  var today = (typeof todayISO === "function") ? todayISO() : "";
+  box.innerHTML = dischargeSummaryHTML(c, adm, dischargeSummaryData(c, adm, today));
+  try { if (typeof printPage === "function") printPage("pg-nicuprint"); } catch (e) {}
+};
+window.printNicuHandover = function () {
+  var box = $("nicuPrint"); if (!box) return;
+  var kids = (typeof DB !== "undefined" && DB.children) || [];
+  var list = censusList(kids);
+  if (!list.length) { alert("No active NICU admissions — nothing to hand over."); return; }
+  var today = (typeof todayISO === "function") ? todayISO() : "";
+  box.innerHTML = handoverHTML(list, today);
+  try { if (typeof printPage === "function") printPage("pg-nicuprint"); } catch (e) {}
 };
 
 })();
