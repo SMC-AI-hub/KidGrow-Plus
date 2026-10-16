@@ -1,5 +1,19 @@
 # Changelog
 
+## v10.10.5 — 2026-10-16 — Type-ahead patient search + duplicate-registration guard (Build A)
+- 🔍 Children-page search is now ranked type-ahead: every word must match
+  across name, parents, phone (digit-normalized), ABHA and DOB year, with
+  name hits outranking parent hits, recent patients first, and a "matched:"
+  note on each card explaining why it hit. Empty query lists recents first.
+- ⌨️ Keyboard-first: `/` jumps to patient search from anywhere (ignored while
+  typing or with a modal open), ↓/Enter opens the top hit, arrows move across
+  cards, Enter opens the focused card, Esc clears. Focusable cards use the
+  standard focus ring; listbox/option roles added.
+- ⚠️ Registration screens for duplicates (same name+DOB or phone+DOB = strong;
+  same name alone = verify) and asks for confirmation before saving a likely
+  duplicate — edits exclude self.
+- Tests: 573/573 (376 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.10.4 — 2026-10-16 — Comprehensive growth report: all charts guaranteed + full detail
 - 🐛 The comprehensive report could reach the printer before its six chart
   images finished decoding, so print/PDF sometimes showed fewer charts.

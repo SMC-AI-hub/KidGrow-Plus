@@ -40,7 +40,7 @@ body{font-family:"Inter","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"Not
 [data-theme="dark"] ::-webkit-scrollbar-thumb{background:#2c4768}
 a{color:var(--teal-d)}
 button{font-family:inherit;cursor:pointer}
-:where(button,a,input,select,textarea):focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:8px}
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:8px}
 input,select,textarea{font-family:inherit;font-size:14px;padding:10px 12px;border:1.5px solid var(--line);border-radius:11px;background:var(--input);color:var(--ink);width:100%;transition:border-color .15s,box-shadow .15s}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.18)}
 input:disabled{opacity:.6;cursor:not-allowed}
