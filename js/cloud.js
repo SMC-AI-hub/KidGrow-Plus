@@ -332,6 +332,117 @@ function subscribe() {
     .catch(function (e) { toast(e.message || "Could not start payment."); });
 }
 
+/* ---------------- billing center ---------------- */
+var billCache = null;
+function fmtINR(n) { try { return "₹" + Number(n || 0).toLocaleString("en-IN"); } catch (e) { return "₹" + n; } }
+function fmtDT(iso) { try { if (!iso) return "—"; return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return "—"; } }
+function billStatusLabel(a, p) {
+  if (!a || !a.ok) return (a && a.reason === "pending") ? "Completing payment…" : "Expired";
+  if (a.reason === "active") return "Active" + ((p && p.current_period_end) ? " · renews " + fmtDT(p.current_period_end) : "");
+  if (a.reason === "past_due") return "Past due — update payment";
+  if (a.reason === "trial") return "Free trial" + ((a.daysLeft != null) ? " · " + a.daysLeft + " day(s) left" : "");
+  if (a.reason === "grace") return "Offline grace";
+  return a.reason || "";
+}
+function billInfoHTML(info, a) {
+  var prof = (info && info.profile) || profile || {};
+  var head = '<div class="card"><h3>💳 Subscription</h3>'
+    + '<dl class="kv"><dt>Plan</dt><dd><b>' + esc(PLAN_NAME) + "</b> · " + esc(PLAN_PRICE || "—") + "</dd>"
+    + "<dt>Status</dt><dd><b>" + esc(billStatusLabel(a, prof)) + "</b></dd>"
+    + ((info && info.email) ? "<dt>Account</dt><dd>" + esc(info.email) + "</dd>" : "")
+    + ((info && info.subscription) ? "<dt>Renews</dt><dd>" + esc(fmtDT(info.subscription.current_end || info.subscription.charge_at)) + "</dd>"
+      + "<dt>Payments</dt><dd>" + esc(String(info.subscription.paid_count)) + " paid" + (info.subscription.remaining_count ? " · " + esc(String(info.subscription.remaining_count)) + " to go" : "") + "</dd>" : "")
+    + "</dl>";
+  if (!info || info.error) {
+    return head + '<div class="hint">Could not load live billing details (offline or unreachable).</div>'
+      + '<button class="btn btn-o btn-sm" onclick="Cloud.refreshBilling()">↻ Retry</button></div>';
+  }
+  var body = head;
+  if (a && a.ok && a.reason === "past_due") {
+    body += '<div class="alert a-amber">⚠️ <div><b>Last payment failed.</b> Update your payment method to stay subscribed — access continues during retry.</div></div>'
+      + '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">Update payment</button> ';
+  } else if (!a || !a.ok) {
+    body += '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">Subscribe now</button> ';
+  } else if (a.reason === "trial") {
+    body += '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">Subscribe now</button> ';
+  }
+  if (info.subscription && (a.ok && (a.reason === "active" || a.reason === "past_due"))) {
+    body += '<button class="btn btn-o btn-sm" onclick="Cloud.cancelSub()">Cancel subscription</button> ';
+  }
+  body += '<button class="btn btn-o btn-sm" onclick="Cloud.refreshBilling()">↻ Refresh</button></div>';
+  body += '<div class="card"><h3>🧾 Invoices</h3>';
+  if (!info.invoices || !info.invoices.length) {
+    body += '<div class="hint">No invoices yet — they appear here after each successful charge. GST invoices are emailed by Razorpay after every payment.</div>';
+  } else {
+    body += "<table class=\"tbl\"><tr><th>Date</th><th>Amount</th><th>Status</th><th></th></tr>" + info.invoices.map(function (v) {
+      return "<tr><td>" + esc(fmtDT(v.date)) + "</td><td>" + esc(fmtINR(v.amount)) + "</td>"
+        + "<td>" + (v.status === "paid" ? '<span class="badge b-green">paid</span>' : v.status === "failed" ? '<span class="badge b-red">failed</span>' : esc(v.status || "—")) + "</td>"
+        + "<td>" + (v.short_url ? '<a href="' + esc(v.short_url) + '" target="_blank" rel="noopener">Download</a>' : "—") + "</td></tr>";
+    }).join("") + "</table>";
+  }
+  return body + "</div>";
+}
+function renderBilling() {
+  var el = $("billBody"); if (!el) return;
+  if (!Cloud.enabled) { el.innerHTML = '<div class="card"><h3>💳 Billing</h3><div class="hint">Cloud is not configured on this device.</div></div>'; return; }
+  if (!session) {
+    el.innerHTML = '<div class="card"><h3>💳 Billing</h3><div class="hint">Sign in to manage your subscription and invoices.</div>'
+      + '<button class="btn btn-p btn-sm" onclick="Cloud.showAuth(\'login\')">Sign in</button></div>';
+    return;
+  }
+  var a = currentAccess();
+  if (!billCache) {
+    el.innerHTML = billStatusCard(a) + '<div class="hint">Loading billing details…</div>';
+    fetch("/api/billing-info", { headers: { Authorization: "Bearer " + session.access_token } })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) { billCache = x.ok ? x.j : { error: true }; renderBilling(); })
+      .catch(function () { billCache = { error: true }; renderBilling(); });
+    return;
+  }
+  el.innerHTML = billInfoHTML(billCache.error ? null : billCache, a);
+}
+function billStatusCard(a) {
+  return '<div class="card"><h3>💳 Subscription</h3><dl class="kv"><dt>Plan</dt><dd><b>' + esc(PLAN_NAME) + "</b> · " + esc(PLAN_PRICE || "—") + "</dd>"
+    + "<dt>Status</dt><dd><b>" + esc(billStatusLabel(a, profile)) + "</b></dd></dl></div>";
+}
+function cancelSub() {
+  if (!Cloud.enabled || !session) { showAuth("login"); return; }
+  if (!window.confirm("Cancel your subscription?\n\nYou keep full access until the end of the current billing period.")) return;
+  toast("Cancelling…");
+  fetch("/api/cancel-subscription", { method: "POST", headers: { Authorization: "Bearer " + session.access_token } })
+    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+    .then(function (x) {
+      if (!x.ok) throw new Error((x.j && x.j.error) || "Cancel failed.");
+      billCache = null;
+      toast("Cancelled — access continues till period end.");
+      fetchStatus().then(renderBilling);
+    })
+    .catch(function (e) { toast(e.message || "Could not cancel."); });
+}
+function renderPricing() {
+  var el = $("pricingBody"); if (!el) return;
+  var cta = "";
+  if (!session) {
+    cta = '<button class="btn btn-p" style="width:100%" onclick="Cloud.showAuth(\'signup\')">Start ' + TRIAL_DAYS + '-day free trial</button>'
+      + '<div style="margin-top:10px;font-size:13px">Have an account? <a href="#" onclick="Cloud.showAuth(\'login\');return false">Sign in</a></div>';
+  } else {
+    var a = currentAccess();
+    if (a.ok && (a.reason === "active" || a.reason === "past_due")) cta = '<div class="alert a-green">✅ <div>You are subscribed. Manage everything from <a href="#" onclick="go(\'billing\');return false">Billing</a>.</div></div>';
+    else if (a.ok && a.reason === "trial") cta = '<div class="alert a-blue">🎁 <div>Trial active — <b>' + a.daysLeft + ' day(s) left</b>.</div></div><button class="btn btn-p" style="width:100%;margin-top:8px" onclick="Cloud.subscribe()">Subscribe now</button>';
+    else cta = '<button class="btn btn-p" style="width:100%" onclick="Cloud.subscribe()">Subscribe now</button>';
+  }
+  el.innerHTML = '<div class="card" style="max-width:520px;margin:0 auto"><div style="text-align:center"><div style="font-size:40px">💎</div><h2 style="margin:4px 0">' + esc(PLAN_NAME) + '</h2>'
+    + '<div style="font-size:30px;font-weight:800;color:var(--navy)">' + esc(PLAN_PRICE || "—") + '</div><div class="hint">per clinic, per month · cancel anytime</div></div>'
+    + '<div style="font-size:14px;margin:14px 0">✓ Unlimited children & records<br>✓ Automatic cloud backup + multi-device sync<br>✓ WhatsApp reminders & vaccine alerts<br>✓ Growth charts (WHO/CDC) & eMAR<br>✓ Works offline — syncs when online</div>'
+    + cta + "</div>"
+    + '<div class="card" style="max-width:520px;margin:12px auto"><h3>Questions</h3><dl class="kv">'
+    + "<dt>Free trial?</dt><dd>" + TRIAL_DAYS + " days, full access, no card required.</dd>"
+    + "<dt>Cancel?</dt><dd>Anytime from Billing — access runs till period end.</dd>"
+    + "<dt>Payment fails?</dt><dd>We retry automatically; you keep access meanwhile.</dd>"
+    + "<dt>My data?</dt><dd>Yours. Export anytime; GST invoices emailed per payment.</dd>"
+    + "</dl></div>";
+}
+
 /* ---------------- public API ---------------- */
 var Cloud = {
   enabled: false,
@@ -374,11 +485,17 @@ var Cloud = {
   _confUp: function () { var m = $("mConflict"); if (m) m.remove(); pushNow(true); },
   _confDown: function () { var m = $("mConflict"); if (m) m.remove(); if (Cloud._confData) applySnapshot(Cloud._confData); },
   // test hooks (pure logic)
+  cancelSub: cancelSub,
+  refreshBilling: function () { billCache = null; renderBilling(); },
   _access: accessFor,
   _trialLeft: trialLeft,
-  _hash: hashStr
+  _hash: hashStr,
+  _billInfoHTML: billInfoHTML,
+  _billStatusLabel: billStatusLabel
 };
 window.Cloud = Cloud;
+window.renderBilling = renderBilling;
+window.renderPricing = renderPricing;
 window.CloudSchedulePush = schedulePush;
 
 })();

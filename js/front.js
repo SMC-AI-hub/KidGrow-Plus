@@ -5,9 +5,9 @@
    ===================================================== */
 const ROLE_RANK = { Doctor: 3, Admin: 3, Nurse: 2, Pharmacist: 2, Frontdesk: 1 };
 const ROLE_HIDE = {
-  Frontdesk: ["milestones", "growth", "visits", "timeline", "rx", "analytics", "reports", "users", "settings", "nb", "labs", "aefi", "screen", "diet", "consent", "export", "nicu", "mar", "calc", "mrd", "formulary"],
-  Nurse: ["users", "settings"],
-  Pharmacist: ["users", "settings", "front", "export", "mrd"],
+  Frontdesk: ["milestones", "growth", "visits", "timeline", "rx", "analytics", "reports", "users", "settings", "nb", "labs", "aefi", "screen", "diet", "consent", "export", "nicu", "mar", "calc", "mrd", "formulary", "billing"],
+  Nurse: ["users", "settings", "billing"],
+  Pharmacist: ["users", "settings", "front", "export", "mrd", "billing"],
   Admin: [],
 };
 
