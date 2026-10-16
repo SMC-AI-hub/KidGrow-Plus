@@ -27,6 +27,7 @@
     <nav class="nav" id="sideNav">
       <div class="nav-group">Overview</div>
       <button data-page="dashboard" class="active"><span class="ic">📊</span>Dashboard</button>
+      <button data-page="pricing"><span class="ic">💎</span>Pricing</button>
       <div class="nav-group">Clinic flow</div>
       <button data-page="children"><span class="ic">🧒</span>Children</button>
       <button data-page="nb"><span class="ic">👶</span>Newborn</button>
@@ -61,6 +62,7 @@
       <div class="nav-group">System</div>
       <button data-page="users"><span class="ic">👥</span>Users & Audit</button>
       <button data-page="settings"><span class="ic">⚙️</span>Settings</button>
+      <button data-page="billing"><span class="ic">💳</span>Billing</button>
     </nav>
     <div id="userChip"></div>
     <div class="side-foot"><b>KidGrow Pro v10</b> · Oct 2026<br>IAP ACVIP 2023-24 · WHO MGRS 2006 (0–5y) · IAP 2015 (5–18y)<br>Screening aid — clinical judgement prevails.</div>
@@ -84,6 +86,16 @@
 
     <div class="content">
       <!-- ======== DASHBOARD ======== -->
+      <!-- PRICING -->
+      <section class="page bigpage" id="pg-pricing">
+        <div id="pricingBody"></div>
+      </section>
+
+      <!-- BILLING -->
+      <section class="page bigpage" id="pg-billing">
+        <div id="billBody"></div>
+      </section>
+
       <section class="page active" id="pg-dashboard">
         <div class="hero no-print" id="dashHero"></div>
         <div class="toolbar"><span class="badge b-teal">● IAP Standards Edition</span><span class="badge b-gray" id="dashChildTag"></span><span class="sp"></span>

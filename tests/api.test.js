@@ -86,6 +86,73 @@ async function main() {
   if (fSaved.url === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = fSaved.url;
   if (fSaved.key === undefined) delete process.env.SUPABASE_ANON_KEY; else process.env.SUPABASE_ANON_KEY = fSaved.key;
 
+  // ---- billing center: billing-info + cancel-subscription ----
+  const billInfo = require("../api/billing-info.js");
+  const billCancel = require("../api/cancel-subscription.js");
+  ok(typeof billInfo === "function" && typeof billCancel === "function", "billing handlers load");
+  process.env.SUPABASE_URL = "https://MARKER_URL_xyz.supabase.co";
+  process.env.SUPABASE_ANON_KEY = "MARKER_ANON_KEY_abc123";
+  process.env.SUPABASE_SERVICE_KEY = "MARKER_SERVICE_KEY_def456";
+  process.env.RAZORPAY_KEY_ID = "rzp_MARKER_KEY";
+  process.env.RAZORPAY_KEY_SECRET = "MARKER_SECRET_ghi789";
+  const J = (o) => ({ ok: true, json: async () => o });
+  const J401 = () => ({ ok: false, json: async () => ({}) });
+  const billFetch = (profile) => async (url) => {
+    if (String(url).includes("/auth/v1/user")) return J({ id: "u-bill-1", email: "doc@clinic.in" });
+    if (String(url).includes("/rest/v1/profiles")) return J([profile]);
+    if (String(url).includes("/subscriptions/sub_9/invoices") || String(url).includes("/invoices?")) {
+      return J({ items: [
+        { id: "inv_1", date: 1760486400, status: "paid", gross_amount: 49900, currency: "INR", short_url: "https://rzp.io/i/one" },
+        { id: "inv_0", date: 1757808000, status: "paid", gross_amount: 49900, currency: "INR", short_url: "https://rzp.io/i/zero" },
+      ] });
+    }
+    if (String(url).includes("/subscriptions/")) {
+      if (String(url).includes("/cancel")) return J({ id: "sub_9" });
+      return J({ id: "sub_9", status: "active", charge_at: 1763078400, current_end: 1763078400, paid_count: 3, remaining_count: 57 });
+    }
+    return J({});
+  };
+  const fullProfile = { sub_status: "active", trial_ends_at: null, current_period_end: "2026-11-14T00:00:00.000Z", razorpay_sub_id: "sub_9", razorpay_customer_id: "cust_9" };
+  const rB401 = mkRes();
+  await billInfo({ method: "GET", headers: {} }, rB401);
+  ok(rB401._s === 401, "billing-info needs session");
+  const rB405 = mkRes();
+  await billInfo({ method: "POST", headers: { authorization: "Bearer x" } }, rB405);
+  ok(rB405._s === 405, "billing-info GET only");
+  global.fetch = billFetch(fullProfile);
+  const rB = mkRes();
+  await billInfo({ method: "GET", headers: { authorization: "Bearer USER_JWT" } }, rB);
+  global.fetch = realFetch;
+  ok(rB._s === 200 && rB._b.sub_status === "active" && rB._b.subscription.status === "active", "billing-info returns status + subscription");
+  ok(rB._b.invoices.length === 2 && rB._b.invoices[0].amount === 499 && rB._b.invoices[0].short_url === "https://rzp.io/i/one", "billing-info lists invoices with links");
+  ok(!/MARKER/.test(JSON.stringify(rB._b)), "billing-info leaks no key material (marker scan)");
+  global.fetch = billFetch({ sub_status: "trialing", razorpay_sub_id: "" });
+  const rBT = mkRes();
+  await billInfo({ method: "GET", headers: { authorization: "Bearer USER_JWT" } }, rBT);
+  global.fetch = realFetch;
+  ok(rBT._s === 200 && rBT._b.subscription === null && rBT._b.invoices.length === 0, "billing-info trial has no subscription");
+  global.fetch = async (url) => (String(url).includes("/auth/v1/user") ? J401() : J({}));
+  const rBU = mkRes();
+  await billInfo({ method: "GET", headers: { authorization: "Bearer STALE" } }, rBU);
+  global.fetch = realFetch;
+  ok(rBU._s === 401, "billing-info rejects stale session");
+  const rC401 = mkRes();
+  await billCancel({ method: "POST", headers: {} }, rC401);
+  ok(rC401._s === 401, "cancel needs session");
+  const rC405 = mkRes();
+  await billCancel({ method: "GET", headers: { authorization: "Bearer x" } }, rC405);
+  ok(rC405._s === 405, "cancel POST only");
+  global.fetch = billFetch(fullProfile);
+  const rC = mkRes();
+  await billCancel({ method: "POST", headers: { authorization: "Bearer USER_JWT" } }, rC);
+  global.fetch = realFetch;
+  ok(rC._s === 200 && rC._b.ok === true && rC._b.cancel_at_cycle_end === true, "cancel at cycle end ok");
+  global.fetch = billFetch({ sub_status: "trialing", razorpay_sub_id: "" });
+  const rCN = mkRes();
+  await billCancel({ method: "POST", headers: { authorization: "Bearer USER_JWT" } }, rCN);
+  global.fetch = realFetch;
+  ok(rCN._s === 400, "cancel with no subscription rejected");
+
   for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
   Object.assign(process.env, saved);
 
