@@ -19,7 +19,7 @@ TypeScript/React migration is deferred to M8 and only if justified by team size.
 | RLS tenant isolation + isolation tests | ❌ | **M1 (this turn)** |
 | Server RBAC, MFA, break-glass, audit (tamper-evident) | ❌ (local only) | M3 |
 | NICU longitudinal, MAR, fluids/nutrition calc | ✅ (M5 2026-10-13; calculators await M7 UAT) | M5 |
-| Wards/beds, handover, discharge, analytics | ❌ | M5–M6 |
+| Wards/beds, handover, discharge, analytics | ⚠️ partial (handover + NICU discharge summary ✅ 2026-10-16; wards/beds still missing) | M5–M6 |
 | Plans/quotas/suspension-grace billing | ⚠️ single plan only | M3 |
 | Backups tested, RPO/RTO, staging env | ❌ | M2 |
 | FHIR/ICD/LOINC/ABDM | ❌ | M6 |
