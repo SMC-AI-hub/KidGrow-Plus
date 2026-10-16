@@ -598,6 +598,16 @@ async function main() {
   ok(roleDefs.length === 1 && roleDefs[0] === "js/front.js", "exactly one applyRole (front.js)");
   ok(fs.readFileSync(path.join(R, "js/tenant.js"), "utf8").includes("function applyServerRole"), "server-role sync renamed");
   ok(fs.readFileSync(path.join(R, "js/front.js"), "utf8").includes("filterNav(f ? f.value"), "applyRole re-applies filter");
+
+  // ---- display exit (kiosk trap fix) ----
+  ok(sb.displayFootHTML().includes("exitDisplay()") && sb.displayFootHTML().includes("Esc to exit"), "display footer has exit + hint");
+  ok(sb.displayFootHTML().includes("toggleDispMute()") && sb.displayFootHTML().includes("dispFullscreen()"), "display footer keeps mute + fullscreen");
+  ok(typeof sb.exitDisplay === "function" && typeof sb.dispFullscreen === "function", "display exit fns exposed");
+  sb.document.getElementById("pageTitle").textContent = "SENTINEL";
+  sb.exitDisplay();
+  ok(sb.document.getElementById("pageTitle").textContent === "SENTINEL", "exitDisplay no-ops when display inactive");
+  try { sb.displayEscHandler({ key: "Enter" }); sb.displayEscHandler({ key: "Escape" }); sb.dispFullscreen(); ok(true, "display handlers no-throw headless"); } catch (e) { ok(false, "display handlers no-throw (" + e.message + ")"); }
+  ok(fs.readFileSync(path.join(R, "js/ops.js"), "utf8").includes('addEventListener("keydown", displayEscHandler)'), "esc listener registered");
   vm.runInContext("DB.users=[]; DB.session={}; DB.tokens=[]; DB.bills=[]; DB.appts=[];", sb);
   const arow = SP.admToRow("m5", { id: "a1", admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36, status: "admitted", indication: "RDS" });
   ok(arow.local_id === "n_a1" && arow.patient_local_id === "c_m5" && arow.birth_weight_g === 2400, "admToRow maps");
