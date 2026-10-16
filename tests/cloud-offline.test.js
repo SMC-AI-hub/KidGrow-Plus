@@ -412,6 +412,35 @@ async function main() {
   sb.renderPatientHeaders();
   ok(sb.document.getElementById("ph-visits").innerHTML.includes("Header Kid"), "header slot filled on visits page");
   ok(sb.document.getElementById("ph-rx").innerHTML.includes("Header Kid"), "header slot filled on rx page");
+
+  // ---- unified timeline ----
+  const tlc = { id: "tl1", name: "Timeline Kid", dob: "2024-01-01", sex: "boy",
+    visits: [{ id: "v1", date: "2026-03-01", type: "Follow-up", subj: "Fever<x>", obj: "", plan: "Review" }],
+    rx: [{ id: "r1", date: "2026-05-01", dx: "Cold", items: [{ drug: "Paracetamol<script>" }], advice: "", review: "", by: "Dr" }],
+    vaccines: { BCG: { date: "2024-01-02", brand: "Serum", batch: "B9", by: "Nurse" } },
+    extraVac: [{ id: "x1", name: "Flu shot", date: "2026-01-10", brand: "Vax" }],
+    measures: [{ date: "2026-04-01", wt: 12, ht: 85 }],
+    labs: [{ id: "l1", date: "2026-02-01", hb: "11.2", note: "" }],
+    aefi: [{ id: "a1", date: "2024-01-03", code: "BCG", vacLabel: "BCG", severity: "Mild", outcome: "Recovered", reported: "No" }] };
+  const tev = sb.timelineEvents(tlc);
+  ok(tev.length === 7, "timeline collects all 7 kinds, got " + tev.length);
+  ok(tev[0].date === "2026-05-01" && tev[6].date === "2024-01-02", "timeline sorts newest-first");
+  ok(tev.filter((e) => e.kind === "vax").length === 2, "scheduled + extra vaccines both included");
+  ok(sb.timelineEvents(null).length === 0, "timeline empty with no child");
+  const tlh = sb.timelineHTML(tlc, "all");
+  ok(!tlh.includes("<script>") && !tlh.includes("<x>") && tlh.includes("Paracetamol"), "timeline escapes clinical text");
+  ok(tlh.includes("BCG") && tlh.includes("Hb 11.2") && tlh.includes("Mild"), "timeline shows vax+lab+aefi detail");
+  ok(sb.timelineHTML(tlc, "rx").includes("Paracetamol") && !sb.timelineHTML(tlc, "rx").includes("Hb 11.2"), "timeline filter isolates kinds");
+  ok(sb.timelineHTML({ ...tlc, rx: [], visits: [], vaccines: {}, extraVac: [], measures: [], labs: [], aefi: [] }, "all").includes("No records yet"), "timeline empty state");
+  ok(sb.vaxLabel("NOPE-99") === "NOPE-99", "unknown vax code falls back to code");
+  vm.runInContext("DB.children=[{id:'tl1',name:'Timeline Kid',dob:'2024-01-01',sex:'boy',visits:[],rx:[],vaccines:{},extraVac:[],measures:[],labs:[],aefi:[]}]; DB.activeId='tl1';", sb);
+  sb.renderTimeline();
+  ok(sb.document.getElementById("timelineList").innerHTML.includes("No records yet"), "renderTimeline fills list");
+  vm.runInContext("DB.users=[{id:'uF',name:'Front',role:'Frontdesk'}]; DB.session={userId:'uF'};", sb);
+  ok(sb.roleBlock("timeline") === true, "frontdesk blocked from timeline");
+  vm.runInContext("DB.users=[{id:'uD',name:'Doc',role:'Doctor'}]; DB.session={userId:'uD'};", sb);
+  ok(sb.roleBlock("timeline") === false, "doctor opens timeline");
+  vm.runInContext("DB.users=[]; DB.session={};", sb);
   const arow = SP.admToRow("m5", { id: "a1", admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36, status: "admitted", indication: "RDS" });
   ok(arow.local_id === "n_a1" && arow.patient_local_id === "c_m5" && arow.birth_weight_g === 2400, "admToRow maps");
   const rrow = SP.roundToRow("a1", { id: "r1", date: "2026-10-07", wtG: 2450, vitals: { spo2: 94 } });
