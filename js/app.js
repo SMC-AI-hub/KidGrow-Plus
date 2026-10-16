@@ -729,6 +729,115 @@ function renderVisits() {
 }
 
 /* ================= DASHBOARD ================= */
+/* ================= ROLE DASHBOARDS ================= */
+const CLINICAL_ROLES = ["Doctor", "Nurse", "Pharmacist"];
+function myAppRole() { try { const u = (typeof currentUser === "function") ? currentUser() : null; return (u && u.role) || "Doctor"; } catch (e) { return "Doctor"; } }
+function greetName() { try { const u = (typeof currentUser === "function") ? currentUser() : null; if (u && u.name && !u.open) return u.name.split(" ")[0]; } catch (e) {} return myAppRole(); }
+function queueToday() {
+  const t = todayISO();
+  return (DB.tokens || []).filter((x) => x.date === t && (x.status === "waiting" || x.status === "in"))
+    .sort((a, b) => (a.n || 0) - (b.n || 0)).map((x) => ({ ...x, child: childById(x.childId) }));
+}
+function billsToday() {
+  const t = todayISO(), bs = (DB.bills || []).filter((b) => b.date === t);
+  return { n: bs.length, total: bs.reduce((s, b) => s + (+b.total || 0), 0), paid: bs.reduce((s, b) => s + (+b.paid || 0), 0) };
+}
+function rxToday() {
+  const t = todayISO(), out = [];
+  (DB.children || []).forEach((c) => (c.rx || []).forEach((r) => {
+    if ((r.date || "") === t) (r.items || []).forEach((it, idx) => out.push({ child: c, rx: r, item: it, idx }));
+  }));
+  return out;
+}
+function toggleDispense(childId, rxId, idx) {
+  const c = childById(childId); if (!c) return;
+  const r = (c.rx || []).find((x) => x.id === rxId); if (!r || !r.items || !r.items[idx]) return;
+  const it = r.items[idx];
+  if (it.dispensed) delete it.dispensed;
+  else it.dispensed = { by: ((typeof currentUser === "function" && currentUser()) || {}).name || "", at: new Date().toISOString() };
+  auditSafe(it.dispensed ? "Dispensed" : "Dispense undone", `${it.drug || ""} — ${c.name}`);
+  save(); renderAll();
+}
+function growthReds() {
+  const t = todayISO(), out = [];
+  (DB.children || []).forEach((c) => {
+    try {
+      const reds = growthAlerts(c.measures || [], c.dob, t).filter((a) => a.level === "red");
+      if (reds.length) out.push({ child: c, msg: reds[0].msg });
+    } catch (e) {}
+  });
+  return out;
+}
+function roleDashHTML(role) {
+  const t = todayISO();
+  if (role === "Frontdesk") {
+    const tod = (DB.tokens || []).filter((x) => x.date === t);
+    const w = tod.filter((x) => x.status === "waiting").length, inn = tod.filter((x) => x.status === "in").length, done = tod.filter((x) => x.status === "done").length;
+    const b = billsToday(), ap = apptsOn(DB.appts || [], t).filter((a) => !a.done);
+    return `<div class="card"><h3>🎟️ Reception — today</h3><div class="statrow">`
+      + `<div class="stat" style="--ac:var(--amber)"><div><div class="n">${w}</div><div class="l">Waiting</div></div><div class="e">⏳</div></div>`
+      + `<div class="stat" style="--ac:var(--green)"><div><div class="n">${inn}</div><div class="l">In consult</div></div><div class="e">🩺</div></div>`
+      + `<div class="stat" style="--ac:var(--blue)"><div><div class="n">${done}/${tod.length}</div><div class="l">Done</div></div><div class="e">✅</div></div></div>`
+      + `<dl class="kv" style="margin-top:8px"><dt>Bills</dt><dd>${b.n} · ₹${b.paid} collected${b.total - b.paid > 0 ? ` · <b>₹${b.total - b.paid} pending</b>` : ""}</dd>`
+      + `<dt>Appointments</dt><dd>${ap.length} open today</dd></dl>`
+      + `<button class="btn btn-p btn-sm" onclick="go('front')">Open frontdesk →</button> `
+      + `<button class="btn btn-o btn-sm" onclick="copyDayList()">📋 Copy day list</button></div>`;
+  }
+  if (role === "Nurse") {
+    let due = [];
+    try { due = clinicDueList(DB.children || [], t); } catch (e) {}
+    const df = due.filter((i) => i.band === "defaulter"), ov = due.filter((i) => i.band === "overdue"), d14 = due.filter((i) => i.band === "due14");
+    const reds = growthReds();
+    let mar = "";
+    try { mar = (typeof marDueHTML === "function") ? marDueHTML() : ""; } catch (e) {}
+    return `<div class="card"><h3>💉 Nurse — care tasks</h3><div class="statrow">`
+      + `<div class="stat" style="--ac:var(--red)"><div><div class="n">${df.length}</div><div class="l">Defaulters</div></div><div class="e">🚨</div></div>`
+      + `<div class="stat" style="--ac:var(--amber)"><div><div class="n">${ov.length + d14.length}</div><div class="l">Due/overdue</div></div><div class="e">💉</div></div>`
+      + `<div class="stat" style="--ac:var(--blue)"><div><div class="n">${reds.length}</div><div class="l">Growth flags</div></div><div class="e">📉</div></div></div>`
+      + (df.slice(0, 5).map((i) => `<div style="font-size:13px">• <b>${esc(i.child)}</b> — ${esc(i.name)} ${esc(i.dose || "")} <span style="color:var(--muted)">(due ${esc(dmy(i.due))}, +${i.daysOver}d)</span></div>`).join("") || `<div class="hint">No defaulters. 🎉</div>`)
+      + `<div style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="go('vaccines')">Vaccines →</button> <button class="btn btn-o btn-sm" onclick="go('mar')">eMAR →</button></div></div>` + mar;
+  }
+  if (role === "Pharmacist") {
+    const lines = rxToday(), left = lines.filter((l) => !l.item.dispensed);
+    const rows = lines.slice(0, 12).map((l) => `<div class="vac-row"><div class="grow"><b>${esc(l.item.drug || "")}</b> ${esc(l.item.strength || "")} <span style="color:var(--muted)">· ${esc(l.child.name)}${l.item.take ? " · " + esc(l.item.take) : ""}</span><br>`
+      + `<span style="font-size:12px;color:var(--muted)">${esc(l.rx.dx || "")}${l.item.dispensed ? ` · ✅ by ${esc(l.item.dispensed.by || "")}` : ""}</span></div>`
+      + `<button class="btn ${l.item.dispensed ? "btn-o" : "btn-p"} btn-xs" onclick="toggleDispense('${l.child.id}','${l.rx.id}',${l.idx})">${l.item.dispensed ? "Undo" : "Dispense"}</button></div>`).join("");
+    return `<div class="card"><h3>💊 Pharmacy — dispensing queue</h3>`
+      + `<div style="font-size:13px;margin-bottom:8px">${left.length} of ${lines.length} items pending today</div>`
+      + (rows || `<div class="hint">No prescriptions written today.</div>`)
+      + (lines.length > 12 ? `<div class="hint">Showing 12 of ${lines.length}.</div>` : "")
+      + `<div style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="go('rx')">Prescriptions →</button> <button class="btn btn-o btn-sm" onclick="go('stock')">Stock →</button></div></div>`;
+  }
+  if (role === "Admin") {
+    const users = DB.users || [];
+    let cloud = "Local mode";
+    try { cloud = (typeof Cloud !== "undefined" && Cloud.enabled && Cloud.user && Cloud.user()) ? ("Cloud · " + Cloud.user().email) : "Local mode"; } catch (e) {}
+    let plan = "";
+    try { plan = (typeof T !== "undefined" && T.tenant && T.tenant.plan) ? ` · Plan: <b>${esc(T.tenant.plan)}</b>` : ""; } catch (e) {}
+    const au = (DB.audit || []).slice(0, 6).map((a) => `<div style="font-size:12.5px">• ${esc(a.action || "")} <span style="color:var(--muted)">— ${esc(a.user || "")}</span></div>`).join("");
+    return `<div class="card"><h3>⚙️ Admin — clinic overview</h3><div class="statrow">`
+      + `<div class="stat" style="--ac:var(--blue)"><div><div class="n">${(DB.children || []).length}</div><div class="l">Patients</div></div><div class="e">🧒</div></div>`
+      + `<div class="stat" style="--ac:var(--teal)"><div><div class="n">${users.length}</div><div class="l">Staff</div></div><div class="e">👥</div></div>`
+      + `<div class="stat" style="--ac:var(--amber)"><div><div class="n">${(DB.tokens || []).filter((x) => x.date === t).length}</div><div class="l">Visits today</div></div><div class="e">🎟️</div></div></div>`
+      + `<dl class="kv" style="margin-top:8px"><dt>Sync</dt><dd>${esc(cloud)}${plan}</dd>`
+      + `<dt>Staff</dt><dd>${users.map((u) => esc(u.name) + " (" + esc(u.role) + ")").join(", ") || "—"}</dd></dl>`
+      + (au ? `<div style="font-size:13px"><b>Recent activity</b></div>${au}` : "")
+      + `<div style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="go('users')">Users & audit →</button> <button class="btn btn-o btn-sm" onclick="go('settings')">Settings →</button></div></div>`;
+  }
+  // Doctor (default): today's queue + attention flags
+  const q = queueToday(), reds = growthReds();
+  let conf = 0;
+  try { conf = (JSON.parse(localStorage.getItem("kidgrow_conflicts") || "[]") || []).length; } catch (e) {}
+  const qrows = q.slice(0, 8).map((x) => `<div style="font-size:13px">${x.status === "in" ? "🟢" : "⏳"} <b>#${esc(String(x.n))} ${esc((x.child && x.child.name) || x.name || "Walk-in")}</b> <span style="color:var(--muted)">· ${esc(x.reason || "")}</span></div>`).join("");
+  return `<div class="card"><h3>🩺 Doctor — today</h3><div class="statrow">`
+    + `<div class="stat" style="--ac:var(--amber)"><div><div class="n">${q.filter((x) => x.status === "waiting").length}</div><div class="l">Waiting</div></div><div class="e">⏳</div></div>`
+    + `<div class="stat" style="--ac:var(--green)"><div><div class="n">${q.filter((x) => x.status === "in").length}</div><div class="l">In consult</div></div><div class="e">🩺</div></div>`
+    + `<div class="stat" style="--ac:${reds.length || conf ? "var(--red)" : "var(--blue)"}"><div><div class="n">${reds.length + conf}</div><div class="l">Flags</div></div><div class="e">🚩</div></div></div>`
+    + (qrows || `<div class="hint">No patients in queue.</div>`)
+    + (reds.slice(0, 4).map((r) => `<div style="font-size:13px">📉 <b>${esc(r.child.name)}</b> <span style="color:var(--muted)">· ${esc(r.msg.split(".")[0])}</span></div>`).join(""))
+    + (conf ? `<div style="font-size:13px">🔀 <b>${conf} sync conflict(s)</b> need review.</div>` : "")
+    + `<div style="margin-top:8px"><button class="btn btn-p btn-sm" onclick="go('front')">Open queue →</button> <button class="btn btn-o btn-sm" onclick="go('timeline')">Timeline →</button></div></div>`;
+}
 function renderDashboard() {
   const c = child();
   if (!c) { $("dashStats").innerHTML = ""; const hz = $("dashHero"); if (hz) hz.innerHTML = ""; return; }
@@ -739,13 +848,17 @@ function renderDashboard() {
   { const hz = $("dashHero");
     if (hz) { const _S = DB.settings || {}, logoHtml = _S.logo ? `<img src="${_S.logo}" alt="clinic logo">` : `<span class="ph">👶</span>`; const hr = new Date().getHours(), greet = hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
       hz.innerHTML = `<div class="hero-top"><div class="hero-logo">${logoHtml}</div><div><div class="hero-eyebrow">${esc(fmtDate(todayISO()))} · ${esc((DB.settings || {}).clinic || "KidGrow Pro")}</div>
-        <h2>${greet}, Doctor 👋</h2>
+        <h2>${greet}, ${esc(greetName())} 👋</h2>
         <div class="hero-sub">Active child: <b>${esc(c.name)}</b> · ${esc(ageStr(a))} · 💉 ${vs.done}/${vs.total} vaccines${vs.overdue ? ` · <b>${vs.overdue} overdue</b>` : ""}</div></div></div>
         <div class="hero-actions"><button class="btn btn-p btn-sm" onclick="openGrowthModal()">+ Record growth</button>
         <button class="btn btn-o btn-sm" onclick="openVisitModal()">+ Visit note</button>
         <button class="btn btn-o btn-sm" onclick="openApptModal()">+ Book visit</button>
         <button class="btn btn-o btn-sm" onclick="go('front')">🎟️ Frontdesk</button></div>`; } }
-  $("dashClinic").innerHTML = clinicPulseHTML() + (typeof nicuCensusHTML === "function" ? nicuCensusHTML() : "") + (typeof marDueHTML === "function" ? marDueHTML() : "") + (typeof growthAlertsHTML === "function" ? growthAlertsHTML() : "");
+  const _role = myAppRole();
+  const _clinicExtra = CLINICAL_ROLES.includes(_role)
+    ? (clinicPulseHTML() + (typeof nicuCensusHTML === "function" ? nicuCensusHTML() : "") + (typeof marDueHTML === "function" ? marDueHTML() : "") + (typeof growthAlertsHTML === "function" ? growthAlertsHTML() : ""))
+    : "";
+  $("dashClinic").innerHTML = roleDashHTML(_role) + _clinicExtra;
   $("dashStats").innerHTML = `
     <div class="stat" style="--ac:var(--blue)"><div><div class="n">${ageStr(a)}</div><div class="l">Age · ${c.sex === "boy" ? "Boy" : "Girl"}</div></div><div class="e">🎂</div></div>
     <div class="stat" style="--ac:var(--teal)"><div><div class="n">${vs.done}/${vs.total}</div><div class="l">Vaccines · ${vs.pct}%</div></div><div class="e">💉</div></div>

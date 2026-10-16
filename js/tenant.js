@@ -38,8 +38,10 @@ function quotaStatus(used, limit) {
   return { pct: pct, state: pct >= 100 ? "full" : pct >= 80 ? "warn" : "ok", label: used + " / " + limit };
 }
 function roleRank(serverRole) {
-  if (serverRole === "owner" || serverRole === "admin" || serverRole === "doctor") return "Doctor";
-  if (serverRole === "nurse" || serverRole === "pharmacist" || serverRole === "lab" || serverRole === "mrd") return "Nurse";
+  if (serverRole === "owner" || serverRole === "doctor") return "Doctor";
+  if (serverRole === "admin") return "Admin";
+  if (serverRole === "nurse" || serverRole === "lab" || serverRole === "mrd") return "Nurse";
+  if (serverRole === "pharmacist") return "Pharmacist";
   return "Frontdesk";
 }
 function mfaNext(o) {

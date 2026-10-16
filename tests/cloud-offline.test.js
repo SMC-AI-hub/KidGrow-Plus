@@ -213,8 +213,10 @@ async function main() {
   ok(TP.planQuota("enterprise", "users") === null && TP.planQuota("nope", "users") === null, "quota mirror: enterprise/unknown unlimited");
   ok(TP.quotaStatus(5, null).state === "ok" && /unlimited/.test(TP.quotaStatus(5, null).label), "quotaStatus: unlimited");
   ok(TP.quotaStatus(40, 100).state === "ok" && TP.quotaStatus(80, 100).state === "warn" && TP.quotaStatus(100, 100).state === "full", "quotaStatus: ok/warn/full boundaries");
-  ok(TP.roleRank("owner") === "Doctor" && TP.roleRank("admin") === "Doctor" && TP.roleRank("doctor") === "Doctor", "roleRank: clinical leads");
-  ok(TP.roleRank("nurse") === "Nurse" && TP.roleRank("pharmacist") === "Nurse" && TP.roleRank("lab") === "Nurse" && TP.roleRank("mrd") === "Nurse", "roleRank: staff");
+  ok(TP.roleRank("owner") === "Doctor" && TP.roleRank("doctor") === "Doctor", "roleRank: clinical leads");
+  ok(TP.roleRank("admin") === "Admin", "roleRank: admin maps to Admin");
+  ok(TP.roleRank("nurse") === "Nurse" && TP.roleRank("lab") === "Nurse" && TP.roleRank("mrd") === "Nurse", "roleRank: care staff");
+  ok(TP.roleRank("pharmacist") === "Pharmacist", "roleRank: pharmacist maps to Pharmacist");
   ok(TP.roleRank("billing") === "Frontdesk" && TP.roleRank("auditor") === "Frontdesk" && TP.roleRank("readonly") === "Frontdesk" && TP.roleRank("xyz") === "Frontdesk", "roleRank: least privilege default");
   ok(TP.mfaNext({ aal: "aal2", hasFactors: true, role: "owner", required: ["owner"] }) === "ok", "mfa: aal2 passes");
   ok(TP.mfaNext({ aal: "aal1", hasFactors: false, role: "nurse", required: ["owner"] }) === "ok", "mfa: non-required role passes");
@@ -441,6 +443,32 @@ async function main() {
   vm.runInContext("DB.users=[{id:'uD',name:'Doc',role:'Doctor'}]; DB.session={userId:'uD'};", sb);
   ok(sb.roleBlock("timeline") === false, "doctor opens timeline");
   vm.runInContext("DB.users=[]; DB.session={};", sb);
+
+  // ---- role dashboards ----
+  ok(sb.myAppRole() === "Doctor", "open mode defaults to Doctor");
+  vm.runInContext("DB.users=[{id:'uP',name:'Pharma Pam',role:'Pharmacist'},{id:'uA',name:'Admin Al',role:'Admin'}]; DB.session={userId:'uP'};", sb);
+  ok(sb.myAppRole() === "Pharmacist" && sb.greetName() === "Pharma", "role + first-name greeting");
+  ok(sb.roleBlock("users") === true && sb.roleBlock("rx") === false, "pharmacist hides admin, sees rx");
+  vm.runInContext("DB.session={userId:'uA'};", sb);
+  ok(sb.roleBlock("users") === false && sb.roleBlock("visits") === false, "admin sees everything");
+  vm.runInContext(`DB.children=[{id:'rd1',name:'Dash Kid',dob:'2024-01-01',sex:'boy',vaccines:{},visits:[],measures:[{date:'2026-01-01',wt:10},{date:'2026-02-01',wt:8.4}],rx:[{id:'rx1',date:todayISO(),dx:'Fever',items:[{drug:'Paracetamol'}],by:'Dr'}]}]; DB.tokens=[{date:todayISO(),n:1,childId:'rd1',reason:'Fever',status:'waiting'}]; DB.bills=[{id:'b1',date:todayISO(),total:500,paid:200}]; DB.appts=[{id:'a1',date:todayISO(),childId:'rd1',time:'10:00',type:'Review',done:false}];`, sb);
+  ok(sb.queueToday().length === 1 && sb.queueToday()[0].child.name === "Dash Kid", "queue joins child names");
+  const btd = sb.billsToday();
+  ok(btd.n === 1 && btd.total === 500 && btd.paid === 200, "bills today totals");
+  ok(sb.rxToday().length === 1 && sb.growthReds().length === 1, "rx-today + growth-red feeds");
+  ok(sb.roleDashHTML("Doctor").includes("queue") && sb.roleDashHTML("Doctor").includes("#1"), "doctor panel shows queue");
+  ok(sb.roleDashHTML("Frontdesk").includes("pending") && sb.roleDashHTML("Frontdesk").includes("300"), "frontdesk panel shows pending dues");
+  ok(sb.roleDashHTML("Nurse").includes("care tasks"), "nurse panel renders");
+  ok(sb.roleDashHTML("Pharmacist").includes("Dispense") && sb.roleDashHTML("Pharmacist").includes("Paracetamol"), "pharmacy queue lists items");
+  sb.toggleDispense("rd1", "rx1", 0);
+  ok(vm.runInContext("DB.children[0].rx[0].items[0].dispensed.by", sb) === "Admin Al", "dispense tick stamps user");
+  ok(sb.roleDashHTML("Pharmacist").includes("0 of 1 items pending"), "pharmacy count updates");
+  sb.toggleDispense("rd1", "rx1", 0);
+  ok(vm.runInContext("DB.children[0].rx[0].items[0].dispensed", sb) === undefined, "dispense undo clears");
+  ok(sb.roleDashHTML("Admin").includes("clinic overview") && sb.roleDashHTML("Admin").includes("Admin Al"), "admin panel shows staff");
+  sb.renderDashboard();
+  ok(sb.document.getElementById("dashClinic").innerHTML.includes("clinic overview"), "dashboard renders role panel");
+  vm.runInContext("DB.users=[]; DB.session={}; DB.tokens=[]; DB.bills=[]; DB.appts=[];", sb);
   const arow = SP.admToRow("m5", { id: "a1", admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36, status: "admitted", indication: "RDS" });
   ok(arow.local_id === "n_a1" && arow.patient_local_id === "c_m5" && arow.birth_weight_g === 2400, "admToRow maps");
   const rrow = SP.roundToRow("a1", { id: "r1", date: "2026-10-07", wtG: 2450, vitals: { spo2: 94 } });
