@@ -1,5 +1,20 @@
 # Changelog
 
+## v10.11.0 — 2026-10-16 — Sunrise dashboard home + MRN + lab review
+- 🌅 New **Sunrise theme** (warm cream + deep teal + gold) joins Light/Dark in a
+  3-way header toggle; fresh installs start on Sunrise, saved prefs untouched.
+- 🏠 Dashboard Home rebuilt per mockup: greeting + type-ahead patient search
+  (MRN-aware, keyboard friendly), Start visit / Register actions, and 4 clinic
+  stat cards (patients today, due ≤7d, growth flags, vaccine dues) — every
+  number rides real data and drills into its list (queue, schedule/eligibility,
+  Analytics growth, due tabs); Schedule alerts carry per-child WhatsApp links.
+- 📋 Minimal MRN: auto-assigned 4-digit record numbers on registration, backfilled
+  on load/import, searchable in type-ahead, shown on the hero + patient cards.
+- 🧪 Lab reports gain a reviewed flag + one-tap Mark reviewed; the dashboard
+  counts unreviewed reports from the last 60 days. Also: shared global `toast()`
+  (fixes latent crashes in plain-script callers), empty-roster graceful states.
+- Tests: 630/630 (433 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.10.7 — 2026-10-16 — Pricing + Billing merged into one Subscription page
 - 💳 The separate Plans & Pricing page is gone — one **Subscription** entry
   (System section) serves both states: visitors/expired accounts see the

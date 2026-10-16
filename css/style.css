@@ -1,6 +1,6 @@
 /* =====================================================
    KidGrow Pro — Modern clinical design system
-   Light + dark themes · icon rail · print-safe
+   Light + dark + sunrise themes · icon rail · print-safe
    NOTE: class names are a public contract with app JS.
    Restyle freely, but do not rename/remove selectors.
    ===================================================== */
@@ -30,6 +30,35 @@
   --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 34px -12px rgba(0,0,0,.55);
   --shadow-lg:0 2px 6px rgba(0,0,0,.5),0 22px 46px -12px rgba(0,0,0,.6);
 }
+[data-theme="sunrise"]{
+  color-scheme:light;
+  --navy:#0a3a36; --navy2:#0d4a44; --navy3:#12685e;
+  --teal:#0b7c72; --teal-d:#0a6b62; --sky:#0e8fa8;
+  --amber:#b45309; --green:#15803d; --red:#b91c1c;
+  --orange:#c2410c; --blue:#1d4ed8; --violet:#6d28d9; --pink:#be185d;
+  --bg:#f6f1e6; --card:#fffdf8; --card2:#faf5ea;
+  --ink:#2c2a24; --head:#0a3a36; --muted:#7c7362; --line:#e6dcc6;
+  --input:#fffdf8; --th:#f3ecdc; --rowh:#faf5ea; --track:#e9dfc9;
+  --topbar:rgba(246,241,230,.92); --navtxt:#cfe3dc;
+  --pickbg:#eef5f1; --pickbd:#b7d8cf;
+  --shadow:0 1px 2px rgba(60,50,20,.06),0 12px 32px -12px rgba(60,50,20,.16);
+  --shadow-lg:0 2px 4px rgba(60,50,20,.07),0 20px 44px -12px rgba(60,50,20,.22);
+}
+[data-theme="sunrise"] .btn-p{background:linear-gradient(135deg,#d9a92c,#b8891f);color:#26200a;box-shadow:0 8px 18px -6px rgba(180,130,20,.55)}
+[data-theme="sunrise"] .btn-p:hover{box-shadow:0 12px 24px -6px rgba(180,130,20,.6)}
+[data-theme="sunrise"] .a-red{background:#fdf0ec;border-color:#f5c9bc}
+[data-theme="sunrise"] .a-amber{background:#fdf6e3;border-color:#ecd9a8}
+[data-theme="sunrise"] .a-green{background:#eef7ee;border-color:#bfe3c6}
+[data-theme="sunrise"] .a-blue{background:#edf3fb;border-color:#c2d6ee}
+/* dashboard type-ahead dropdown */
+.search-wrap{position:relative}
+.search-res{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);z-index:60;overflow:hidden}
+.sr-row{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 12px;cursor:pointer;font-size:13.5px;color:var(--ink)}
+.sr-row:last-child{border-bottom:0}
+.sr-row:hover,.sr-row:focus-visible{background:var(--rowh)}
+.sr-row .why{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
+.hero-search{margin:12px 0;position:relative;z-index:2}
+.hero-search input{width:100%;padding:12px 14px;font-size:14.5px;border-radius:12px}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:"Inter","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"Noto Sans","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:14.5px}

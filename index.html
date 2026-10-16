@@ -109,7 +109,7 @@
       <button class="icon-btn" id="navToggle" onclick="toggleNav()" title="Collapse / expand menu">☰</button>
       <div><h2 id="pageTitle">Dashboard</h2><div class="sub" id="clinicLine">—</div></div>
       <span id="netBadge" class="badge b-green" title="Connection status">● Online</span>
-      <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Dark / light mode">🌙</button>
+      <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Theme: light (tap to change)">🌙</button>
       <button class="icon-btn" id="settingsGear" onclick="go('settings')" title="Settings — clinic profile, logo, doctors">⚙️</button>
       <div class="child-picker">
         <div class="avatar" id="childAvatar">–</div>
@@ -133,6 +133,13 @@
           <button class="btn btn-o btn-sm" onclick="document.getElementById('importFile').click()">⬆ Import</button>
           <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
         </div>
+        <div class="grid g4" id="dashHome"></div>
+        <div style="height:16px"></div>
+        <div class="grid g2">
+          <div class="card"><h3>🕘 Today's queue</h3><div class="hint">Tokens + appointments, earliest first</div><div id="dashQueue"></div></div>
+          <div class="card"><h3>🔔 Alerts</h3><div class="hint">What needs you today</div><div id="dashAlerts"></div></div>
+        </div>
+        <div style="height:16px"></div>
         <div class="grid g4" id="dashStats"></div>
         <div style="height:16px"></div>
         <div class="card"><h3>🏥 Today's clinic pulse</h3><div class="hint">Appointments + doses needing action, across all children</div><div id="dashClinic"></div></div>

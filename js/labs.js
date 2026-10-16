@@ -98,6 +98,7 @@ function renderLabs() {
         const cl = hbClass(ageM, +r.hb);
         return `<div class="vac-row"><div class="grow"><b>${fmtDate(r.date)}</b> · Hb ${esc(String(r.hb || "—"))} ${cl ? sevBadge(cl.sev) + " " + esc(cl.label) : ""}
         <br><span style="font-size:12px;color:var(--muted)">${[r.ferritin ? "Ferr " + r.ferritin : "", r.b12 ? "B12 " + r.b12 : "", r.vitD ? "D " + r.vitD : "", r.note ? esc(r.note) : ""].filter(Boolean).join(" · ")}</span></div>
+        ${r.rev ? `<span class="badge b-green" title="Reviewed ${esc(r.rev)}">✓ reviewed</span>` : `<button class="btn btn-o btn-xs" onclick="toggleLabRev('${r.id}')">Mark reviewed</button>`}
         <button class="btn btn-danger btn-xs" onclick="delLab('${r.id}')">✕</button></div>`; }).join("") : `<div style="font-size:13px;color:var(--muted)">—</div>`}
     </div>
   </div>`;
@@ -106,9 +107,25 @@ function saveLab() {
   const c = child(); if (!c) return;
   c.labs = c.labs || [];
   if (!$("lbDate").value) return alert("Date required.");
-  c.labs.push({ id: uid(), date: $("lbDate").value, hb: $("lbHb").value, mcv: $("lbMcv").value, ferritin: $("lbFer").value, crp: $("lbCrp").value, b12: $("lbB12").value, vitD: $("lbVitD").value, note: $("lbNote").value.trim() });
+  c.labs.push({ id: uid(), rev: "", date: $("lbDate").value, hb: $("lbHb").value, mcv: $("lbMcv").value, ferritin: $("lbFer").value, crp: $("lbCrp").value, b12: $("lbB12").value, vitD: $("lbVitD").value, note: $("lbNote").value.trim() });
   auditSafe("Lab report", `${c.name} — Hb ${$("lbHb").value || "—"}`);
   save(); renderAll();
+}
+const LAB_REVIEW_DAYS = 60; // dashboard "awaiting review" counts unreviewed reports from the last 60 days
+function toggleLabRev(id) {
+  const c = child(); if (!c) return;
+  const r = (c.labs || []).find((x) => x.id === id); if (!r) return;
+  r.rev = r.rev ? "" : todayISO();
+  auditSafe("Lab review", `${c.name} — ${r.date} ${r.rev ? "reviewed" : "reopened"}`);
+  save(); renderAll();
+}
+function labsPending(children, today) {
+  const t = today || todayISO(), cut = addDays(t, -LAB_REVIEW_DAYS);
+  let n = 0;
+  (children || []).forEach((c) => (c.labs || []).forEach((r) => {
+    if (!r.rev && (r.date || "") >= cut) n++;
+  }));
+  return n;
 }
 function delLab(id) {
   if (!needSafe(2, "delete lab reports")) return;
