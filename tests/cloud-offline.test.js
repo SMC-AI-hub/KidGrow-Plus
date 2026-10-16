@@ -579,6 +579,23 @@ async function main() {
   sb.document.getElementById("vLot").value = "lotA"; sb.document.getElementById("vBatch").value = "";
   sb.syncLotFields("v");
   ok(sb.document.getElementById("vBatch").value === "B-1", "picker autofills batch");
+
+  // ---- collapsible nav + filter + applyRole fix ----
+  ok(html.includes('id="navFilter"') && (html.match(/data-sec="/g) || []).length === 5, "nav has filter + 5 sections");
+  const sideNav = html.slice(html.indexOf('id="sideNav"'), html.indexOf('id="userChip"'));
+  ok(sideNav.split("data-sec=")[0].indexOf("data-page=") === -1 && (sideNav.match(/data-page="/g) || []).length >= 30, "all nav buttons live inside sections");
+  ok(vm.runInContext("NAV_SECS.join(',')", sb) === "overview,flow,clinical,insights,system", "JS section list matches markup");
+  ok(sb.navMatch("Vaccination Record", "vacc") && sb.navMatch("NICU", "nicu") && !sb.navMatch("Growth", "xyz") && sb.navMatch("X", ""), "filter matcher");
+  ok(typeof sb.toggleNavSec === "function" && typeof sb.filterNav === "function" && typeof sb.restoreNavSecs === "function" && typeof sb.refreshNavSecs === "function", "nav section fns exposed");
+  sb.setNavSecCollapsed("clinical", true);
+  ok(sb.navSecCollapsed().includes("clinical"), "collapse persists");
+  sb.setNavSecCollapsed("clinical", false);
+  ok(!sb.navSecCollapsed().includes("clinical") && sb.navSecCollapsed().includes("insights"), "uncollapse works, defaults kept");
+  try { sb.restoreNavSecs(); sb.filterNav("vac"); sb.filterNav(""); ok(true, "nav fns no-throw headless"); } catch (e) { ok(false, "nav fns no-throw headless (" + e.message + ")"); }
+  const roleDefs = order.filter((f) => /function applyRole\s*\(/.test(fs.readFileSync(path.join(R, f), "utf8")));
+  ok(roleDefs.length === 1 && roleDefs[0] === "js/front.js", "exactly one applyRole (front.js)");
+  ok(fs.readFileSync(path.join(R, "js/tenant.js"), "utf8").includes("function applyServerRole"), "server-role sync renamed");
+  ok(fs.readFileSync(path.join(R, "js/front.js"), "utf8").includes("filterNav(f ? f.value"), "applyRole re-applies filter");
   vm.runInContext("DB.users=[]; DB.session={}; DB.tokens=[]; DB.bills=[]; DB.appts=[];", sb);
   const arow = SP.admToRow("m5", { id: "a1", admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36, status: "admitted", indication: "RDS" });
   ok(arow.local_id === "n_a1" && arow.patient_local_id === "c_m5" && arow.birth_weight_g === 2400, "admToRow maps");

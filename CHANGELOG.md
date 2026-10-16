@@ -1,5 +1,13 @@
 # Changelog
 
+## v10.10.1 — 2026-10-16 — Shorter side menu: collapsible sections + filter + role-hiding fix
+- 📂 All 5 menu sections collapse (Insights + System start collapsed); choice
+  persists per browser. 🔍 Filter box narrows the menu as you type (Esc clears).
+- 🐛 Fixed: tenant.js redeclared `applyRole` and recursed into itself, so
+  role-based menu hiding never ran — renamed to `applyServerRole`, front.js
+  owns nav hiding again (Frontdesk/Nurse see shorter menus), applied at boot.
+- Tests: 533/533 (336 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.10.0 — 2026-10-16 — NICU documents + catch-up planner + lot picker
 - 🖨️ NICU discharge summary + shift handover (printable, letterhead, branded footer).
   Follow-up advice captured at discharge; summaries refuse while still admitted.

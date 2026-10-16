@@ -93,7 +93,9 @@ function loadMine() {
     });
   }).catch(function () { /* offline: keep cached context */ });
 }
-function applyRole() {
+/* Server-role sync, then delegates to front.js applyRole() for nav hiding.
+   (Previously this redeclared applyRole and recursed into itself — nav hiding never ran.) */
+function applyServerRole() {
   try {
     if (typeof DB !== "undefined" && DB.session && T.role) {
       DB.session.serverRole = T.role;
@@ -139,7 +141,7 @@ function tenantCreate() {
     var m = $("mTenantNew"); if (m) m.remove();
     toast("Organization created ✓");
     audit("tenant.create", "tenants", tid, null);
-    return loadMine().then(function () { applyRole(); renderTenantCard(); renderBanners(); if (typeof renderAll === "function") renderAll(); });
+    return loadMine().then(function () { applyServerRole(); renderTenantCard(); renderBanners(); if (typeof renderAll === "function") renderAll(); });
   }).catch(function (e) { $("tnErr").textContent = e.message || "Could not create."; });
 }
 function saveBranding() {
@@ -211,7 +213,7 @@ function inviteFromURL() {
       try { localStorage.setItem("kidgrow_tenant", T.current); } catch (e) {}
       toast("Welcome to the organization ✓");
       try { history.replaceState(null, "", location.pathname); } catch (e) {}
-      loadMine().then(function () { applyRole(); renderTenantCard(); renderBanners(); if (typeof renderAll === "function") renderAll(); });
+      loadMine().then(function () { applyServerRole(); renderTenantCard(); renderBanners(); if (typeof renderAll === "function") renderAll(); });
     }).catch(function (e) { toast("Invite: " + (e.message || "invalid.")); });
   } catch (e) {}
 }
@@ -408,7 +410,7 @@ function renderTenantCard() {
 function tenantSwitch(tid) {
   T.current = tid;
   try { localStorage.setItem("kidgrow_tenant", tid); } catch (e) {}
-  loadMine().then(function () { applyRole(); renderTenantCard(); renderBanners(); if (typeof renderAll === "function") renderAll(); });
+  loadMine().then(function () { applyServerRole(); renderTenantCard(); renderBanners(); if (typeof renderAll === "function") renderAll(); });
 }
 function usageView() {
   if (!live() || !T.current) return;
@@ -454,7 +456,7 @@ var Tenant = {
         if (typeof Cloud !== "undefined" && Cloud.enabled && Cloud.user && Cloud.user()) {
           clearInterval(iv);
           loadMine().then(function () {
-            applyRole(); renderTenantCard(); renderBanners(); inviteFromURL(); mfaGate();
+            applyServerRole(); renderTenantCard(); renderBanners(); inviteFromURL(); mfaGate();
           });
         } else if (typeof Cloud !== "undefined" && !Cloud.enabled) {
           clearInterval(iv); renderTenantCard();

@@ -36,6 +36,7 @@ function applyRole() {
   document.querySelectorAll("#sideNav button, #mobNav button").forEach((b) => {
     b.style.display = (u && !u.open && roleBlock(b.dataset.page)) ? "none" : "";
   });
+  if (typeof filterNav === "function") { const f = document.getElementById("navFilter"); filterNav(f ? f.value : ""); }
   const chip = document.getElementById("userChip");
   if (chip) {
     chip.innerHTML = (u && !u.open)
@@ -389,3 +390,7 @@ function delUser(id) {
   log("User removed", u.name);
   save(); applyRole(); renderAll();
 }
+
+/* Boot (scripts run after DOM parse): hide role-blocked buttons + restore collapsed sections. */
+try { applyRole(); } catch (e) {}
+try { if (typeof restoreNavSecs === "function") restoreNavSecs(); } catch (e) {}
