@@ -217,6 +217,46 @@ function stockDeduct(code, brand, batch, childName) {
   stockLog(`Auto −1 · ${childName || ""} · ${code || hit.name || ""}`.trim(), hit.id, `${hit.name}${hit.batch ? " · " + hit.batch : ""}`, -1);
   return hit;
 }
+/* Lots available for the dose-modal picker: in-stock only, earliest-expiry first. code=null → all lots (extras). */
+function stockLotsFor(code) {
+  return stockLots()
+    .filter((l) => l && (+l.qty || 0) > 0 && (!code || l.code === code))
+    .sort((a, b) => (a.expiry || "9999").localeCompare(b.expiry || "9999"));
+}
+function lotStatus(l, today) {
+  today = today || ((typeof todayISO === "function") ? todayISO() : "");
+  if ((l.expiry || "") && today && l.expiry < today) return "expired";
+  if ((l.expiry || "") && today && l.expiry <= addDays(today, 60)) return "expiring";
+  return "ok";
+}
+function lotLabel(l) {
+  const st = lotStatus(l);
+  return `${l.brand || l.name || "?"}${l.batch ? " · " + l.batch : ""} · ${+l.qty || 0} left${l.expiry ? " · exp " + fmtDate(l.expiry) : ""}${st === "expired" ? " ⚠️ EXPIRED" : st === "expiring" ? " · expiring soon" : ""}`;
+}
+/* <option> list for the picker. Expired lots render disabled (quarantine — visible but unpickable). */
+function lotOptionsHTML(code, selected) {
+  const lots = stockLotsFor(code);
+  let h = `<option value="">Auto — earliest expiry</option>`;
+  h += lots.map((l) => `<option value="${l.id}"${l.id === selected ? " selected" : ""}${lotStatus(l) === "expired" ? " disabled" : ""}>${esc(lotLabel(l))}</option>`).join("");
+  h += `<option value="none">No deduction — given elsewhere / campaign</option>`;
+  return h;
+}
+function lotHintHTML(code) {
+  const n = stockLotsFor(code).length;
+  if (!n) return "No matching lot in stock — Auto will try a brand/batch match, else records without deducting.";
+  return `${n} lot(s) in stock · Auto picks earliest expiry · expired lots are blocked.`;
+}
+/* Deduct exactly one dose from an explicitly chosen lot. Never consumes expired/empty lots. */
+function stockDeductLot(lotId, code, childName) {
+  const l = stockLots().find((x) => x && x.id === lotId);
+  if (!l) return { ok: false, reason: "missing" };
+  if (!(+l.qty || 0) > 0) return { ok: false, reason: "empty", lot: l };
+  const today = (typeof todayISO === "function") ? todayISO() : "";
+  if ((l.expiry || "") && today && l.expiry < today) return { ok: false, reason: "expired", lot: l };
+  l.qty = (+l.qty || 1) - 1; l.updated = todayISO();
+  stockLog(`Manual −1 · ${childName || ""} · ${code || l.name || ""}`.trim(), l.id, `${l.name}${l.batch ? " · " + l.batch : ""}`, -1);
+  return { ok: true, lot: l };
+}
 function renderStock() {
   const box = $("stockBox");
   if (!box) return;

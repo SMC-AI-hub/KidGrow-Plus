@@ -478,6 +478,56 @@ function vacStatus(c, visit, vx) {
   if (t >= addDays(due, -14)) return "due";
   return "upcoming";
 }
+/* ---- catch-up planner: missed visits in schedule order, earliest-possible dates ----
+   Conservative mechanical rule: same-visit antigens together; ≥28 days between
+   catch-up visits AND ≥28 days after any already-given dose of the same series
+   (series = leading letters, so boosters chain after primaries). Per-antigen
+   exact minimum intervals need IAP-chart verification (see M7 sign-off) — the
+   plan labels every date "earliest" and carries the verify disclaimer. */
+function vaxSeries(code) {
+  let s = String(code || "").toUpperCase().replace(/-.*$/, "").replace(/[0-9]+$/, "");
+  // Trailing-B booster marker (DTPB/HIBB/PCVB/TCVB/IPVB) chains onto the primary
+  // series — except HEPB, where B means Hep-B, not booster.
+  if (s !== "HEPB" && s.endsWith("B")) s = s.slice(0, -1);
+  return s || String(code || "");
+}
+function catchupPlan(c, today) {
+  today = today || todayISO();
+  const done = (c && c.vaccines) || {};
+  const seriesLast = {};
+  Object.keys(done).forEach((cd) => {
+    const d = (done[cd] || {}).date || "";
+    const s = vaxSeries(cd);
+    if (d && (!seriesLast[s] || d > seriesLast[s])) seriesLast[s] = d;
+  });
+  const sched = (typeof VACCINE_SCHEDULE !== "undefined" ? VACCINE_SCHEDULE : []);
+  const missed = sched.filter((v) => dueDateFor(c, v) <= today && (v.vaccines || []).some((x) => !done[x.code]));
+  const plan = [];
+  let prev = null;
+  missed.forEach((v) => {
+    const items = v.vaccines.filter((x) => !done[x.code])
+      .map((x) => ({ visitId: v.id, visit: v.label, code: x.code, name: x.name, dose: x.dose }));
+    let earliest = prev ? addDays(prev, 28) : today;
+    items.forEach((it) => {
+      const g = seriesLast[vaxSeries(it.code)];
+      if (g) { const eg = addDays(g, 28); if (eg > earliest) earliest = eg; }
+    });
+    plan.push({ date: earliest, visit: v.label, items, rota: (v.vaccines || []).some((x) => /^ROTA/i.test(x.code)) });
+    prev = earliest;
+  });
+  return plan;
+}
+function catchupHTML(c, plan) {
+  if (!plan || !plan.length) return "";
+  const rows = plan.map((p, i) => {
+    const isToday = p.date === todayISO();
+    return `<div class="vac-row"><div class="grow"><b>Visit ${i + 1} — earliest ${fmtDate(p.date)}</b>${isToday ? ` <span class="badge b-green">today</span>` : ""}<br>`
+      + `<span style="font-size:12.5px">${p.items.map((it) => `${esc(it.name)} ${esc(it.dose || "")}`).join(" · ")}</span>`
+      + `${p.rota ? `<br><span style="font-size:12px;color:#b45309">⚠️ Includes rotavirus — confirm age eligibility before giving.</span>` : ""}</div>`
+      + `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${p.items.map((it) => `<button class="btn btn-p btn-xs" onclick="openVacModal('${it.visitId}','${it.code}')">Record ${esc(it.code)}</button>`).join("")}</div></div>`;
+  }).join("");
+  return `<div class="card"><h3>📋 Catch-up plan — ${plan.length} visit(s)</h3><div class="hint">Missed doses in schedule order · no need to restart any series · minimum 4-week gap between visits. Planning aid — verify against the IAP catch-up chart; clinical judgement prevails.</div>${rows}</div>`;
+}
 function renderVaccines() {
   const c = child(); if (!c) return;
   const s = vaccineSummary(c);
@@ -486,6 +536,8 @@ function renderVaccines() {
   if (s.overdue) al += `<div class="alert a-red">⚠️ <div><b>${s.overdue} vaccine(s) overdue.</b> Please schedule catch-up at the earliest. IAP: no need to restart a series — continue from where it stopped, keeping minimum intervals.</div></div>`;
   if (s.next) al += `<div class="alert a-blue">📅 <div><b>Next:</b> ${esc(s.next.v.label)} visit — due <b>${fmtDate(s.next.due)}</b> (${esc(s.next.v.vaccines.filter((x) => !c.vaccines[x.code]).map((x) => x.code).join(", "))}).</div></div>`;
   else al += `<div class="alert a-green">✅ <div><b>Schedule complete</b> till 10–12 y. Continue annual influenza & adolescent boosters as advised.</div></div>`;
+  const _plan = catchupPlan(c, todayISO());
+  if (_plan.length) al += catchupHTML(c, _plan);
   $("vacAlerts").innerHTML = al;
   const tl = $("vacTimeline"); tl.innerHTML = "";
   VACCINE_SCHEDULE.forEach((v) => {
@@ -524,6 +576,11 @@ function openVacModal(visitId, code) {
   $("vBrandList").innerHTML = bl.map((x) => `<option value="${esc(x.b)}">${esc(x.m)}${x.n ? " · " + esc(x.n) : ""}</option>`).join("");
   $("vBrand").value = r.brand || ""; $("vMfr").value = r.mfr || "";
   $("vBrand").oninput = (e) => { const hit = brandsFor(code).find((x) => x.b.toLowerCase() === e.target.value.trim().toLowerCase()); if (hit) $("vMfr").value = hit.m; };
+  if (typeof lotOptionsHTML === "function") {
+    $("vLot").innerHTML = lotOptionsHTML(code, r.lot || "");
+    $("vLot").value = r.lot || "";
+    $("vLotHint").textContent = r.date ? "Editing an existing entry — saving won't deduct stock again." : lotHintHTML(code);
+  }
   const sibs = v.vaccines.filter((x) => x.code !== code && !c.vaccines[x.code]);
   const sibBox = $("vSibBox");
   if (sibs.length && !r.date) {
@@ -547,6 +604,34 @@ function extraDupCheck(c, name, dateISO, selfId) {
   return hit ? { dup: true, existing: hit } : { dup: false };
 }
 let VAX_EDITING = null; // {code, date} snapshot when modal opened on an existing record
+/* Autofill batch/brand from the picked lot (only into empty fields). prefix: v = routine, x = extra. */
+function syncLotFields(prefix) {
+  const sel = $(prefix === "x" ? "xLot" : "vLot");
+  if (!sel || !sel.value || sel.value === "none") return;
+  const l = (typeof stockLots === "function") ? stockLots().find((x) => x && x.id === sel.value) : null;
+  if (!l) return;
+  const b = $(prefix === "x" ? "xBatch" : "vBatch"), br = $(prefix === "x" ? "xBrand" : "vBrand");
+  if (b && !b.value && l.batch) b.value = l.batch;
+  if (br && !br.value && l.brand) br.value = l.brand;
+}
+/* One physical shot = exactly one deduction, even when it covers several
+   antigens (combos). Returns lot id, null (auto/none), or undefined = abort save. */
+function vaxDeduct(codes, lotChoice, brand, batch, childName) {
+  codes = codes || [];
+  if (!codes.length || lotChoice === "none") return null;
+  if (lotChoice && typeof stockDeductLot === "function") {
+    const r = stockDeductLot(lotChoice, codes[0], childName);
+    if (!r.ok) {
+      alert(r.reason === "expired" ? "⚠️ That lot is EXPIRED — nothing recorded. Quarantine the lot and pick another."
+        : r.reason === "empty" ? "⚠️ That lot is out of stock — nothing recorded. Pick another lot."
+        : "⚠️ That lot is no longer available — nothing recorded. Pick another lot.");
+      return undefined;
+    }
+    return r.lot.id;
+  }
+  if (typeof stockDeduct === "function") codes.forEach((cd) => stockDeduct(cd, brand, batch, childName));
+  return null;
+}
 function saveVaccine() {
   const c = child(), code = $("vCode").value;
   if (!$("vDate").value) return alert("Date given is required.");
@@ -565,12 +650,16 @@ function saveVaccine() {
   if (diff.length && !confirm("Overwrite existing record(s)?\n" + diff.map((s) => `• ${s.cd}: recorded ${fmtDate(s.ex.date)}${s.ex.batch ? " (batch " + s.ex.batch + ")" : ""}`).join("\n") + "\n\nOK = replace with the new entry. Cancel = keep existing.")) return;
   VAX_EDITING = null;
   const bm = matchBrand(code, $("vBrand").value, $("vMfr").value);
-  const rec = (aer) => ({ date: $("vDate").value, brand: bm.brand, mfr: bm.mfr, batch: $("vBatch").value.trim(), site: $("vSite").value.trim(), by: $("vBy").value.trim(), aer, note: $("vNote").value.trim() });
+  const prevLot = (c.vaccines[code] || {}).lot || "";
   const _newVx = [];
   if (!c.vaccines[code]) _newVx.push(code);
+  document.querySelectorAll(".vSib:checked").forEach((cb) => { if (!c.vaccines[cb.value]) _newVx.push(cb.value); });
+  const lotChoice = ($("vLot") || {}).value || "";
+  const lotId = (typeof vaxDeduct === "function") ? vaxDeduct(_newVx, lotChoice, bm.brand, $("vBatch").value.trim(), c.name) : null;
+  if (lotId === undefined) return; // chosen lot invalid — abort before writing anything
+  const rec = (aer) => ({ date: $("vDate").value, brand: bm.brand, mfr: bm.mfr, batch: $("vBatch").value.trim(), site: $("vSite").value.trim(), by: $("vBy").value.trim(), aer, note: $("vNote").value.trim(), lot: lotId || prevLot });
   c.vaccines[code] = rec($("vAer").value.trim());
-  document.querySelectorAll(".vSib:checked").forEach((cb) => { if (!c.vaccines[cb.value]) _newVx.push(cb.value); c.vaccines[cb.value] = rec(""); });
-  if (typeof stockDeduct === "function") _newVx.forEach((cd) => stockDeduct(cd, bm.brand, $("vBatch").value.trim(), c.name));
+  document.querySelectorAll(".vSib:checked").forEach((cb) => { c.vaccines[cb.value] = rec(""); });
   auditSafe("Vaccine recorded", code + " — " + c.name);
   save(); closeModal("mVac"); renderAll();
 }
@@ -605,6 +694,11 @@ function openExtraModal(id) {
   $("xDate").value = x?.date || todayISO(); $("xBatch").value = x?.batch || "";
   $("xBy").value = x?.by || (DB.settings.doctor || ""); $("xNote").value = x?.note || "";
   $("xBrand").oninput = (e) => { const hit = allBrandOptions().find((o) => o.b.toLowerCase() === e.target.value.trim().toLowerCase()); if (hit) $("xMfr").value = hit.m; };
+  if (typeof lotOptionsHTML === "function") {
+    $("xLot").innerHTML = lotOptionsHTML(null, (x && x.lot) || "");
+    $("xLot").value = (x && x.lot) || "";
+    $("xLotHint").textContent = x ? "Editing an existing entry — saving won't deduct stock again." : lotHintHTML(null);
+  }
   $("xDelBtn").style.display = x ? "" : "none";
   openModal("mExtra");
 }
@@ -614,8 +708,13 @@ function saveExtra() {
   const bm = matchBrand(null, $("xBrand").value, $("xMfr").value);
   const x = { id: $("xId").value || uid(), name: $("xName").value.trim(), brand: bm.brand, mfr: bm.mfr, date: $("xDate").value, batch: $("xBatch").value.trim(), by: $("xBy").value.trim(), note: $("xNote").value.trim() };
   const i = c.extraVac.findIndex((v) => v.id === x.id);
-  if (i >= 0) c.extraVac[i] = x; else c.extraVac.push(x);
-  if (i < 0 && typeof stockDeduct === "function") stockDeduct(null, x.brand, x.batch, c.name + " · " + x.name);
+  if (i < 0) {
+    const lotChoice = ($("xLot") || {}).value || "";
+    const lotId = (typeof vaxDeduct === "function") ? vaxDeduct([x.name], lotChoice, x.brand, x.batch, c.name + " · " + x.name) : null;
+    if (lotId === undefined) return; // chosen lot invalid — abort before writing anything
+    x.lot = lotId || "";
+    c.extraVac.push(x);
+  } else { x.lot = (c.extraVac[i].lot || ""); c.extraVac[i] = x; }
   auditSafe("Extra vaccine", x.name + " — " + c.name);
   save(); closeModal("mExtra"); renderAll();
 }
