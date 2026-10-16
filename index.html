@@ -30,7 +30,6 @@
       <button class="nav-group navsec-h" onclick="toggleNavSec('home')"><span>Home</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="dashboard" class="active"><span class="ic">📊</span>Dashboard</button>
-      <button data-page="pricing"><span class="ic">💎</span>Pricing</button>
       </div>
       </div>
       <div class="navsec" data-sec="patients">
@@ -96,7 +95,7 @@
       <div class="navsec-b">
       <button data-page="users"><span class="ic">👥</span>Users & Audit</button>
       <button data-page="settings"><span class="ic">⚙️</span>Settings</button>
-      <button data-page="billing"><span class="ic">💳</span>Billing</button>
+      <button data-page="billing"><span class="ic">💳</span>Subscription</button>
       </div>
       </div>
     </nav>
@@ -122,12 +121,7 @@
 
     <div class="content">
       <!-- ======== DASHBOARD ======== -->
-      <!-- PRICING -->
-      <section class="page bigpage" id="pg-pricing">
-        <div id="pricingBody"></div>
-      </section>
-
-      <!-- BILLING -->
+      <!-- BILLING (merged: #pricing redirects here via ROUTE_ALIASES) -->
       <section class="page bigpage" id="pg-billing">
         <div id="billBody"></div>
       </section>
