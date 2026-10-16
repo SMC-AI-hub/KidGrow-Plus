@@ -28,6 +28,7 @@ function makeEl(tag, id) {
     closest() { return null; }, matches() { return false; }, contains() { return false; },
     click() {}, focus() {}, blur() {}, select() {}, scrollIntoView() {},
     getContext() { return ctxStub(); },
+    toDataURL() { return "data:image/png,KGTEST"; },
   };
   Object.defineProperty(el, "innerHTML", { get: () => el._html, set: (v) => { el._html = String(v); } });
   Object.defineProperty(el, "textContent", { get: () => el._text, set: (v) => { el._text = String(v); } });
@@ -686,6 +687,36 @@ async function main() {
   ok(vm.runInContext("DRUGS.length", sb) === 30, "formulary holds 30 drugs");
   const structIssues = vm.runInContext("DRUGS.map((d) => DrugPure.validateDrug(d).length)", sb);
   ok(structIssues.every((n) => n === 0), "all 30 drugs pass structural validation");
+
+  // ---- Comprehensive growth report: all 6 charts + full detail sections ----
+  sb.print = () => { sb.__printed = (sb.__printed || 0) + 1; };
+  vm.runInContext(`DB.children=[{id:'gr1',name:'Growth Kid',dob:'2022-06-01',sex:'boy',fHt:'175',mHt:'160',
+    measures:[{date:'2024-06-01',wt:12,ht:86,bmi:16.2,hc:48,muac:14},{date:'2025-01-01',wt:13,ht:90,bmi:16.0,hc:48.5,muac:14.2},{date:'2025-06-01',wt:14,ht:94,bmi:15.8,hc:49,muac:14.5}],
+    tanner:[{id:'t1',date:'2025-06-01',b:0,g:1,ph:1,note:''}]}]; DB.activeId='gr1';`, sb);
+  sb.printGrowthFull();
+  const gFull = sb.document.getElementById("growthFullPrint").innerHTML;
+  ok((gFull.match(/<img /g) || []).length === 6, "full report embeds all 6 charts");
+  ok(gFull.includes("COMPREHENSIVE GROWTH REPORT"), "full report title present");
+  ok(gFull.includes("Growth charts (6 of 6)"), "chart count line is honest");
+  ok(gFull.includes("Measurement history (3)"), "history section covers all visits");
+  ok(gFull.includes("Growth velocity between visits"), "velocity section present");
+  ok(gFull.includes("Puberty & predicted height") && gFull.includes("Mid-parental"), "puberty + MPH present");
+  ok(gFull.includes("References & methods"), "methods note present");
+  ok(gFull.includes("Impression & plan"), "impression present");
+  ok(gFull.includes("Latest 14 kg"), "per-chart caption shows latest value");
+  ok(sb.__printed === 1, "print dialog fires once");
+  const gVel = vm.runInContext("growthVelocityRows(child(), allMeasures(child()))", sb);
+  ok(gVel.length === 2 && gVel[0].gpd > 0 && gVel[0].vw && gVel[0].vh, "velocity rows computed per interval");
+  ok(vm.runInContext("assessRowFor(assessMeasure(child(), allMeasures(child()).slice(-1)[0]), 'wfa').key", sb) === "WAZ", "caption maps chart to assess row");
+  // decode gate: print waits for pending images, then prints
+  const gfp = sb.document.getElementById("pg-growthprint");
+  const qsaOrig = gfp.querySelectorAll;
+  let decoded = 0;
+  gfp.querySelectorAll = () => [{ complete: false, decode: () => { decoded++; return Promise.resolve(); } }];
+  sb.__printed = 0;
+  await sb.printPage("pg-growthprint");
+  ok(decoded === 1 && sb.__printed === 1, "printPage waits for image decode, then prints");
+  gfp.querySelectorAll = qsaOrig;
 
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

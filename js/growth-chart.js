@@ -286,24 +286,126 @@ function growthChartImg(ind) {
     return cv.toDataURL("image/png");
   } catch (e) { return ""; }
 }
+/* ---------------- comprehensive report builders (pure) ---------------- */
+function assessRowFor(A, ind) {
+  const rows = (A && A.rows) || [];
+  const keys = { wfa: ["WAZ", "WAZ5"], lhfa: ["HAZ", "HAZ5"], wfh: ["WHZ"], bmi: ["BMIZ", "BMIZ5"], hc: ["HCAZ"], muac: ["MUAC"] }[ind] || [];
+  return rows.find((r) => keys.includes(r.key)) || null;
+}
+function assessCaptionFor(A, ind) {
+  const r = assessRowFor(A, ind);
+  if (!r) return "";
+  return `Latest ${esc(r.value)} · P${fmtPct(r.pct)} · z ${zStr(r.z)} · ${esc(r.grade)}`;
+}
+function growthHistoryHTML(c, rows) {
+  const trs = (rows || []).map((m, i, arr) => {
+    const tag = `${i === 0 ? "first" : ""}${i === arr.length - 1 ? `${i === 0 ? " + " : ""}latest` : ""}${m.edema ? ` · oedema ${m.edema}` : ""}`;
+    return `<tr><td>${fmtDate(m.date)}<br><span style="font-size:11px;color:var(--muted)">${ageStr(ageBetween(c.dob, m.date))}${tag ? ` · ${tag}` : ""}</span></td>` +
+      `<td>${m.wt ?? "—"}</td><td>${m.ht ?? "—"}</td><td>${m.bmi ?? "—"}</td><td>${m.hc ?? "—"}</td><td>${m.muac ?? "—"}</td></tr>`;
+  }).join("");
+  return `<div style="margin-top:14px"><h3>Measurement history (${(rows || []).length})</h3>` +
+    `<div style="overflow:auto"><table class="tbl"><tr><th>Date · age</th><th>Wt (kg)</th><th>Ht (cm)</th><th>BMI</th><th>HC (cm)</th><th>MUAC (cm)</th></tr>${trs}</table></div></div>`;
+}
+function growthVelocityRows(c, rows) {
+  // Pure per-interval velocity using the same norms as the Velocity tab.
+  const out = [], rs = (rows || []).filter((r) => r.wt && r.ht);
+  for (let i = 1; i < rs.length; i++) {
+    const a = rs[i - 1], b = rs[i];
+    const days = Math.max(1, Math.round((new Date(b.date) - new Date(a.date)) / 86400000));
+    const gaA = growthAge(c, a.date), gaB = growthAge(c, b.date);
+    const dA = gaA.useCorr ? gaA.corrD : gaA.chronoD, dB = gaB.useCorr ? gaB.corrD : gaB.chronoD;
+    const mid = (dA + dB) / 2, N = VEL_NORMS.find((n) => mid <= n.maxD) || VEL_NORMS[VEL_NORMS.length - 1];
+    const gpd = ((b.wt - a.wt) * 1000) / days;
+    const cpy = ((b.ht - a.ht) / days) * 365.25;
+    const hcpm = (a.hc && b.hc) ? ((b.hc - a.hc) / days) * 30.4375 : null;
+    out.push({
+      a: a.date, b: b.date, days, mid, label: N.label, corr: gaA.useCorr || gaB.useCorr,
+      gpd, cpy, hcpm, N,
+      vw: velVerdict(gpd, N.wt[0], N.wt[1]), vh: velVerdict(cpy, N.ht[0], N.ht[1]),
+      vhc: N.hc ? velVerdict(hcpm, N.hc[0], N.hc[1]) : null,
+    });
+  }
+  return out;
+}
+function growthVelocityHTML(c, rows) {
+  const ivs = growthVelocityRows(c, rows);
+  if (!ivs.length) return `<div style="margin-top:14px"><h3>Growth velocity</h3><div class="empty">Need at least 2 measurements with weight + length/height for velocity.</div></div>`;
+  const badge = (v) => `<span class="badge ${v.s === "red" ? "b-red" : v.s === "amber" ? "b-amber" : v.s === "gray" ? "b-gray" : "b-green"}">${esc(v.t)}</span>`;
+  const trs = ivs.map((v) => {
+    let extra = "";
+    if (v.mid > 1460 && v.cpy < 4 && v.cpy >= 0) extra = `<br><span class="badge b-red">Ht vel &lt;4 cm/y after 4 y — evaluate</span>`;
+    if (v.gpd < 0) extra += `<br><span class="badge b-red">Weight loss — urgent review</span>`;
+    return `<tr><td>${fmtDate(v.a)} → ${fmtDate(v.b)}<br><span style="font-size:11px;color:var(--muted)">${v.days} d · ~${esc(v.label)}${v.corr ? " · corr" : ""}</span></td>` +
+      `<td><b>${v.gpd.toFixed(1)} g/d</b><br><span style="font-size:11.5px;color:var(--muted)">exp ${v.N.wt[0]}–${v.N.wt[1]}</span><br>${badge(v.vw)}</td>` +
+      `<td><b>${v.cpy.toFixed(1)} cm/y</b><br><span style="font-size:11.5px;color:var(--muted)">exp ${v.N.ht[0]}–${v.N.ht[1]}</span><br>${badge(v.vh)}${extra}</td>` +
+      `<td>${v.hcpm == null ? "—" : `<b>${v.hcpm.toFixed(2)} cm/mo</b>`}${v.N.hc && v.vhc ? `<br><span style="font-size:11.5px;color:var(--muted)">exp ${v.N.hc[0]}–${v.N.hc[1]}</span><br>${badge(v.vhc)}` : `<br><span style="font-size:11.5px;color:var(--muted)">track curve</span>`}</td></tr>`;
+  }).join("");
+  return `<div style="margin-top:14px"><h3>Growth velocity between visits</h3>` +
+    `<div class="hint">Expected ranges: standard paediatric norms. Short intervals (&lt;2–3 mo) exaggerate error — interpret with centile trends. Preterm uses corrected age.</div>` +
+    `<div style="overflow:auto"><table class="tbl"><tr><th>Interval</th><th>Weight gain</th><th>Height velocity</th><th>Head growth</th></tr>${trs}</table></div></div>`;
+}
+function growthPubertyHTML(c) {
+  const mph = mphTarget(c);
+  const mphLine = mph
+    ? `<p><b>Mid-parental (target) height:</b> ${mph.mph.toFixed(1)} cm <span style="color:var(--muted)">(range ${mph.lo.toFixed(1)}–${mph.hi.toFixed(1)} cm)</span></p>`
+    : `<p style="color:var(--muted)">Parental heights not recorded — enter them on Overview for a target-height range.</p>`;
+  const ts = ((c.tanner) || []).slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const t = ts[ts.length - 1];
+  if (!t) return `<div style="margin-top:14px"><h3>Puberty & predicted height</h3>${mphLine}<p style="color:var(--muted)">No Tanner staging recorded yet — stage annually from 8 y.</p></div>`;
+  const gonLbl = c.sex === "boy" ? (TANNER_G[(t.g || 1) - 1] || `G${t.g}`) : (TANNER_B[(t.b || 1) - 1] || `B${t.b}`);
+  const ti = tannerInterpret(c, t);
+  const tvLine = c.sex === "boy" && (t.tvL || t.tvR) ? `<br>Testicular vol: L ${esc(t.tvL || "—")} mL · R ${esc(t.tvR || "—")} mL` : "";
+  const menLine = c.sex === "girl" && t.menarche ? `<br>Menarche: ${fmtDate(t.menarche)}` : "";
+  return `<div style="margin-top:14px"><h3>Puberty & predicted height</h3>${mphLine}` +
+    `<p><b>Latest Tanner (${fmtDate(t.date)}):</b> ${esc(gonLbl)} · ${esc(TANNER_PH[(t.ph || 1) - 1] || `PH${t.ph}`)}${tvLine}${menLine}${t.note ? `<br>Note: ${esc(t.note)}` : ""}</p>` +
+    `<div class="alert ${ti.sev === "red" ? "a-red" : ti.sev === "amber" ? "a-amber" : "a-green"}"><div><b>${esc(ti.t)}.</b> ${esc(ti.b)}</div></div></div>`;
+}
+function growthMethodsHTML() {
+  const ref5 = (typeof DB !== "undefined" && DB.gRef5) || "iap";
+  return `<div style="margin-top:14px"><h3>References & methods</h3><ul style="font-size:12.5px;color:var(--muted)">` +
+    `<li><b>0–5 y:</b> WHO Child Growth Standards 2006 (MGRS), exact daily LMS interpolation (igrowup method beyond ±3 SD).</li>` +
+    `<li><b>5–18 y:</b> this report used <b>${ref5 === "cdc" ? "CDC 2000 exact" : "IAP 2015-aligned screening curves"}</b> (switchable in Growth → Options). IAP BMI lines track the adult 23 (overweight) / 27 (obesity) equivalents.</li>` +
+    `<li><b>Length vs height:</b> length &lt;2 y, height ≥2 y; a value measured the “wrong” way is converted with the WHO ±0.7 cm rule.</li>` +
+    `<li><b>Preterm</b> (gestation &lt;37 w): corrected age used until 2 y when enabled; PMA shown alongside.</li>` +
+    `<li><b>Velocity bands</b> are standard paediatric norms — short intervals (&lt;2–3 mo) exaggerate error; interpret with centile trends.</li>` +
+    `<li><b>Head circumference</b> has no IAP/CDC reference beyond 5 y — it is tracked serially with neurodevelopment.</li>` +
+    `<li>Screening aid — confirm treatment decisions on official printed charts or specialty software.</li></ul></div>`;
+}
+
 function printGrowthFull() {
   const c = child(); if (!c) return;
   const rows = allMeasures(c);
   if (!rows.length) return alert("No measurements to print.");
   const lm = rows[rows.length - 1], A = assessMeasure(c, lm), ga = A.ga;
   const imgs = GCHART_ORDER.map((ind) => ({ ind, img: growthChartImg(ind) }));
+  const drawn = imgs.filter((x) => x.img).length;
+  const chartSecs = imgs.map(({ ind, img }) => {
+    const cap = assessCaptionFor(A, ind);
+    return `<div style="margin-top:10px;text-align:center;break-inside:avoid">` +
+      (img
+        ? `<img src="${img}" style="max-width:100%;border:1px solid #cbd5e1;border-radius:8px">`
+        : `<div class="empty">Chart unavailable (${esc(GCHART_META[ind].title)}).</div>`) +
+      `<div style="font-size:12px;font-weight:700">${esc(GCHART_META[ind].title)}</div>` +
+      (cap ? `<div style="font-size:11.5px;color:var(--muted)">${esc(cap)}</div>` : "") + `</div>`;
+  }).join("");
   $("growthFullPrint").innerHTML = `${clinicHeader()}
     <div class="doc-title">📈 COMPREHENSIVE GROWTH REPORT (IAP / WHO)</div>
     ${childHeader(c)}
     <dl class="kv" style="margin-bottom:10px"><dt>Assessment date</dt><dd>${fmtDate(lm.date)} · chrono ${ageStr(ageBetween(c.dob, lm.date))}${ga.useCorr ? " · <b>corrected age used (preterm)</b>" : ""} · PMA ${pmaStr(ga.pmaD)}</dd>
     <dt>Anthropometry</dt><dd>${lm.wt} kg · ${lm.ht} cm (${lm.pos || "auto"}) · BMI ${lm.bmi}${lm.hc ? ` · HC ${lm.hc} cm` : ""}${lm.muac ? ` · MUAC ${lm.muac} cm` : ""}${lm.edema ? ` · <b>oedema ${esc(lm.edema)}</b>` : ""}</dd></dl>
+    <h3>Latest assessment — all indicators</h3>
     <table class="tbl"><thead><tr><th>Indicator</th><th>%ile</th><th>Z</th><th>Grade</th></tr></thead>
     ${A.rows.map((r) => `<tr><td><b>${esc(r.label)}</b> <span style="font-size:11px;color:var(--muted)">[${esc(r.ref)}]</span></td><td>${isFinite(r.pct) ? fmtPct(r.pct) : "—"}</td><td>${isFinite(r.z) ? zStr(r.z) : "—"}</td><td><b>${esc(r.grade)}</b></td></tr>`).join("")}</table>
-    ${imgs.map(({ ind, img }) => img ? `<div style="margin-top:10px;text-align:center;break-inside:avoid"><img src="${img}" style="max-width:100%;border:1px solid #cbd5e1;border-radius:8px"><div style="font-size:12px;font-weight:700">${GCHART_META[ind].title}</div></div>` : "").join("")}
-    <h4 style="margin:12px 0 6px;color:var(--navy)">Impression & plan</h4>
+    <h3 style="margin-top:14px">Growth charts (${drawn} of ${imgs.length})</h3>
+    ${chartSecs}
+    ${growthHistoryHTML(c, rows)}
+    ${growthVelocityHTML(c, rows)}
+    ${growthPubertyHTML(c)}
+    ${growthMethodsHTML()}
+    <h3 style="margin-top:14px">Impression & plan</h3>
     ${(A.biv || []).map((f) => `<div>⚠️ ${esc(f)}</div>`).join("")}
     ${A.triage.map((t) => `<div style="margin-bottom:6px"><b>${esc(t.title)}</b><br>${esc(t.body)}</div>`).join("") || "<div>Growing well — continue routine surveillance.</div>"}
-    <div class="footer-note">Exact WHO (0–5 y) / CDC + IAP-aligned (5–18 y) references · ${mphTarget(c) ? `MPH target ${mphTarget(c).mph.toFixed(1)} cm (${mphTarget(c).lo.toFixed(0)}–${mphTarget(c).hi.toFixed(0)}) · ` : ""}Confirm diagnostic labels on official charts.</div>
-    ${docFooter("Growth report")}`;
+    <div class="footer-note">Exact WHO (0–5 y) / CDC + IAP-aligned (5–18 y) references · Confirm diagnostic labels on official charts.</div>
+    ${docFooter("Comprehensive growth report")}`;
   printPage("pg-growthprint");
 }
