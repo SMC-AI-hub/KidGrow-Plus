@@ -581,16 +581,18 @@ async function main() {
   ok(sb.document.getElementById("vBatch").value === "B-1", "picker autofills batch");
 
   // ---- collapsible nav + filter + applyRole fix ----
-  ok(html.includes('id="navFilter"') && (html.match(/data-sec="/g) || []).length === 5, "nav has filter + 5 sections");
+  ok(html.includes('id="navFilter"') && (html.match(/data-sec="/g) || []).length === 8, "nav has filter + 8 sections");
   const sideNav = html.slice(html.indexOf('id="sideNav"'), html.indexOf('id="userChip"'));
   ok(sideNav.split("data-sec=")[0].indexOf("data-page=") === -1 && (sideNav.match(/data-page="/g) || []).length >= 30, "all nav buttons live inside sections");
-  ok(vm.runInContext("NAV_SECS.join(',')", sb) === "overview,flow,clinical,insights,system", "JS section list matches markup");
+  const navPages = [...sideNav.matchAll(/data-page="([^"]+)"/g)].map((m) => m[1]).sort().join(",");
+  ok(navPages === vm.runInContext("Object.keys(TITLES).sort().join(',')", sb), "every route mapped in new IA, none dropped");
+  ok(vm.runInContext("NAV_SECS.join(',')", sb) === "home,patients,ops,clinical,immun,specialty,reports,system", "JS section list matches markup");
   ok(sb.navMatch("Vaccination Record", "vacc") && sb.navMatch("NICU", "nicu") && !sb.navMatch("Growth", "xyz") && sb.navMatch("X", ""), "filter matcher");
   ok(typeof sb.toggleNavSec === "function" && typeof sb.filterNav === "function" && typeof sb.restoreNavSecs === "function" && typeof sb.refreshNavSecs === "function", "nav section fns exposed");
   sb.setNavSecCollapsed("clinical", true);
   ok(sb.navSecCollapsed().includes("clinical"), "collapse persists");
   sb.setNavSecCollapsed("clinical", false);
-  ok(!sb.navSecCollapsed().includes("clinical") && sb.navSecCollapsed().includes("insights"), "uncollapse works, defaults kept");
+  ok(!sb.navSecCollapsed().includes("clinical") && sb.navSecCollapsed().includes("specialty") && sb.navSecCollapsed().includes("reports"), "uncollapse works, defaults kept");
   try { sb.restoreNavSecs(); sb.filterNav("vac"); sb.filterNav(""); ok(true, "nav fns no-throw headless"); } catch (e) { ok(false, "nav fns no-throw headless (" + e.message + ")"); }
   const roleDefs = order.filter((f) => /function applyRole\s*\(/.test(fs.readFileSync(path.join(R, f), "utf8")));
   ok(roleDefs.length === 1 && roleDefs[0] === "js/front.js", "exactly one applyRole (front.js)");

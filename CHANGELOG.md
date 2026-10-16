@@ -1,5 +1,14 @@
 # Changelog
 
+## v10.10.2 — 2026-10-16 — Workflow-grouped navigation (8 sections, all 33 routes mapped)
+- 🗂️ Menu regrouped around work: Home · Patients · Clinic ops · Clinical care ·
+  Immunization (vaccines + card + AEFI + stock together) · Specialty (NICU/eMAR) ·
+  Reports · System. Emergency + Calculators moved one tap away in Clinical care.
+- Collapse prefs storage bumped (kgNavCol2) so stale v1 prefs don't linger;
+  Specialty/Reports/System start collapsed. Role-hiding + filter untouched.
+- New guard: test fails if any TITLES route lacks a menu button or vice versa.
+- Tests: 534/534 (337 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.10.1 — 2026-10-16 — Shorter side menu: collapsible sections + filter + role-hiding fix
 - 📂 All 5 menu sections collapse (Insights + System start collapsed); choice
   persists per browser. 🔍 Filter box narrows the menu as you type (Esc clears).

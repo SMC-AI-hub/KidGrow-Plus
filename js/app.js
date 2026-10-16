@@ -323,16 +323,17 @@ function toggleNav() {
 }
 
 /* ---------------- Collapsible nav sections + filter ---------------- */
-const NAV_SECS = ["overview", "flow", "clinical", "insights", "system"];
-const NAV_SEC_DEFAULT_CLOSED = ["insights", "system"]; // rarely-daily sections start collapsed
+const NAV_SECS = ["home", "patients", "ops", "clinical", "immun", "specialty", "reports", "system"];
+const NAV_SEC_DEFAULT_CLOSED = ["specialty", "reports", "system"]; // rarely-daily sections start collapsed
+const NAV_COL_KEY = "kgNavCol2"; // bumped on IA regroup so stale v1 prefs don't linger
 function navSecCollapsed() {
-  try { return JSON.parse(localStorage.getItem("kgNavCol") || "null") || [...NAV_SEC_DEFAULT_CLOSED]; }
+  try { return JSON.parse(localStorage.getItem(NAV_COL_KEY) || "null") || [...NAV_SEC_DEFAULT_CLOSED]; }
   catch (e) { return [...NAV_SEC_DEFAULT_CLOSED]; }
 }
 function setNavSecCollapsed(sec, closed) {
   const arr = navSecCollapsed().filter((s) => s !== sec);
   if (closed) arr.push(sec);
-  try { localStorage.setItem("kgNavCol", JSON.stringify(arr)); } catch (e) {}
+  try { localStorage.setItem(NAV_COL_KEY, JSON.stringify(arr)); } catch (e) {}
 }
 function toggleNavSec(sec) {
   const box = document.querySelector(`.navsec[data-sec="${sec}"]`);

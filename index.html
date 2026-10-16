@@ -26,53 +26,68 @@
     </div>
     <nav class="nav" id="sideNav">
       <div class="navfilter"><input id="navFilter" placeholder="🔍 Filter menu…" autocomplete="off" oninput="filterNav(this.value)" onkeydown="if(event.key==='Escape'){this.value='';filterNav('')}"></div>
-      <div class="navsec" data-sec="overview">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('overview')"><span>Overview</span><span class="chev">▾</span></button>
+      <div class="navsec" data-sec="home">
+      <button class="nav-group navsec-h" onclick="toggleNavSec('home')"><span>Home</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="dashboard" class="active"><span class="ic">📊</span>Dashboard</button>
       <button data-page="pricing"><span class="ic">💎</span>Pricing</button>
       </div>
       </div>
-      <div class="navsec" data-sec="flow">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('flow')"><span>Clinic flow</span><span class="chev">▾</span></button>
+      <div class="navsec" data-sec="patients">
+      <button class="nav-group navsec-h" onclick="toggleNavSec('patients')"><span>Patients</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="children"><span class="ic">🧒</span>Children</button>
       <button data-page="nb"><span class="ic">👶</span>Newborn</button>
+      <button data-page="timeline"><span class="ic">🕓</span>Timeline</button>
+      </div>
+      </div>
+      <div class="navsec" data-sec="ops">
+      <button class="nav-group navsec-h" onclick="toggleNavSec('ops')"><span>Clinic ops</span><span class="chev">▾</span></button>
+      <div class="navsec-b">
       <button data-page="schedule"><span class="ic">📅</span>Schedule</button>
       <button data-page="front"><span class="ic">🎟️</span>Frontdesk</button>
-      <button data-page="stock"><span class="ic">🧊</span>Vaccine Stock</button>
       <button data-page="display"><span class="ic">📺</span>Display</button>
       </div>
       </div>
       <div class="navsec" data-sec="clinical">
       <button class="nav-group navsec-h" onclick="toggleNavSec('clinical')"><span>Clinical care</span><span class="chev">▾</span></button>
       <div class="navsec-b">
+      <button data-page="visits"><span class="ic">🩺</span>Visits & Notes</button>
+      <button data-page="rx"><span class="ic">💊</span>Prescription</button>
+      <button data-page="formulary"><span class="ic">📚</span>Formulary</button>
+      <button data-page="growth"><span class="ic">📈</span>Growth (IAP/WHO)</button>
       <button data-page="milestones"><span class="ic">🌟</span>Milestones</button>
+      <button data-page="screen"><span class="ic">🔍</span>Screening</button>
+      <button data-page="diet"><span class="ic">🥗</span>Diet</button>
+      <button data-page="labs"><span class="ic">🩸</span>Labs & Anaemia</button>
+      <button data-page="consent"><span class="ic">✍️</span>Consent</button>
+      <button data-page="hand"><span class="ic">📄</span>Handouts</button>
+      <button data-page="emg"><span class="ic">🚨</span>Emergency</button>
+      <button data-page="calc"><span class="ic">🧮</span>Calculators</button>
+      </div>
+      </div>
+      <div class="navsec" data-sec="immun">
+      <button class="nav-group navsec-h" onclick="toggleNavSec('immun')"><span>Immunization</span><span class="chev">▾</span></button>
+      <div class="navsec-b">
       <button data-page="vaccines"><span class="ic">💉</span>Vaccination Record</button>
       <button data-page="card"><span class="ic">🧾</span>Vaccine Card</button>
       <button data-page="aefi"><span class="ic">⚠️</span>AEFI</button>
-      <button data-page="growth"><span class="ic">📈</span>Growth (IAP/WHO)</button>
-      <button data-page="labs"><span class="ic">🩸</span>Labs & Anaemia</button>
-      <button data-page="screen"><span class="ic">🔍</span>Screening</button>
-      <button data-page="diet"><span class="ic">🥗</span>Diet</button>
-      <button data-page="visits"><span class="ic">🩺</span>Visits & Notes</button>
-      <button data-page="timeline"><span class="ic">🕓</span>Timeline</button>
-      <button data-page="rx"><span class="ic">💊</span>Prescription</button>
-      <button data-page="formulary"><span class="ic">📚</span>Formulary</button>
-      <button data-page="consent"><span class="ic">✍️</span>Consent</button>
+      <button data-page="stock"><span class="ic">🧊</span>Vaccine Stock</button>
+      </div>
+      </div>
+      <div class="navsec" data-sec="specialty">
+      <button class="nav-group navsec-h" onclick="toggleNavSec('specialty')"><span>Specialty</span><span class="chev">▾</span></button>
+      <div class="navsec-b">
       <button data-page="nicu"><span class="ic">🏥</span>NICU</button>
       <button data-page="mar"><span class="ic">💊</span>eMAR</button>
-      <button data-page="calc"><span class="ic">🧮</span>Calculators</button>
-      <button data-page="mrd"><span class="ic">📋</span>MRD Registers</button>
       </div>
       </div>
-      <div class="navsec" data-sec="insights">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('insights')"><span>Insights</span><span class="chev">▾</span></button>
+      <div class="navsec" data-sec="reports">
+      <button class="nav-group navsec-h" onclick="toggleNavSec('reports')"><span>Reports</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="analytics"><span class="ic">📊</span>Analytics</button>
-      <button data-page="emg"><span class="ic">🚨</span>Emergency</button>
-      <button data-page="hand"><span class="ic">📄</span>Handouts</button>
       <button data-page="reports"><span class="ic">🖨️</span>Reports</button>
+      <button data-page="mrd"><span class="ic">📋</span>MRD Registers</button>
       <button data-page="export"><span class="ic">📤</span>Exports</button>
       </div>
       </div>
