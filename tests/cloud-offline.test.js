@@ -397,6 +397,21 @@ async function main() {
   vm.runInContext("document.getElementById('vDate').value='2026-05-01';", sb);
   sb.saveVaccine(); // confirm() stubbed false -> overwrite declined
   ok(vm.runInContext("DB.children[0].vaccines.BCG.date", sb) === "2026-01-10", "overwrite requires confirm, declined in test");
+
+  // ---- unified patient header ----
+  ok(sb.patientHeaderHTML(null) === "", "header empty with no child");
+  const phc = { id: "ph1", name: "Header Kid", dob: "2024-01-15", sex: "girl", allergy: "Penicillin",
+    measures: [{ date: "2026-01-01", wt: 10 }, { date: "2026-06-01", wt: 11.5 }], vaccines: {}, visits: [] };
+  const phd = sb.patientHeaderData(phc);
+  ok(phd.wt === 11.5 && phd.wtDate === "2026-06-01", "header picks latest weight");
+  const phh = sb.patientHeaderHTML(phc);
+  ok(phh.includes("Header Kid") && phh.includes("Penicillin") && phh.includes("11.5"), "header shows name+allergy+weight");
+  ok(sb.patientHeaderHTML({ ...phc, allergy: "" }).includes("No known allergy"), "header shows no-allergy state");
+  vm.runInContext("DB.children=[{id:'ph1',name:'Header Kid',dob:'2024-01-15',sex:'girl',allergy:'',vaccines:{},visits:[],measures:[]}]; DB.activeId='ph1'; DB.tokens=[{date:todayISO(),n:5,childId:'ph1',reason:'Fever',status:'in'}];", sb);
+  ok(sb.patientHeaderHTML(vm.runInContext("DB.children[0]", sb)).includes("Token #5"), "header shows active token");
+  sb.renderPatientHeaders();
+  ok(sb.document.getElementById("ph-visits").innerHTML.includes("Header Kid"), "header slot filled on visits page");
+  ok(sb.document.getElementById("ph-rx").innerHTML.includes("Header Kid"), "header slot filled on rx page");
   const arow = SP.admToRow("m5", { id: "a1", admittedAt: "2026-10-06T08:00", birthWtG: 2400, ga: 36, status: "admitted", indication: "RDS" });
   ok(arow.local_id === "n_a1" && arow.patient_local_id === "c_m5" && arow.birth_weight_g === 2400, "admToRow maps");
   const rrow = SP.roundToRow("a1", { id: "r1", date: "2026-10-07", wtG: 2450, vitals: { spo2: 94 } });
