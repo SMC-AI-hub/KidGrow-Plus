@@ -94,7 +94,7 @@ function normalizeChild(c) {
 function child() { return normalizeChild(DB.children.find((c) => c.id === DB.activeId) || DB.children[0] || null); }
 
 /* ================= PATIENT HEADER (unified, every clinical screen) ================= */
-const PH_SLOTS = ["visits", "rx", "vaccines", "growth", "labs", "aefi", "nicu", "mar", "nb", "screen", "diet", "consent"];
+const PH_SLOTS = ["visits", "timeline", "rx", "vaccines", "growth", "labs", "aefi", "nicu", "mar", "nb", "screen", "diet", "consent"];
 function patientHeaderData(c) {
   if (!c) return null;
   const ms = [...(c.measures || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
@@ -252,8 +252,8 @@ function seedDemo() {
 }
 
 /* ---------------- Navigation ---------------- */
-const TITLES = { dashboard: "Dashboard", children: "Children", nb: "Newborn Care", schedule: "Schedule & Reminders", milestones: "Milestone Assessment", vaccines: "Vaccination Digital Record", card: "Digital Vaccine Card", aefi: "AEFI Register", growth: "Growth Assessment (IAP / WHO)", labs: "Labs & Anaemia", screen: "Screening Suite", diet: "Diet Planner", hand: "Parent Handouts", visits: "Visits & Clinical Notes", rx: "Prescription", consent: "E-Consent", nicu: "NICU", mar: "eMAR", calc: "Calculators", mrd: "MRD Registers", formulary: "Formulary Review", front: "Frontdesk — Tokens & Billing", analytics: "Clinic Analytics", emg: "Emergency Ready-Reckoner", reports: "Reports & Certificates", export: "Data & Exports", users: "Users & Audit", settings: "Settings", stock: "Vaccine Stock & Ledger", display: "Token Display" };
-const RENDER_FOR = { dashboard: "renderDashboard", children: "renderChildren", nb: "renderNB", schedule: "renderSchedule", milestones: "renderMilestones", vaccines: "renderVaccines", card: "renderCard", aefi: "renderAefi", growth: "renderGrowth", labs: "renderLabs", screen: "renderScreen", diet: "renderDiet", hand: "renderHand", visits: "renderVisits", rx: "renderRx", consent: "renderConsent", nicu: "renderNicu", mar: "renderMar", calc: "renderCalc", mrd: "renderMrd", formulary: "renderFormulary", front: "renderFront", analytics: "renderAnalytics", emg: "renderEmergency", export: "renderExport", users: "renderUsers", stock: "renderStock", display: "renderDisplay" };
+const TITLES = { dashboard: "Dashboard", children: "Children", nb: "Newborn Care", schedule: "Schedule & Reminders", milestones: "Milestone Assessment", vaccines: "Vaccination Digital Record", card: "Digital Vaccine Card", aefi: "AEFI Register", growth: "Growth Assessment (IAP / WHO)", labs: "Labs & Anaemia", screen: "Screening Suite", diet: "Diet Planner", hand: "Parent Handouts", visits: "Visits & Clinical Notes", timeline: "Patient Timeline", rx: "Prescription", consent: "E-Consent", nicu: "NICU", mar: "eMAR", calc: "Calculators", mrd: "MRD Registers", formulary: "Formulary Review", front: "Frontdesk — Tokens & Billing", analytics: "Clinic Analytics", emg: "Emergency Ready-Reckoner", reports: "Reports & Certificates", export: "Data & Exports", users: "Users & Audit", settings: "Settings", stock: "Vaccine Stock & Ledger", display: "Token Display" };
+const RENDER_FOR = { dashboard: "renderDashboard", children: "renderChildren", nb: "renderNB", schedule: "renderSchedule", milestones: "renderMilestones", vaccines: "renderVaccines", card: "renderCard", aefi: "renderAefi", growth: "renderGrowth", labs: "renderLabs", screen: "renderScreen", diet: "renderDiet", hand: "renderHand", visits: "renderVisits", timeline: "renderTimeline", rx: "renderRx", consent: "renderConsent", nicu: "renderNicu", mar: "renderMar", calc: "renderCalc", mrd: "renderMrd", formulary: "renderFormulary", front: "renderFront", analytics: "renderAnalytics", emg: "renderEmergency", export: "renderExport", users: "renderUsers", stock: "renderStock", display: "renderDisplay" };
 function go(page) {
   if (typeof roleBlock === "function" && roleBlock(page)) { alert("🔒 Your role cannot open this page."); return; }
   document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
@@ -398,6 +398,59 @@ function renderChildren() {
       </div>`;
     box.appendChild(div);
   });
+}
+
+/* ================= UNIFIED TIMELINE ================= */
+let TIMELINE_FILTER = "all";
+const TIMELINE_FILTERS = [["all", "All"], ["visit", "🩺 Visits"], ["rx", "💊 Rx"], ["vax", "💉 Vaccines"], ["growth", "📏 Growth"], ["labs", "🩸 Labs"], ["aefi", "⚠️ AEFI"]];
+function vaxLabel(code) {
+  try {
+    for (const v of (VACCINE_SCHEDULE || [])) for (const x of (v.vaccines || []))
+      if (x.code === code) return `${x.name}${x.dose ? " " + x.dose : ""}`;
+  } catch (e) {}
+  return code;
+}
+function timelineEvents(c) {
+  if (!c) return [];
+  const ev = [];
+  const ts = (d) => (d || "").slice(0, 10);
+  (c.visits || []).forEach((v) => ev.push({ date: ts(v.date), kind: "visit", icon: "🩺", title: v.type || "Visit",
+    sub: [v.subj && ("S: " + v.subj), v.obj && ("O: " + v.obj), v.plan && ("A/P: " + v.plan)].filter(Boolean).join(" · ") }));
+  (c.rx || []).forEach((r) => ev.push({ date: ts(r.date), kind: "rx", icon: "💊", title: "Rx" + (r.dx ? " — " + r.dx : ""),
+    sub: (r.items || []).map((i) => i.drug).filter(Boolean).join(", ") + (r.allergyFlag ? " ⚠️ allergy flag" : "") }));
+  Object.entries(c.vaccines || {}).forEach(([code, r]) => ev.push({ date: ts(r.date), kind: "vax", icon: "💉",
+    title: vaxLabel(code), sub: [r.brand, r.batch && ("batch " + r.batch), r.by && ("by " + r.by)].filter(Boolean).join(" · ") }));
+  (c.extraVac || []).forEach((x) => ev.push({ date: ts(x.date), kind: "vax", icon: "➕", title: x.name || "Vaccine",
+    sub: [x.brand, x.batch && ("batch " + x.batch)].filter(Boolean).join(" · ") }));
+  (c.measures || []).forEach((m) => ev.push({ date: ts(m.date), kind: "growth", icon: "📏", title: "Growth",
+    sub: [m.wt > 0 && (`${m.wt} kg`), m.ht > 0 && (`${m.ht} cm`), m.hc > 0 && (`HC ${m.hc}`), m.muac > 0 && (`MUAC ${m.muac}`)].filter(Boolean).join(" · ") }));
+  (c.labs || []).forEach((l) => {
+    const p = ["mcv", "ferritin", "crp", "b12", "vitD"].map((k) => l[k] ? `${k} ${l[k]}` : "").filter(Boolean);
+    if (l.note) p.push(l.note);
+    ev.push({ date: ts(l.date), kind: "labs", icon: "🩸", title: "Lab" + (l.hb ? ` — Hb ${l.hb}` : ""), sub: p.join(" · ") });
+  });
+  (c.aefi || []).forEach((e) => ev.push({ date: ts(e.date), kind: "aefi", icon: "⚠️", title: `AEFI — ${e.vacLabel || e.code || ""}`,
+    sub: [e.severity, e.outcome && ("Outcome: " + e.outcome), e.reported === "Yes" && "Reported"].filter(Boolean).join(" · ") }));
+  const ko = { visit: 0, rx: 1, vax: 2, growth: 3, labs: 4, aefi: 5 };
+  ev.sort((a, b) => (b.date || "").localeCompare(a.date || "") || ((ko[a.kind] ?? 9) - (ko[b.kind] ?? 9)));
+  return ev;
+}
+function timelineHTML(c, filter) {
+  const f = filter || "all";
+  const all = timelineEvents(c);
+  const list = f === "all" ? all : all.filter((e) => e.kind === f);
+  const chips = TIMELINE_FILTERS.map(([k, l]) => {
+    const n = k === "all" ? all.length : all.filter((e) => e.kind === k).length;
+    return `<button class="btn btn-xs ${k === f ? "btn-p" : "btn-o"}" onclick="TIMELINE_FILTER='${k}';renderTimeline()">${esc(l)} (${n})</button>`;
+  }).join("");
+  const rows = list.slice(0, 200).map((e) => `<div class="vac-row"><div class="grow"><span style="font-size:12px;color:var(--muted)">${esc(fmtDate(e.date))}</span> ${e.icon} <b>${esc(e.title)}</b><br>${e.sub ? `<span style="font-size:13px">${esc(e.sub.length > 160 ? e.sub.slice(0, 160) + "…" : e.sub)}</span>` : ""}</div></div>`).join("");
+  return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${chips}</div>` +
+    (rows || `<div class="hint">No ${f === "all" ? "" : f + " "}records yet for this child.</div>`) +
+    (list.length > 200 ? `<div class="hint">Showing latest 200 of ${list.length}.</div>` : "");
+}
+function renderTimeline() {
+  const el = $("timelineList"); if (!el) return;
+  el.innerHTML = timelineHTML(child(), (typeof TIMELINE_FILTER !== "undefined") ? TIMELINE_FILTER : "all");
 }
 
 /* ================= VACCINES ================= */
@@ -839,7 +892,7 @@ function renderAll() {
   if (!child() && DB.children.length) DB.activeId = DB.children[0].id;
   DB.appts = DB.appts || []; DB.tokens = DB.tokens || []; DB.bills = DB.bills || []; DB.users = DB.users || []; DB.audit = DB.audit || []; DB.session = DB.session || {};
   try { syncChildPicker(); } catch (e) {}
-  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
+  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
 }
 window.addEventListener("resize", () => drawGrowthChart());
 

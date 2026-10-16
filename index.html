@@ -44,6 +44,7 @@
       <button data-page="screen"><span class="ic">🔍</span>Screening</button>
       <button data-page="diet"><span class="ic">🥗</span>Diet</button>
       <button data-page="visits"><span class="ic">🩺</span>Visits & Notes</button>
+      <button data-page="timeline"><span class="ic">🕓</span>Timeline</button>
       <button data-page="rx"><span class="ic">💊</span>Prescription</button>
       <button data-page="formulary"><span class="ic">📚</span>Formulary</button>
       <button data-page="consent"><span class="ic">✍️</span>Consent</button>
@@ -307,6 +308,11 @@
         <div class="toolbar"><button class="btn btn-p" onclick="openVisitModal()">+ New visit note</button><span class="sp"></span>
         <button class="btn btn-o btn-sm" onclick="printPage('pg-visits')">🖨️ Print notes</button></div>
         <div id="visitList"></div>
+      </section>
+      <section class="page" id="pg-timeline"><div id="ph-timeline"></div>
+        <div class="toolbar"><span style="font-size:13px;color:var(--muted)">All visits, prescriptions, vaccines, growth, labs & AEFI — newest first</span><span class="sp"></span>
+        <button class="btn btn-o btn-sm" onclick="printPage('pg-timeline')">🖨️ Print</button></div>
+        <div id="timelineList"></div>
       </section>
 
       <!-- ======== REPORTS ======== -->
