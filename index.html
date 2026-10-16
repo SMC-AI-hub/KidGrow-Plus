@@ -258,7 +258,7 @@
       <section class="page" id="pg-calc"><div id="calcBox"></div></section>
       <section class="page" id="pg-children">
         <div class="toolbar">
-          <input class="search" id="childSearch" placeholder="🔍 Search children…" oninput="renderChildren()">
+          <input class="search" id="childSearch" placeholder="🔍 Search name, parent, phone…  ( press / anywhere )" oninput="renderChildren()" onkeydown="childSearchKey(event)">
           <span class="sp"></span>
           <button class="btn btn-p" onclick="openChildModal()">+ Register child</button>
         </div>

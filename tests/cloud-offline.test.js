@@ -718,6 +718,57 @@ async function main() {
   ok(decoded === 1 && sb.__printed === 1, "printPage waits for image decode, then prints");
   gfp.querySelectorAll = qsaOrig;
 
+  // ---- Build A: type-ahead patient search (G1) ----
+  vm.runInContext(`DB.children=[
+    {id:'s1',name:'Aarav Sharma',sex:'boy',dob:'2022-01-01',father:'Rohit Sharma',mother:'Priya',phone:'98765 43210',abha:'',vaccines:{},visits:[],measures:[]},
+    {id:'s2',name:'Diya Sharma',sex:'girl',dob:'2023-03-03',father:'Karan',mother:'Anaya Sharma',phone:'91234 56789',abha:'',vaccines:{},visits:[],measures:[]},
+    {id:'s3',name:'Arjun Mehta',sex:'boy',dob:'2021-06-06',father:'Vikram',mother:'Neha',phone:'90000 11111',abha:'',vaccines:{},visits:[],measures:[]}]; DB.activeId='s1';`, sb);
+  const sKids = vm.runInContext("DB.children", sb);
+  ok(sb.matchChildren("sharma", sKids).map((h) => h.c.id).join(",") === "s1,s2", "name hit outranks parent hit");
+  ok(sb.matchChildren("98765", sKids).map((h) => h.c.id).join(",") === "s1", "phone digits match normalized number");
+  ok(sb.matchChildren("91234-56789", sKids).map((h) => h.c.id).join(",") === "s2", "dashed phone query still matches");
+  ok(sb.matchChildren("anaya", sKids)[0].why.includes("parent"), "parent match explains itself");
+  ok(sb.matchChildren("sharma 2023", sKids).map((h) => h.c.id).join(",") === "s2", "multi-token AND narrows to one child");
+  ok(sb.matchChildren("zzzqqq", sKids).length === 0, "no match returns empty");
+  ok(sb.matchChildren("", sKids, ["s3", "s1"])[0].c.id === "s3", "empty query lists recents first");
+  sb.pushRecentId("s9"); sb.pushRecentId("s3");
+  ok(sb.getRecentIds()[0] === "s3" && sb.getRecentIds().length <= 8, "recents round-trip with cap");
+  const dStrong = sb.findDupChildren({ name: "Aarav Sharma", dob: "2022-01-01", phone: "" }, sKids);
+  ok(dStrong.length === 1 && dStrong[0].strong && dStrong[0].why.includes("name + DOB"), "exact name+DOB flagged strong");
+  const dPhone = sb.findDupChildren({ name: "Nobody", dob: "2023-03-03", phone: "9123456789" }, sKids);
+  ok(dPhone.length === 1 && dPhone[0].c.id === "s2", "same phone+DOB flagged despite different name");
+  const dWeak = sb.findDupChildren({ name: "Aarav Sharma", dob: "2020-05-05", phone: "" }, sKids);
+  ok(dWeak.length === 1 && !dWeak[0].strong, "same name different DOB is a weak verify-not-block");
+  ok(sb.findDupChildren({ name: "Aarav Sharma", dob: "2022-01-01", phone: "" }, sKids, "s1").length === 0, "dup screen excludes self on edit");
+  sb.document.getElementById("cId").value = "";
+  sb.document.getElementById("cName").value = "Aarav Sharma";
+  sb.document.getElementById("cDob").value = "2022-01-01";
+  sb.document.getElementById("cPhone").value = "";
+  sb.saveChild();
+  ok(vm.runInContext("DB.children.length", sb) === 3, "duplicate registration refused when confirm declined");
+  await new Promise((r) => setTimeout(r, 2600)); // outlast the 2.5 s double-submit guard
+  sb.document.getElementById("cName").value = "Zara Khan";
+  sb.document.getElementById("cDob").value = "2024-01-01";
+  sb.saveChild();
+  ok(vm.runInContext("DB.children.length", sb) === 4, "genuine registration still saves");
+  sb.scrollTo = () => {};
+  ok(sb.globalSlashKey({ key: "/", target: { tagName: "DIV" }, preventDefault() {} }) === true, "/ acts on body");
+  ok(sb.document.getElementById("pageTitle").textContent === "Children", "/ navigates to Children");
+  ok(sb.globalSlashKey({ key: "/", target: { tagName: "INPUT" }, preventDefault() {} }) === false, "/ ignored while typing");
+  const dqOrig = sb.document.querySelector;
+  sb.document.querySelector = () => ({});
+  ok(sb.globalSlashKey({ key: "/", target: { tagName: "DIV" }, preventDefault() {} }) === false, "/ ignored with modal open");
+  sb.document.querySelector = dqOrig;
+  const ccBox = sb.document.getElementById("childCards");
+  ccBox.children.length = 0;
+  sb.document.getElementById("childSearch").value = "sharma";
+  sb.renderChildren();
+  ok(ccBox.children.length === 2 && ccBox.children[0].innerHTML.includes("Aarav Sharma") && ccBox.children[1].innerHTML.includes("Diya Sharma"), "rendered cards follow ranked order");
+  ccBox.children.length = 0;
+  sb.document.getElementById("childSearch").value = "anaya";
+  sb.renderChildren();
+  ok(ccBox.children.length === 1 && ccBox.children[0].innerHTML.includes("matched: parent"), "card shows why it matched");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

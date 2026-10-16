@@ -132,7 +132,18 @@ function renderPatientHeaders() {
   const html = patientHeaderHTML(c);
   PH_SLOTS.forEach((s) => { const el = document.getElementById("ph-" + s); if (el) el.innerHTML = html; });
 }
-function setActive(id) { DB.activeId = id; DB.msBand = null; save(); syncChildPicker(); renderAll(); }
+function setActive(id) { DB.activeId = id; DB.msBand = null; pushRecentId(id); save(); syncChildPicker(); renderAll(); }
+
+/* ---------------- Recent patients (type-ahead ranking) ---------------- */
+function getRecentIds() { try { const r = JSON.parse(localStorage.getItem("kgRecent") || "[]"); return Array.isArray(r) ? r.filter((x) => typeof x === "string") : []; } catch (e) { return []; } }
+function pushRecentId(id) {
+  if (!id) return;
+  try {
+    const r = getRecentIds().filter((x) => x !== id);
+    r.unshift(id);
+    localStorage.setItem("kgRecent", JSON.stringify(r.slice(0, 8)));
+  } catch (e) {}
+}
 
 /* ---------------- Demo seed ---------------- */
 function seedDemo() {
@@ -266,6 +277,7 @@ function go(page) {
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll("#sideNav button, #mobNav button").forEach((b) => b.addEventListener("click", () => go(b.dataset.page)));
+document.addEventListener("keydown", globalSlashKey); // "/" jumps to patient search from anywhere
 
 /* ---------------- Theme + sidebar ---------------- */
 function applyTheme() {
@@ -413,6 +425,8 @@ function saveChild() {
   if (!name || !dob) return alert("Name and date of birth are required.");
   if (dob > todayISO()) return alert("Date of birth cannot be in the future.");
   const id = $("cId").value;
+  const dups = findDupChildren({ name, dob, phone: $("cPhone").value }, DB.children, id || null);
+  if (dups.length && !confirm(`⚠️ Possible duplicate record:\n${dups.slice(0, 3).map((d) => `• ${d.c.name} (DOB ${fmtDate(d.c.dob)}) — ${d.why}`).join("\n")}\n\nSave anyway?`)) return;
   const data = { name, sex: $("cSex").value, dob, blood: $("cBlood").value, birthWt: parseFloat($("cBirthWt").value) || "", gest: $("cGest").value, birthLen: parseFloat($("cBirthLen").value) || "", birthHC: parseFloat($("cBirthHC").value) || "", father: $("cFather").value.trim(), mother: $("cMother").value.trim(), fHt: parseFloat($("cFHt").value) || "", mHt: parseFloat($("cMHt").value) || "", phone: $("cPhone").value.trim(), abha: $("cAbha").value.trim(), ped: $("cPed").value.trim(), allergy: $("cAllergy").value.trim() };
   if (id) { const ex = DB.children.find((x) => x.id === id); if (ex) normalizeChild(Object.assign(ex, data)); }
   else DB.children.push(normalizeChild(Object.assign({ id: uid(), created: todayISO() }, data)));
@@ -429,21 +443,131 @@ function deleteChild(id) {
   auditSafe("Child deleted", c.name);
   save(); syncChildPicker(); renderAll();
 }
+/* ---------------- Type-ahead patient search (pure matcher) ---------------- */
+function childHay(c) {
+  return {
+    name: String(c.name || "").toLowerCase(),
+    parents: `${c.father || ""} ${c.mother || ""}`.toLowerCase(),
+    digits: String(c.phone || "").replace(/\D/g, ""),
+    abha: String(c.abha || "").replace(/\D/g, ""),
+    dob: String(c.dob || ""),
+  };
+}
+// Ranked multi-field match: every token must hit (AND). Returns [{c, score, why}].
+function matchChildren(q, kids, recentIds) {
+  const rec = recentIds || [];
+  const toks = String(q || "").toLowerCase().split(/\s+/).filter(Boolean);
+  const out = [];
+  for (const c of (kids || [])) {
+    const h = childHay(c), why = [];
+    const recIdx = rec.indexOf(c.id);
+    if (!toks.length) { out.push({ c, score: recIdx >= 0 ? 100 - recIdx : 0, why: recIdx >= 0 ? ["recent"] : [] }); continue; }
+    let score = 0, okAll = true;
+    for (const t of toks) {
+      const td = t.replace(/\D/g, "");
+      let s = 0, w = "";
+      if (h.name.startsWith(t)) { s = 60; w = "name"; }
+      else if (h.name.includes(t)) { s = 40; w = "name"; }
+      if (t.length >= 2 && h.parents.includes(t) && s < 25) { s = 25; w = "parent"; }
+      if (td.length >= 3 && h.digits.includes(td) && s < 50) { s = 50; w = "phone"; }
+      if (td.length >= 4 && h.abha.includes(td) && s < 30) { s = 30; w = "ABHA"; }
+      if (td.length >= 4 && h.dob.includes(t) && s < 20) { s = 20; w = "DOB"; }
+      if (!s) { okAll = false; break; }
+      score += s; if (w && !why.includes(w)) why.push(w);
+    }
+    if (!okAll) continue;
+    if (recIdx >= 0) { score += Math.max(0, 10 - recIdx); why.push("recent"); }
+    out.push({ c, score, why });
+  }
+  out.sort((a, b) => b.score - a.score || String(a.c.name || "").localeCompare(String(b.c.name || "")));
+  return out;
+}
+// Duplicate-registration screen. Returns [{c, why}] — strong first.
+function findDupChildren(data, kids, selfId) {
+  const nm = String(data.name || "").trim().toLowerCase();
+  const dob = String(data.dob || "");
+  const ph = String(data.phone || "").replace(/\D/g, "");
+  const out = [];
+  for (const c of (kids || [])) {
+    if (selfId && c.id === selfId) continue;
+    const cn = String(c.name || "").trim().toLowerCase();
+    const sameName = !!nm && cn === nm;
+    const sameDob = !!dob && String(c.dob || "") === dob;
+    const samePhone = ph.length >= 7 && String(c.phone || "").replace(/\D/g, "") === ph;
+    if (sameName && sameDob) out.push({ c, why: "same name + DOB", strong: true });
+    else if (samePhone && sameDob) out.push({ c, why: "same phone + DOB", strong: true });
+    else if (sameName) out.push({ c, why: "same name, different DOB — verify", strong: false });
+  }
+  out.sort((a, b) => (b.strong - a.strong) || String(a.c.name || "").localeCompare(String(b.c.name || "")));
+  return out;
+}
+/* ---------------- Patient-search keyboard support ---------------- */
+function childCardsFocus(i) {
+  const cards = document.querySelectorAll("#childCards .card[data-cid]");
+  if (!cards.length) return false;
+  const el = cards[Math.max(0, Math.min(cards.length - 1, i == null ? 0 : i))];
+  if (el && el.focus) el.focus();
+  return true;
+}
+function childCardsKey(e) {
+  if (!e || !e.key) return;
+  const box = $("childCards");
+  const cards = [...(box ? box.querySelectorAll(".card[data-cid]") : [])];
+  if (!cards.length) return;
+  const cur = cards.indexOf(document.activeElement);
+  if (cur < 0) return; // focus is on an inner button — leave native behaviour alone
+  if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); (cards[cur + 1] || cards[0]).focus(); }
+  else if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); (cards[cur - 1] || cards[cards.length - 1]).focus(); }
+  else if (e.key === "Enter") { e.preventDefault(); setActive(cards[cur].dataset.cid); go("dashboard"); }
+  else if (e.key === "Escape") { const s = $("childSearch"); if (s) { s.value = ""; renderChildren(); s.focus(); } }
+}
+function childSearchKey(e) {
+  if (!e || !e.key) return;
+  if (e.key === "ArrowDown") { e.preventDefault(); childCardsFocus(0); }
+  else if (e.key === "Enter") {
+    const first = document.querySelector("#childCards .card[data-cid]");
+    if (first && first.dataset.cid) { e.preventDefault(); setActive(first.dataset.cid); go("dashboard"); }
+  }
+  else if (e.key === "Escape") { e.target.value = ""; renderChildren(); }
+}
+// Global "/" focuses patient search from anywhere (returns true when it acts).
+function globalSlashKey(e) {
+  if (!e || e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return false;
+  const t = e.target || {};
+  if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable) return false;
+  if (document.querySelector(".modal-bg.open")) return false;
+  if (typeof roleBlock === "function" && roleBlock("children")) return false;
+  if (e.preventDefault) e.preventDefault();
+  go("children");
+  setTimeout(() => { const s = $("childSearch"); if (s && s.focus) { s.focus(); if (s.select) s.select(); } }, 60);
+  return true;
+}
 function renderChildren() {
-  const q = ($("childSearch").value || "").toLowerCase();
+  const q = ($("childSearch").value || "");
   const box = $("childCards"); box.innerHTML = "";
-  const list = DB.children.filter((c) => c.name.toLowerCase().includes(q));
-  if (!list.length) { box.innerHTML = `<div class="card" style="grid-column:1/-1"><div class="empty"><div class="big">🧒</div>No children found. Register your first child to begin.</div></div>`; return; }
-  list.forEach((c) => {
+  box.setAttribute("role", "listbox"); box.setAttribute("aria-label", "Patients");
+  box.onkeydown = childCardsKey;
+  const hits = matchChildren(q, DB.children, getRecentIds());
+  if (!hits.length) {
+    box.innerHTML = q.trim()
+      ? `<div class="card" style="grid-column:1/-1"><div class="empty"><div class="big">🔍</div>No matches for “${esc(q.trim())}”.<br><button class="btn btn-p btn-sm" style="margin-top:10px" onclick="openChildModal()">+ Register this child</button></div></div>`
+      : `<div class="card" style="grid-column:1/-1"><div class="empty"><div class="big">🧒</div>No children found. Register your first child to begin.</div></div>`;
+    return;
+  }
+  hits.forEach(({ c, why }) => {
     const a = ageBetween(c.dob);
     const vac = vaccineSummary(c);
     const div = document.createElement("div"); div.className = "card";
+    div.setAttribute("tabindex", "0"); div.setAttribute("role", "option"); div.dataset.cid = c.id;
+    div.setAttribute("aria-label", `${c.name}, ${ageStr(a)}`);
+    const whyLine = why.length ? `<div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">matched: ${esc(why.join(" · "))}</div>` : "";
     div.innerHTML = `
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
         <div class="avatar" style="width:48px;height:48px;font-size:18px">${esc(c.name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase())}</div>
         <div><b style="font-size:16px;color:var(--navy)">${esc(c.name)}</b><br>
         <span style="font-size:12.5px;color:var(--muted)">${c.sex === "boy" ? "♂ Boy" : "♀ Girl"} · ${ageStr(a)} · DOB ${fmtDate(c.dob)}</span></div>
       </div>
+      ${whyLine}
       <dl class="kv" style="margin-bottom:10px">
         <dt>Parents</dt><dd>${esc(c.father || "—")} · ${esc(c.mother || "—")}</dd>
         <dt>Vaccines</dt><dd>${vac.done}/${vac.total} done ${vac.overdue ? `· <span class="badge b-red">${vac.overdue} overdue</span>` : ""}</dd>
