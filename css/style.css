@@ -276,7 +276,8 @@ label.sib input{width:14px;height:14px;accent-color:var(--teal)}
   .sidebar,.topbar,.toolbar,.mobile-nav,.no-print{display:none!important}
   .main{padding:0}.content{padding:0;max-width:none}
   .page{display:none}.page.printing{display:block!important}
-  .page.printing{animation:none}
+  .page.printing{animation:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.bw-print .page.printing{filter:grayscale(1)}
   .card{box-shadow:none;border:1px solid #cbd5e1;break-inside:avoid}
   .stat{box-shadow:none}
   .vaxcard{border-width:1.5px;box-shadow:none}

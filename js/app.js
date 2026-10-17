@@ -1420,11 +1420,17 @@ function printCertificate() {
 
 /* ================= SETTINGS / DATA ================= */
 function saveSettings() {
-  const lm = document.getElementById("sLockMins");
-  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), addr: $("sAddr").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15") });
-  save(); syncChildPicker(); renderBrand(); alert("Clinic profile saved.");
+  const lm = document.getElementById("sLockMins"), scp0 = document.getElementById("sColorPrint");
+  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), addr: $("sAddr").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15"), colorPrint: scp0 ? scp0.checked : ((DB.settings || {}).colorPrint !== false) });
+  save(); syncChildPicker(); renderBrand(); applyPrintMode(); alert("Clinic profile saved.");
 }
-function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; $("sAddr").value = s.addr || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; }
+function savePrintPref() { const scp = $("sColorPrint"); if (!scp) return; DB.settings = Object.assign({}, DB.settings, { colorPrint: scp.checked }); save(); applyPrintMode(); toast(scp.checked ? "Color printing on 🎨" : "Ink-saver B&W printing on"); }
+function applyPrintMode() {
+  const color = (DB.settings || {}).colorPrint !== false;
+  try { document.body.classList.toggle("bw-print", !color); document.body.dataset.printMode = color ? "color" : "bw"; } catch (e) {}
+  return color;
+}
+function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; $("sAddr").value = s.addr || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; const scp = document.getElementById("sColorPrint"); if (scp) scp.checked = s.colorPrint !== false; }
 function exportData() {
   DB.lastBackup = todayISO(); save();
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: "application/json" });
@@ -1561,4 +1567,4 @@ function applyRefVersions() {
   try { document.querySelectorAll("[data-vaxver]").forEach((el) => { el.textContent = VAX_SCHEDULE_VERSION; n++; }); } catch (e) {}
   return n;
 }
-load(); loadSettings(); syncChildPicker(); applyTheme(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();
+load(); loadSettings(); syncChildPicker(); applyTheme(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();

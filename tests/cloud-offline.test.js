@@ -911,6 +911,17 @@ async function main() {
   sb.saveChild();
   ok(/^\d{4}$/.test(vm.runInContext("DB.children[DB.children.length-1].mrn", sb)), "registration auto-assigns MRN");
 
+  // ---- v10.11.1: color printing ----
+  vm.runInContext("delete DB.settings.colorPrint;", sb);
+  ok(sb.applyPrintMode() === true, "print defaults to color");
+  sb.document.getElementById("sColorPrint").checked = false;
+  sb.savePrintPref();
+  ok(vm.runInContext("DB.settings.colorPrint", sb) === false && sb.applyPrintMode() === false, "ink-saver toggle persists");
+  sb.document.getElementById("sColorPrint").checked = true;
+  sb.savePrintPref();
+  const cssP = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
+  ok(cssP.includes(".page.printing{animation:none;-webkit-print-color-adjust:exact") && cssP.includes("body.bw-print .page.printing{filter:grayscale(1)}"), "print CSS forces color, grayscale opt-out");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
