@@ -1,5 +1,17 @@
 # Changelog
 
+## v10.15.2 — 2026-10-17 — Growth print: no tabs, no duplicate chart
+- 🐛 Growth sub-tabs (Charts / All charts / Full assessment / Velocity /
+  Puberty / Standards) no longer print — the tab bar is now `no-print`
+  (it was the only tab bar outside a toolbar; all others verified hidden).
+- 🔍 "Weight-for-age duplicated at end" traced to the same stale-client
+  screen leak as v10.15.1 (report's own 6 charts verified distinct) —
+  fixed at delivery level (below), not just in CSS.
+- 📦 Service worker cache bumped v10 → v11 so every device re-downloads
+  the shell (with the v10.15.1 print fix) on next visit instead of
+  serving stale CSS indefinitely.
+- Tests: 665/665 (468 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.15.1 — 2026-10-17 — Printout no longer mirrors the screen
 - 🐛 Fixed: printouts showed the current screen page first, then the real
   content. Root cause: `.page.active{display:block}` (specificity 0,2,0)

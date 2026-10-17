@@ -99,7 +99,8 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/kidgrow-v10/.test(sw), "SW cache bumped to v10");
+  ok(/kidgrow-v11/.test(sw), "SW cache bumped to v11");
+  ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
   ok(C && C.enabled === false, "Cloud present but disabled with empty config");
