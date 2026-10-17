@@ -125,16 +125,18 @@ function drawGrowthChartInto(cv, ind) {
   const span = (hi - lo) || 1; lo -= span * 0.07; hi += span * 0.13;
 
   // ---- draw ----
-  const dpr = window.devicePixelRatio || 1, W = 900, H = 360;
+  const PR = !!cv._kgPrint; // print trial: hi-res + bolder render for paper
+  const FF = (st, w) => (w ? w + " " : "") + (PR ? Math.round(st * 1.12) : st) + "px 'Segoe UI',sans-serif";
+  const dpr = (window.devicePixelRatio || 1) * (PR ? 2.5 : 1), W = 900, H = 360;
   cv.width = W * dpr; cv.height = H * dpr;
   const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
   const pL = 54, pR = 16, pT = 14, pB = 36;
   const X = (x) => pL + ((x - x0) / (x1 - x0)) * (W - pL - pR);
   const Y = (v) => pT + (1 - (v - lo) / (hi - lo)) * (H - pT - pB);
-  ctx.font = "11px 'Segoe UI',sans-serif"; ctx.lineWidth = 1;
+  ctx.font = FF(11); ctx.lineWidth = PR ? 1.5 : 1;
   // grid
-  ctx.strokeStyle = "#edf1f6"; ctx.fillStyle = "#8a99ad";
+  ctx.strokeStyle = PR ? "#d9e1ea" : "#edf1f6"; ctx.fillStyle = PR ? "#54637a" : "#8a99ad";
   for (let i = 0; i <= 7; i++) {
     const v = lo + ((hi - lo) * i) / 7;
     ctx.beginPath(); ctx.moveTo(pL, Y(v)); ctx.lineTo(W - pR, Y(v)); ctx.stroke();
@@ -146,31 +148,31 @@ function drawGrowthChartInto(cv, ind) {
     ctx.fillText(xFmt(x), X(x) - 12, H - 14);
     ctx.beginPath(); ctx.moveTo(X(x), pT); ctx.lineTo(X(x), H - pB); ctx.stroke();
   }
-  ctx.fillStyle = "#64748b";
+  ctx.fillStyle = PR ? "#475569" : "#64748b";
   ctx.fillText(!meta.age ? "length / height (cm)" : "age", pL, H - 2);
   // junction marker 5y
   if (meta.age && x0 < 1826 && x1 > 1826 && ind !== "hc" && ind !== "muac") {
     ctx.strokeStyle = "#b6c2d1"; ctx.setLineDash([5, 4]);
     ctx.beginPath(); ctx.moveTo(X(1826), pT); ctx.lineTo(X(1826), H - pB); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = "#64748b"; ctx.fillText("5y: WHO → " + ((DB.gRef5 || "iap") === "cdc" ? "CDC" : "IAP"), X(1826) + 5, pT + 12);
+    ctx.fillStyle = PR ? "#475569" : "#64748b"; ctx.fillText("5y: WHO → " + ((DB.gRef5 || "iap") === "cdc" ? "CDC" : "IAP"), X(1826) + 5, pT + 12);
   }
   if (meta.age && (ind === "hc" || ind === "muac") && x1 > 1826) {
     ctx.strokeStyle = "#b6c2d1"; ctx.setLineDash([5, 4]);
     ctx.beginPath(); ctx.moveTo(X(1826), pT); ctx.lineTo(X(1826), H - pB); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = "#64748b"; ctx.fillText("reference to 5y", X(1826) + 5, pT + 12);
+    ctx.fillStyle = PR ? "#475569" : "#64748b"; ctx.fillText("reference to 5y", X(1826) + 5, pT + 12);
   }
   // MPH band
   if (mph && ind === "lhfa") {
     ctx.fillStyle = "rgba(139,92,246,.08)";
     ctx.fillRect(pL, Y(mph.hi), W - pL - pR, Y(mph.lo) - Y(mph.hi));
-    ctx.strokeStyle = "#8b5cf6"; ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "#8b5cf6"; ctx.setLineDash([6, 4]); ctx.lineWidth = PR ? 2 : 1.5;
     ctx.beginPath(); ctx.moveTo(pL, Y(mph.mph)); ctx.lineTo(W - pR, Y(mph.mph)); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = "#8b5cf6"; ctx.font = "bold 10px 'Segoe UI'"; ctx.fillText(`MPH ${mph.mph.toFixed(0)}cm`, W - pR - 78, Y(mph.mph) - 5);
-    ctx.font = "11px 'Segoe UI',sans-serif";
+    ctx.fillStyle = "#8b5cf6"; ctx.font = FF(10, "bold"); ctx.fillText(`MPH ${mph.mph.toFixed(0)}cm`, W - pR - 78, Y(mph.mph) - 5);
+    ctx.font = FF(11);
   }
   // curves
   curves.forEach((cs, k) => {
-    ctx.strokeStyle = lineColor(lines[k].l); ctx.lineWidth = (lines[k].l === "Median" || lines[k].l === "P50") ? 2.6 : 1.3;
+    ctx.strokeStyle = lineColor(lines[k].l); ctx.lineWidth = (lines[k].l === "Median" || lines[k].l === "P50") ? (PR ? 3.4 : 2.6) : (PR ? 1.9 : 1.3);
     ctx.beginPath(); let pen = false;
     cs.forEach((p) => {
       if (!p || !isFinite(p.v)) { pen = false; return; }
@@ -178,14 +180,14 @@ function drawGrowthChartInto(cv, ind) {
     });
     ctx.stroke();
     const last = [...cs].reverse().find((p) => p && isFinite(p.v));
-    if (last) { ctx.fillStyle = lineColor(lines[k].l); ctx.font = "bold 10px 'Segoe UI'"; ctx.fillText(lines[k].l, Math.min(X(last.x) - 24, W - 46), Y(last.v) - 5); ctx.font = "11px 'Segoe UI',sans-serif"; }
+    if (last) { ctx.fillStyle = lineColor(lines[k].l); ctx.font = FF(10, "bold"); ctx.fillText(lines[k].l, Math.min(X(last.x) - 24, W - 46), Y(last.v) - 5); ctx.font = FF(11); }
   });
   // wfh: height-based set (dashed, 65-120)
   if (!meta.age) {
     const T = WHO_REF.wfh[sxB(c.sex)];
     [3, 50, 97].forEach((p) => {
       const z = zMode ? (p === 3 ? -2 : p === 50 ? 0 : 2) : invPhi(p / 100);
-      ctx.strokeStyle = p === 50 ? "#0d9488" : "#b6c2d1"; ctx.lineWidth = p === 50 ? 1.6 : 1.1; ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = p === 50 ? "#0d9488" : "#b6c2d1"; ctx.lineWidth = p === 50 ? (PR ? 2.2 : 1.6) : (PR ? 1.5 : 1.1); ctx.setLineDash([5, 4]);
       ctx.beginPath();
       for (let x = Math.max(65, x0); x <= Math.min(120, x1); x += 1) {
         const r = lmsAt(T, x), v = lmsVal(r.M, r.S, r.L, z);
@@ -194,54 +196,54 @@ function drawGrowthChartInto(cv, ind) {
       }
       ctx.stroke(); ctx.setLineDash([]);
     });
-    ctx.fillStyle = "#64748b"; ctx.font = "10px 'Segoe UI'"; ctx.fillText("solid = length-based · dashed = height-based", pL + 6, pT + 12);
-    ctx.font = "11px 'Segoe UI',sans-serif";
+    ctx.fillStyle = PR ? "#475569" : "#64748b"; ctx.font = FF(10); ctx.fillText("solid = length-based · dashed = height-based", pL + 6, pT + 12);
+    ctx.font = FF(11);
   }
   if (iapLines && iapLines.length) {
     const draw = (key, col, lbl) => {
-      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([8, 4]); ctx.beginPath();
+      ctx.strokeStyle = col; ctx.lineWidth = PR ? 2.6 : 2; ctx.setLineDash([8, 4]); ctx.beginPath();
       iapLines.forEach((o, i) => (i ? ctx.lineTo(X(o.x), Y(o[key])) : ctx.moveTo(X(o.x), Y(o[key]))));
       ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = col; ctx.font = "bold 10px 'Segoe UI'";
+      ctx.fillStyle = col; ctx.font = FF(10, "bold");
       ctx.fillText(lbl, X(iapLines[iapLines.length-1].x) - 64, Y(iapLines[iapLines.length-1][key]) - 6);
-      ctx.font = "11px 'Segoe UI',sans-serif";
+      ctx.font = FF(11);
     };
     draw("ob", "#dc2626", "IAP Obese"); draw("ov", "#d97706", "IAP Overwt"); draw("uw", "#8b5cf6", "IAP Underwt");
   }
   if (cdcBMI && cdcBMI.length) {
     ["p85", "p95"].forEach((key) => {
-      ctx.strokeStyle = key === "p95" ? "#dc2626" : "#d97706"; ctx.lineWidth = 1.6; ctx.setLineDash([3, 3]); ctx.beginPath();
+      ctx.strokeStyle = key === "p95" ? "#dc2626" : "#d97706"; ctx.lineWidth = PR ? 2.1 : 1.6; ctx.setLineDash([3, 3]); ctx.beginPath();
       cdcBMI.forEach((o, i) => (i ? ctx.lineTo(X(o.x), Y(o[key])) : ctx.moveTo(X(o.x), Y(o[key]))));
       ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = ctx.strokeStyle; ctx.font = "bold 10px 'Segoe UI'";
+      ctx.fillStyle = ctx.strokeStyle; ctx.font = FF(10, "bold");
       ctx.fillText(key === "p95" ? "CDC P95" : "CDC P85", X(cdcBMI[cdcBMI.length-1].x) - 56, Y(cdcBMI[cdcBMI.length-1][key]) + 12);
-      ctx.font = "11px 'Segoe UI',sans-serif";
+      ctx.font = FF(11);
     });
   }
   // points
   const vis = pts.filter((p) => p.x >= x0 - (x1 - x0) * 0.01 && p.x <= x1 + (x1 - x0) * 0.01);
   if (vis.length) {
     const srt = [...vis].sort((a, b) => a.x - b.x);
-    ctx.strokeStyle = "#0f2b4d"; ctx.lineWidth = 2.2; ctx.beginPath();
+    ctx.strokeStyle = "#0f2b4d"; ctx.lineWidth = PR ? 2.8 : 2.2; ctx.beginPath();
     srt.forEach((p, i) => (i ? ctx.lineTo(X(p.x), Y(p.v)) : ctx.moveTo(X(p.x), Y(p.v)))); ctx.stroke();
     srt.forEach((p, i) => {
       const last = i === srt.length - 1;
       if (p.sq) {
         ctx.fillStyle = last ? "#dc2626" : "#0f2b4d";
-        ctx.fillRect(X(p.x) - 4, Y(p.v) - 4, 8, 8);
+        const _qs = PR ? 5 : 4; ctx.fillRect(X(p.x) - _qs, Y(p.v) - _qs, _qs * 2, _qs * 2);
       } else {
-        ctx.beginPath(); ctx.arc(X(p.x), Y(p.v), last ? 6 : p.birth ? 5 : 4, 0, 7);
-        if (p.birth && !last) { ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = "#7c3aed"; ctx.stroke(); }
+        ctx.beginPath(); ctx.arc(X(p.x), Y(p.v), last ? (PR ? 7 : 6) : p.birth ? (PR ? 6 : 5) : (PR ? 5 : 4), 0, 7);
+        if (p.birth && !last) { ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = PR ? 3 : 2.5; ctx.strokeStyle = "#7c3aed"; ctx.stroke(); }
         else { ctx.fillStyle = last ? "#dc2626" : "#0f2b4d"; ctx.fill(); }
       }
       if (last || srt.length <= 9) {
-        ctx.fillStyle = "#0f2b4d"; ctx.font = "bold 10px 'Segoe UI'";
+        ctx.fillStyle = "#0f2b4d"; ctx.font = FF(10, "bold");
         ctx.fillText(String(Math.round(p.v * 10) / 10) + (p.birth ? " (B)" : ""), X(p.x) + 7, Y(p.v) - 7);
-        ctx.font = "11px 'Segoe UI',sans-serif";
+        ctx.font = FF(11);
       }
     });
   } else {
-    ctx.fillStyle = "#94a3b8"; ctx.font = "14px 'Segoe UI'";
+    ctx.fillStyle = PR ? "#64748b" : "#94a3b8"; ctx.font = FF(14);
     ctx.fillText("No plotted points in this range.", pL + 20, H / 2);
   }
   if (!isMain) return true;
@@ -282,6 +284,7 @@ function renderGrowthOverview() {
 function growthChartImg(ind) {
   try {
     const cv = document.createElement("canvas");
+    cv._kgPrint = true; // print trial render
     if (!drawGrowthChartInto(cv, ind)) return "";
     return cv.toDataURL("image/png");
   } catch (e) { return ""; }
@@ -379,15 +382,19 @@ function printGrowthFull() {
   const lm = rows[rows.length - 1], A = assessMeasure(c, lm), ga = A.ga;
   const imgs = GCHART_ORDER.map((ind) => ({ ind, img: growthChartImg(ind) }));
   const drawn = imgs.filter((x) => x.img).length;
-  const chartSecs = imgs.map(({ ind, img }) => {
+  const chartSecArr = imgs.map(({ ind, img }) => {
     const cap = assessCaptionFor(A, ind);
-    return `<div style="margin-top:10px;text-align:center;break-inside:avoid">` +
+    return `<div style="margin-top:0;text-align:center;break-inside:avoid">` +
       (img
         ? `<img src="${img}" style="max-width:100%;border:1px solid #cbd5e1;border-radius:8px">`
         : `<div class="empty">Chart unavailable (${esc(GCHART_META[ind].title)}).</div>`) +
       `<div style="font-size:12px;font-weight:700">${esc(GCHART_META[ind].title)}</div>` +
       (cap ? `<div style="font-size:11.5px;color:var(--muted)">${esc(cap)}</div>` : "") + `</div>`;
-  }).join("");
+  });
+  // print trial: two charts side by side per row (pairs kept on one page)
+  let chartSecs = "";
+  for (let i = 0; i < chartSecArr.length; i += 2)
+    chartSecs += `<div class="gprint-pair">${chartSecArr.slice(i, i + 2).join("")}</div>`;
   $("growthFullPrint").innerHTML = `${clinicHeader()}
     <div class="doc-title">📈 COMPREHENSIVE GROWTH REPORT (IAP / WHO)</div>
     ${childHeader(c)}

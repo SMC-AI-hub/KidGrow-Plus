@@ -1,5 +1,14 @@
 # Changelog
 
+## v10.17.1 — 2026-10-17 — Print trial: side-by-side hi-res growth charts
+- 🖨️ TRIAL: full growth report now prints charts two side by side
+  (3 pairs), each pair kept on one page.
+- 🖨️ TRIAL: print charts render at 2.5× resolution (4500×1800 px)
+  with bolder curves (+40%), darker grid/labels and larger dots —
+  screen charts untouched.
+- ✅ Verified with headless-Chrome A4 screenshots before commit.
+- Tests: 684/684 (478 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.17.0 — 2026-10-17 — A4 professional print density
 - 🖨️ New `@page` rule: A4 with 10/9/11mm margins — predictable,
   full-sheet output instead of browser-default margins.
