@@ -1,5 +1,19 @@
 # Changelog
 
+## v10.20.0 — 2026-10-17 — Clustered, age-exact printouts
+- 🌟 Milestones print: current band clustered by domain (group
+  subheads, no repetitive domain column); earlier bands are one
+  summary line each; future bands gone entirely — report shows
+  exactly the assessment age. Interpretation + overdue list kept.
+- 💉 Immunisation card: visits clustered with status subheads
+  (✅ Complete / ⏰ Due date); only given visits + next due visit
+  print in full — later visits collapse to one line. Same
+  clustering in the downloadable parent file. Cards are one page.
+- 📏 House rule going forward: printouts show age-relevant data
+  only — no long future/unmarked documents anywhere in the app.
+- ✅ Both verified with headless-Chrome A4 screenshots.
+- Tests: 696/696 (490 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.19.0 — 2026-10-17 — Immunisation card: logo, layout, useful QR
 - 🏥 Hospital logo now prints on the Digital Immunisation Card
   (was missing — header showed name/address only).

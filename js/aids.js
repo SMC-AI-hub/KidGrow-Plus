@@ -144,11 +144,25 @@ function renderCard() {
   const c = child();
   if (!c) { $("cardBox").innerHTML = `<div class="empty">No child selected.</div>`; return; }
   const code = encodeRecord(c);
-  const given = VACCINE_SCHEDULE.map((v) => v.vaccines.map((vx) => {
+  // Clustered by visit, age-relevant only: given visits + next due visit in full,
+  // later visits collapsed to one line (no long future document).
+  const vStat = VACCINE_SCHEDULE.map((v) => {
+    const done = v.vaccines.filter((vx) => c.vaccines[vx.code]).length;
+    return { v, done, total: v.vaccines.length };
+  });
+  const firstPending = vStat.findIndex((s) => s.done < s.total);
+  const showThru = firstPending < 0 ? vStat.length : firstPending + 1;
+  const vRow = (vx) => {
     const r = c.vaccines[vx.code];
-    return `<tr><td>${esc(v.label)}</td><td><b>${esc(vx.name)}</b> ${esc(vx.dose)}</td><td>${r ? `<b>${fmtDate(r.date)}</b>${r.brand ? `<br><span style="font-size:11px;color:var(--muted)">${esc(r.brand)}</span>` : ""}` : "—"}</td><td>${r ? "✓" : "○"}</td></tr>`;
-  }).join("")).join("");
-  const ex = (c.extraVac || []).map((x) => `<tr><td>Additional</td><td><b>${esc(x.name)}</b>${x.brand ? `<br><span style="font-size:11px;color:var(--muted)">${esc(x.brand)}</span>` : ""}</td><td>${x.date ? fmtDate(x.date) : "—"}</td><td>✓</td></tr>`).join("");
+    return `<tr><td><b>${esc(vx.name)}</b> ${esc(vx.dose)}</td><td>${r ? `<b>${fmtDate(r.date)}</b>${r.brand ? `<br><span style="font-size:11px;color:var(--muted)">${esc(r.brand)}</span>` : ""}` : "—"}</td><td>${r ? "✓" : "○"}</td></tr>`;
+  };
+  const given = vStat.slice(0, showThru).map(({ v, done, total }) => {
+    const st = done === total ? "✅ Complete" : `⏰ Due ${esc(fmtDate(dueDateFor(c, v)))}${done ? ` · ${done}/${total} given` : ""}`;
+    return `<tr style="background:#f1f5f9"><td colspan="3"><b>${esc(v.label)}</b> <span style="color:var(--muted)">(${esc(v.sub || "")})</span> — <b>${st}</b></td></tr>` + v.vaccines.map(vRow).join("");
+  }).join("");
+  const laterDoses = vStat.slice(showThru).reduce((a, s) => a + s.total, 0);
+  const laterLine = laterDoses ? `<tr style="background:#f8fafc"><td colspan="3" style="color:var(--muted)">Further visits (${esc(vStat[showThru].v.label)} → ${esc(vStat[vStat.length - 1].v.label)}): ${laterDoses} dose(s) to be scheduled — full list in the app.</td></tr>` : "";
+  const ex = (c.extraVac || []).length ? `<tr style="background:#f1f5f9"><td colspan="3"><b>Additional vaccines</b></td></tr>` + (c.extraVac || []).map((x) => `<tr><td><b>${esc(x.name)}</b>${x.brand ? `<br><span style="font-size:11px;color:var(--muted)">${esc(x.brand)}</span>` : ""}</td><td>${x.date ? fmtDate(x.date) : "—"}</td><td>✓</td></tr>`).join("") : "";
   $("cardBox").innerHTML = `
     <div class="toolbar no-print" style="margin-bottom:12px">
       <span style="font-size:13px;color:var(--muted)">Record code: <b>${code.length}</b> chars · QR ${code.length < 1800 ? "fits easily" : "fits (dense)"}</span>
@@ -178,7 +192,7 @@ function renderCard() {
         </dl>
         <div class="qrbox" style="text-align:center">${qrSVG(code)}<div style="font-size:11px;color:var(--muted);margin-top:4px">Scan at any KidGrow clinic<br>to verify / import this record</div></div>
       </div>
-      <table class="tbl" style="margin-top:10px"><tr><th>Visit</th><th>Vaccine</th><th>Given</th><th>✓</th></tr>${given}${ex}</table>
+      <table class="tbl" style="margin-top:10px"><tr><th>Vaccine</th><th>Given</th><th>✓</th></tr>${given}${laterLine}${ex}</table>
       <div class="vax-sign"><div>Doctor signature &amp; seal: ______________</div><div style="margin-left:auto">Date: ${fmtDate(todayISO())}</div></div>
       <div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center">${VAX_SCHEDULE_VERSION} schedule · ${esc(DB.settings.doctor || "")} · Generated ${fmtDate(todayISO())} · Computer-assisted record — confirm before filing.</div>
     </div>

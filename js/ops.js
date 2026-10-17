@@ -566,11 +566,23 @@ function parentCardHTML(c) {
   const S = DB.settings || {};
   const t = todayISO(), age = ageBetween(c.dob);
   const due = dueItemsForChild(c, t).filter((i) => i.band !== "upcoming").slice(0, 12);
-  const rows = VACCINE_SCHEDULE.map((v) => v.vaccines.map((vx) => {
+  const vStat = VACCINE_SCHEDULE.map((v) => {
+    const done = v.vaccines.filter((vx) => (c.vaccines || {})[vx.code]).length;
+    return { v, done, total: v.vaccines.length };
+  });
+  const firstPending = vStat.findIndex((s) => s.done < s.total);
+  const showThru = firstPending < 0 ? vStat.length : firstPending + 1;
+  const vRow = (vx) => {
     const r = (c.vaccines || {})[vx.code];
-    return `<tr><td>${esc(v.label)}</td><td><b>${esc(vx.name)}</b> ${esc(vx.dose || "")}</td><td>${r ? esc(fmtDate(r.date)) + (r.brand ? " · " + esc(r.brand) : "") : "Due " + esc(fmtDate(dueDateFor(c, v)))}</td><td>${r ? "✓" : "○"}</td></tr>`;
-  }).join("")).join("");
-  const ex = (c.extraVac || []).map((x) => `<tr><td>Additional</td><td><b>${esc(x.name)}</b>${x.brand ? " · " + esc(x.brand) : ""}</td><td>${x.date ? esc(fmtDate(x.date)) : "—"}</td><td>✓</td></tr>`).join("");
+    return `<tr><td><b>${esc(vx.name)}</b> ${esc(vx.dose || "")}</td><td>${r ? esc(fmtDate(r.date)) + (r.brand ? " · " + esc(r.brand) : "") : "—"}</td><td>${r ? "✓" : "○"}</td></tr>`;
+  };
+  const rows = vStat.slice(0, showThru).map(({ v, done, total }) => {
+    const st = done === total ? "✅ Complete" : `⏰ Due ${esc(fmtDate(dueDateFor(c, v)))}${done ? ` · ${done}/${total} given` : ""}`;
+    return `<tr><td colspan="3" style="background:#f1f5f9"><b>${esc(v.label)}</b> (${esc(v.sub || "")}) — <b>${st}</b></td></tr>` + v.vaccines.map(vRow).join("");
+  }).join("");
+  const laterDoses = vStat.slice(showThru).reduce((a, s) => a + s.total, 0);
+  const laterLine = laterDoses ? `<tr><td colspan="3" style="background:#f8fafc;color:#64748b">Further visits (${esc(vStat[showThru].v.label)} → ${esc(vStat[vStat.length - 1].v.label)}): ${laterDoses} dose(s) to be scheduled — full list in the app.</td></tr>` : "";
+  const ex = (c.extraVac || []).length ? `<tr><td colspan="3" style="background:#f1f5f9"><b>Additional vaccines</b></td></tr>` + (c.extraVac || []).map((x) => `<tr><td><b>${esc(x.name)}</b>${x.brand ? " · " + esc(x.brand) : ""}</td><td>${x.date ? esc(fmtDate(x.date)) : "—"}</td><td>✓</td></tr>`).join("") : "";
   const lm = (typeof latestMeasure === "function") ? latestMeasure(c) : null;
   const qr = (typeof qrSVG === "function" && typeof encodeRecord === "function") ? qrSVG(encodeRecord(c)) : "";
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -596,7 +608,7 @@ th{background:#f1f5f9}.due{background:#fefce8;border:1px solid #fde68a;border-ra
 ${c.abha ? "<dt>ABHA</dt><dd>" + esc(c.abha) + "</dd>" : ""}
 <dt>Growth</dt><dd>${lm ? `${esc(fmtDate(lm.date))}: ${lm.wt} kg · ${lm.ht} cm` : "Not recorded yet"}</dd></dl>
 ${due.length ? `<div class="due"><b>⏰ Due / overdue:</b> ${due.map((i) => `${esc(i.name)} ${esc(i.dose || "")} (${esc(fmtDate(i.due))})`).join(" · ")}</div>` : `<div class="due"><b>✅ Up to date</b> — no pending doses.</div>`}
-<table><tr><th>Visit</th><th>Vaccine</th><th>Given</th><th>✓</th></tr>${rows}${ex}</table>
+<table><tr><th>Vaccine</th><th>Given</th><th>✓</th></tr>${rows}${laterLine}${ex}</table>
 ${qr ? `<div class="qr">${qr}<div>Scan at clinic to verify / import</div></div>` : ""}
 <div class="foot">Verify code <b>${parentVerifyCode(c)}</b> · Generated ${esc(fmtDate(t))} · Keep this file safe — show it at every visit.</div>
 </div></body></html>`;
