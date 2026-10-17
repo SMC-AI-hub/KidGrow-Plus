@@ -1,5 +1,26 @@
 # Changelog
 
+## v10.16.0 — 2026-10-17 — Production billing hardening
+- 🐛 Cancelled subscriptions now keep paid access till period end
+  (previously any `cancelled` status hit the paywall immediately) —
+  with "Cancelled · access till <date>" label, banner countdown and a
+  Resubscribe button.
+- 🔒 Webhook state machine fixed: `subscription.authenticated`
+  (mandate ok, first charge pending) stays gated as pending — only
+  activated/charged (money moved) grants active.
+- 🔒 Failed FIRST payment can no longer grant `past_due` access —
+  past_due now requires a previously-paid status (active/cancelled).
+- 🗄️ New migration `0006_billing_grants`: EXECUTE on
+  `ensure_profile()` for authenticated users (trial provisioning
+  failed exactly when the signup trigger was absent). Run on staging
+  AND production.
+- 🖨️ Trial/subscription banner + toast no longer print on PDFs.
+- 🛡️ CSP widened to `*.razorpay.com` (script/connect/frame) so UPI
+  AutoPay + future checkout hosts never break on a locked CSP.
+- 🧾 Invoice link relabelled Download → Receipt.
+- 🔢 Version synced: package.json 10.16.0 (health endpoint).
+- Tests: 679/679 (473 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.15.2 — 2026-10-17 — Growth print: no tabs, no duplicate chart
 - 🐛 Growth sub-tabs (Charts / All charts / Full assessment / Velocity /
   Puberty / Standards) no longer print — the tab bar is now `no-print`

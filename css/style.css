@@ -273,7 +273,7 @@ label.sib input{width:14px;height:14px;accent-color:var(--teal)}
 /* ---------- Print: always light, always clean ---------- */
 @media print{
   :root{--bg:#fff;--card:#fff;--card2:#f8fafc;--ink:#1e293b;--head:#0f2b4d;--muted:#64748b;--line:#e2e8f0;--input:#fff;--th:#f1f5f9;--rowh:#f8fafc;--track:#e8eef4;--teal-d:#0b7c72;color-scheme:light}
-  .sidebar,.topbar,.toolbar,.mobile-nav,.no-print,.modal-bg{display:none!important}
+  .sidebar,.topbar,.toolbar,.mobile-nav,.no-print,.modal-bg,#cloudBanner,#cloudToast{display:none!important}
   .main{padding:0}.content{padding:0;max-width:none}
   .page{display:none!important}.page.printing{display:block!important}
   .page.printing{animation:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}

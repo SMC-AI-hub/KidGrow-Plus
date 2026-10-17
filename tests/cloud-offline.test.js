@@ -130,6 +130,9 @@ async function main() {
   ok(acc({ sub_status: "created", trial_ends_at: new Date(NOW - DAY).toISOString() }, null, NOW).reason === "pending", "access: created + trial over -> pending");
   ok(acc({ sub_status: "past_due" }, null, NOW).ok === true, "access: past_due keeps access");
   ok(acc({ sub_status: "cancelled" }, null, NOW).reason === "expired", "access: cancelled -> expired");
+  const aCx = acc({ sub_status: "cancelled", current_period_end: new Date(NOW + 5 * DAY).toISOString() }, null, NOW);
+  ok(aCx.ok && aCx.reason === "cancelled" && aCx.daysLeft === 5, "access: cancelled + paid time left -> ok");
+  ok(acc({ sub_status: "cancelled", current_period_end: new Date(NOW - DAY).toISOString() }, null, NOW).reason === "expired", "access: cancelled + period past -> expired");
   ok(acc(null, { ok: true, verifiedAt: NOW - 2 * DAY }, NOW).reason === "grace", "access: offline fresh cache -> grace");
   ok(acc(null, { ok: true, verifiedAt: NOW - 8 * DAY }, NOW).ok === false, "access: stale cache (8d) -> locked");
   ok(acc(null, { ok: false, reason: "expired", verifiedAt: NOW }, NOW).reason === "expired", "access: negative cache sticks");
@@ -492,12 +495,14 @@ async function main() {
   ok(bl({ ok: true, reason: "past_due" }, {}) === "Past due — update payment", "label: past due");
   ok(bl({ ok: true, reason: "trial", daysLeft: 9 }, {}) === "Free trial · 9 day(s) left", "label: trial countdown");
   ok(bl({ ok: false, reason: "expired" }, {}) === "Expired" && bl({ ok: false, reason: "pending" }, {}) === "Completing payment…", "label: expired + pending");
+  ok(bl({ ok: true, reason: "cancelled", daysLeft: 5 }, { current_period_end: "2026-11-16T00:00:00Z" }).startsWith("Cancelled · access till"), "label: cancelled + access till");
   const binfo = { email: "evil@x.com<script>", profile: { sub_status: "active", current_period_end: "2026-11-16T00:00:00Z" }, subscription: { current_end: "2026-11-16T00:00:00Z", paid_count: 3, remaining_count: 9 }, invoices: [{ date: "2026-10-16T00:00:00Z", amount: 999, status: "paid", short_url: "https://rzp.io/x" }, { date: "2026-09-16T00:00:00Z", amount: 999, status: "failed", short_url: "" }] };
   const bh = C._billInfoHTML(binfo, { ok: true, reason: "active" });
   ok(!bh.includes("<script>") && bh.includes("evil@x.com"), "billing escapes account email");
   ok(bh.includes("3 paid") && bh.includes("9 to go") && bh.includes("Cloud.cancelSub()"), "billing shows sub counts + cancel");
   ok(bh.includes("b-green") && bh.includes("b-red") && bh.includes("https://rzp.io/x"), "invoices show paid/failed + link");
   ok(C._billInfoHTML({ profile: {} }, { ok: true, reason: "trial", daysLeft: 5 }).includes("Subscribe now"), "trial sees subscribe CTA");
+  ok(C._billInfoHTML({ profile: {} }, { ok: true, reason: "cancelled", daysLeft: 5 }).includes("Resubscribe"), "cancelled sees resubscribe CTA");
   ok(C._billInfoHTML(null, { ok: false, reason: "expired" }).includes("Could not load live billing details"), "error state degrades gracefully");
   ok(typeof C.cancelSub === "function" && typeof C.refreshBilling === "function" && typeof sb.renderBilling === "function" && typeof sb.subscriptionPitchHTML === "function" && typeof sb.renderPricing === "undefined", "billing API exposed, old renderer gone");
   sb.renderBilling();
@@ -922,6 +927,7 @@ async function main() {
   sb.savePrintPref();
   const cssP = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
   ok(cssP.includes(".page.printing{animation:none;-webkit-print-color-adjust:exact") && cssP.includes("body.bw-print .page.printing{filter:grayscale(1)}") && cssP.includes(".page{display:none!important}") && cssP.includes(".modal-bg"), "print CSS forces color, hides active page + modals, grayscale opt-out");
+  ok(cssP.includes("#cloudBanner") && cssP.includes("#cloudToast"), "print CSS hides trial banner + toast");
 
   // ---- v10.11.2: rich handouts ----
   const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);
