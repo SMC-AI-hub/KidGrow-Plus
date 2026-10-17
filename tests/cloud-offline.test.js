@@ -1002,6 +1002,15 @@ async function main() {
   sb.renderHand();
   ok(sb.document.getElementById("handBox").innerHTML.includes("முழு விளக்கப்"), "Tamil handbook link renders");
 
+  // ---- v10.14.0: booklet per topic per language ----
+  const bkIds = vm.runInContext("HANDOUTS.map((h)=>h.id)", sb);
+  const missingB = [];
+  for (const id of bkIds) for (const L of ["en", "ta", "hi"]) if (!fs.existsSync(path.join(R, "handbook", "booklet-" + id + "-" + L + ".html"))) missingB.push(id + "-" + L);
+  ok(!missingB.length, "66 booklets resolve (22 topics x 3 langs)" + (missingB.length ? ": " + missingB.join(",") : ""));
+  const bkSample = fs.readFileSync(path.join(R, "handbook", "booklet-hb08-en.html"), "utf8");
+  ok(bkSample.includes("First foods 6–24 months") && bkSample.includes("WHEN TO SEE YOUR DOCTOR") && bkSample.includes("AVOID THESE MISTAKES"), "sample booklet carries full sections");
+  ok(sb.document.getElementById("handBox").innerHTML.includes("handbook/booklet-hb08-ta.html"), "toolbar booklet link follows topic+lang");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

@@ -1,5 +1,16 @@
 # Changelog
 
+## v10.14.0 — 2026-10-17 — Mother-booklet design for every handout
+- 📖 NEW booklet engine (tools/make-booklets.js): all 22 handout topics ×
+  EN/TA/HI = 66 print-ready booklets in warm mother-booklet design —
+  cream pages, orange header bar, dark-green footer, color-blocked
+  sections, numbered steps, tinted charts, red-flag boxes, A4 print CSS.
+- 🔘 Handout toolbar gains a 📖 Booklet button opening the current
+  topic+language booklet in a new tab (works offline via runtime cache).
+- Play booklets include all 5 age bands; fever booklet carries the
+  weight-based dose formula; cold booklet keeps the breath guide.
+- Tests: 661/661 (464 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.13.0 — 2026-10-17 — Infant Feeding Handbook under Handouts
 - 📖 All 13 handbook chapters now live under Handouts as separate headings
   (new "Infant Feeding Handbook" group): first 1,000 days, milk science,
