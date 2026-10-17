@@ -1,7 +1,9 @@
-/* KidGrow Pro — booklet generator (v10.14.0).
+/* KidGrow Pro — booklet generator (v10.15.0).
  * Emits handbook/booklet-<id>-<lang>.html for every HANDOUTS topic in
- * en/ta/hi: warm mother-booklet design (cream pages, orange header bar,
- * dark-green footer, color-blocked sections, tinted tables, print-ready A4).
+ * en/ta/hi: warm mother-booklet design, hospital logo (centered cover,
+ * pulled live from app settings), copyright footer on screen + every
+ * printed page, plus optional enrichment (guides/recipes/myths with
+ * EN fallback until TA/HI translations land).
  * Run: node tools/make-booklets.js
  */
 const vm = require("vm");
@@ -17,6 +19,7 @@ const HANDOUTS = vm.runInContext("HANDOUTS", sb);
 const HAND_BREATH = vm.runInContext("HAND_BREATH", sb);
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const pick = (o, L) => (o && (o[L] || o.en)) || "";
 
 const T = {
   brand: { en: "KIDGROW • PARENT HANDOUT", ta: "கிட்குரோ • பெற்றோர் குறிப்பு", hi: "किडग्रो • अभिभावक पर्ची" },
@@ -26,10 +29,17 @@ const T = {
   dont: { en: "AVOID THESE MISTAKES", ta: "தவிர்க்க வேண்டியவை", hi: "इन गलतियों से बचें" },
   expect: { en: "WHAT TO EXPECT", ta: "என்ன எதிர்பார்க்கலாம்", hi: "क्या उम्मीद करें" },
   doc: { en: "WHEN TO SEE YOUR DOCTOR", ta: "மருத்துவரை எப்போது பார்க்க", hi: "डॉक्टर को कब दिखाएँ" },
-  gold: { en: "GOLDEN RULE", ta: "பொன் விதி", hi: "सुनहरा नियम" },
   dose: { en: "DOSE GUIDE", ta: "மருந்து அளவு", hi: "खुराक मार्गदर्शिका" },
+  guides: { en: "FOOD & CALORIE GUIDES", ta: "உணவு & கலோரி வழிகாட்டி", hi: "खाना-कैलोरी मार्गदर्शिका" },
+  recipes: { en: "EASY, LOW-COST RECIPES", ta: "எளிய, குறைந்த செலவு சமையல்", hi: "आसान, कम-ख़र्च व्यंजन" },
+  myths: { en: "MYTHS VS FACTS", ta: "கட்டுக்கதை vs உண்மை", hi: "भ्रम बनाम सच" },
+  ing: { en: "Ingredients", ta: "தேவையானவை", hi: "सामग्री" },
+  mth: { en: "Method", ta: "செய்முறை", hi: "विधि" },
+  cost: { en: "Approx. cost", ta: "தோராய செலவு", hi: "अनुमानित लागत" },
+  kcal: { en: "Approx. energy", ta: "தோராய சக்தி", hi: "अनुमानित ऊर्जा" },
   print: { en: "🖨️ Print", ta: "🖨️ அச்சிடுக", hi: "🖨️ प्रिंट करें" },
-  foot: { en: "For education only — always consult your doctor", ta: "கல்விக்காக மட்டும் — எப்போதும் மருத்துவரை அணுகுங்கள்", hi: "सिर्फ जानकारी के लिए — हमेशा डॉक्टर से सलाह लें" },
+  rights: { en: "All rights reserved", ta: "அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை", hi: "सर्वाधिकार सुरक्षित" },
+  noperm: { en: "For patient education only — do not reproduce without permission", ta: "நோயாளி கல்விக்காக மட்டும் — அனுமதியின்றி மறுபிரசுரம் வேண்டாம்", hi: "सिर्फ रोगी-शिक्षा के लिए — बिना अनुमति पुनर्मुद्रण न करें" },
   doseTxt: {
     en: "Paracetamol 10–15 mg/kg every 4–6 hours (max 4 doses in 24 hours). Your child's exact dose is computed on the app handout — confirm with your doctor.",
     ta: "4–6 மணிக்கு ஒருமுறை 10–15 மி.கி/கிலோ பாராசிட்டமால் (24 மணியில் அதிகம் 4 வேளை). சரியான அளவு செயலி குறிப்பில் கணக்கிடப்படும் — மருத்துவரிடம் உறுதி செய்யுங்கள்.",
@@ -45,9 +55,11 @@ const CSS = `
 .wrap{max-width:820px;margin:0 auto;padding:20px 18px 8px}
 .cover{text-align:center;padding:26px 10px 6px}
 .cover .badge{display:inline-flex;align-items:center;justify-content:center;width:92px;height:92px;border-radius:50%;background:#fff;border:3px solid var(--orange);font-size:46px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.logo-center img{display:none;max-width:230px;max-height:130px;margin:0 auto;object-fit:contain}
 .cover h1{color:var(--rust);font-size:30px;margin:14px 0 4px;line-height:1.25}
 .cover .meta{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.4px}
 .cover .about{max-width:62ch;margin:12px auto 0;font-size:15.5px}
+.copyline{font-size:12.5px;color:var(--mut);font-weight:700;margin-top:10px}
 .bar{color:#fff;font-weight:800;text-align:center;letter-spacing:.6px;font-size:14.5px;border-radius:8px;padding:9px 12px;margin:26px 0 12px}
 .bar.o{background:var(--orange)}.bar.p{background:var(--purple)}.bar.b{background:var(--blue)}.bar.t{background:var(--teal)}.bar.g{background:var(--green)}.bar.r{background:var(--red)}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:0 0 12px}
@@ -64,24 +76,35 @@ table.bt th{background:var(--teal);color:#fff;padding:10px 12px;text-align:left}
 table.bt td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
 table.bt tr:nth-child(even) td{background:#F4F9F7}
 .chart-t{font-weight:800;color:var(--dgreen);margin:14px 0 8px;font-size:15.5px}
+.recipe{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:0 0 12px;position:relative}
+.recipe h4{color:var(--rust);margin:0 30% 6px 0;font-size:16px}
+.recipe .age{position:absolute;top:12px;right:12px;background:var(--dgreen);color:#fff;font-weight:800;font-size:12.5px;border-radius:6px;padding:3px 12px}
+.recipe p{margin:5px 0;font-size:14.5px}
+.recipe .ck{color:var(--dgreen);font-size:13.5px}
+.fine{font-size:12.5px;color:var(--mut)}
 .danger{background:#FDECEC;border:2px solid var(--red);border-radius:12px;padding:12px 16px;font-size:15px}
 .printbtn{display:inline-block;background:#fff;border:2px solid var(--orange);color:var(--rust);font-weight:800;border-radius:999px;padding:8px 22px;font-size:15px;cursor:pointer;margin:18px auto 6px}
 .center{text-align:center}
 .footer{background:var(--dgreen);color:#fff;text-align:center;font-size:12px;padding:10px 14px;margin-top:26px}
-@media print{@page{size:A4;margin:11mm}.no-print{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}ol.steps li,ul.donts li,.card,.gold,.danger{break-inside:avoid}}
+.pfoot{display:none}
+@media print{@page{size:A4;margin:11mm 11mm 16mm}.no-print{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}ol.steps li,ul.donts li,.card,.gold,.danger,.recipe{break-inside:avoid}.pfoot{display:block;position:fixed;bottom:0;left:0;right:0;background:var(--dgreen);color:#fff;text-align:center;font-size:10px;padding:6px 10px}}
 `;
 
-function chartHtml(h, L) {
-  if (!h.chart) return "";
-  const head = h.chart.head[L].map((c) => `<th>${esc(c)}</th>`).join("");
-  const rows = h.chart.rows[L].map((r) => `<tr>${r.map((c, j) => (j === 0 ? `<td><b>${esc(c)}</b></td>` : `<td>${esc(c)}</td>`)).join("")}</tr>`).join("");
-  return `<div class="chart-t">${esc(h.chartTitle[L])}</div><table class="bt"><tr>${head}</tr>${rows}</table>`;
+const LOGO_SCRIPT = `<script>
+(function(){try{var raw=localStorage.getItem("kidgrow_pro_v1");if(!raw)return;var db=JSON.parse(raw);var s=(db&&db.settings)||{};if(s.logo){var im=document.getElementById("hospLogo");if(im){im.src=s.logo;im.style.display="block";}var b=document.getElementById("iconBadge");if(b)b.style.display="none";}var nm=s.clinic||"KidGrow Pro";var y=new Date().getFullYear();var els=document.querySelectorAll(".copyline");for(var i=0;i<els.length;i++){els[i].textContent="\\u00A9 "+y+" "+nm;}}catch(e){}})();
+<\/script>`;
+
+function tableHtml(title, head, rows) {
+  const th = head.map((c) => `<th>${esc(c)}</th>`).join("");
+  const tr = rows.map((r) => `<tr>${r.map((c, j) => (j === 0 ? `<td><b>${esc(c)}</b></td>` : `<td>${esc(c)}</td>`)).join("")}</tr>`).join("");
+  return `${title ? `<div class="chart-t">${esc(title)}</div>` : ""}<table class="bt"><tr>${th}</tr>${tr}</table>`;
 }
 
 function booklet(h, L) {
   const grp = h.grp === "hb" ? T.hb[L] : T.care[L];
+  const copyBase = `\u00A9 2026 KidGrow Pro \u2022 ${T.rights[L]}`;
   let body = "";
-  body += `<div class="cover"><div class="badge">${h.icon}</div><h1>${esc(h.title[L])}</h1><div class="meta">${h.grp === "hb" ? "📖" : "🩺"} ${esc(grp)} • ${esc(LANGN[L])}</div><p class="about">${esc(h.about[L])}</p>`;
+  body += `<div class="cover"><div class="logo-center"><img id="hospLogo" alt="Hospital logo"></div><div class="badge" id="iconBadge">${h.icon}</div><h1>${esc(h.title[L])}</h1><div class="meta">${h.grp === "hb" ? "📖" : "🩺"} ${esc(grp)} • ${esc(LANGN[L])}</div><div class="copyline">${esc(copyBase)}</div><p class="about">${esc(h.about[L])}</p>`;
   if (h.pearl) body += `<div class="gold"><b>${esc(h.pearl[L])}</b></div>`;
   body += `<div class="center no-print"><button class="printbtn" onclick="window.print()">${esc(T.print[L])}</button></div></div>`;
   if (h.breath) body += `<div class="card">🫁 ${esc(HAND_BREATH[L])}</div>`;
@@ -92,7 +115,24 @@ function booklet(h, L) {
     }
   } else {
     body += `<div class="bar o">${esc(T.do[L])}</div><ol class="steps">${h.bullets[L].map((x) => `<li>${esc(x)}</li>`).join("")}</ol>`;
-    body += chartHtml(h, L);
+    if (h.chart) body += tableHtml(h.chartTitle[L], h.chart.head[L], h.chart.rows[L]);
+    if (h.guides) {
+      body += `<div class="bar g">${esc(T.guides[L])}</div>`;
+      if (h.guidesIntro) body += `<div class="card">${esc(pick(h.guidesIntro, L))}</div>`;
+      for (const g of h.guides) body += tableHtml(pick(g.t, L), pick(g.head, L), pick(g.rows, L));
+      if (h.guidesFoot) body += `<p class="fine">${esc(pick(h.guidesFoot, L))}</p>`;
+      if (h.allergyNote) body += `<div class="gold">⚠️ ${esc(pick(h.allergyNote, L))}</div>`;
+    }
+    if (h.recipes) {
+      body += `<div class="bar o">${esc(T.recipes[L])}</div>`;
+      for (const r of h.recipes) {
+        body += `<div class="recipe"><span class="age">${esc(r.age)}</span><h4>${esc(pick(r.name, L))}</h4><p><b>${esc(T.ing[L])}:</b> ${esc(pick(r.ing, L))}</p><p><b>${esc(T.mth[L])}:</b> ${esc(pick(r.method, L))}</p><p class="ck"><b>${esc(T.cost[L])}:</b> ${esc(pick(r.cost, L))} &nbsp;|&nbsp; <b>${esc(T.kcal[L])}:</b> ${esc(pick(r.kcal, L))}</p></div>`;
+      }
+      if (h.recipesFoot) body += `<p class="fine">${esc(pick(h.recipesFoot, L))}</p>`;
+    }
+    if (h.myths) {
+      body += `<div class="bar p">${esc(T.myths[L])}</div>` + tableHtml("", pick(h.myths.head, L), pick(h.myths.rows, L));
+    }
     body += `<div class="bar r">${esc(T.dont[L])}</div><ul class="donts">${h.dont[L].map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
     body += `<div class="bar t">${esc(T.expect[L])}</div><div class="card">${esc(h.expect[L])}</div>`;
     body += `<div class="bar r" style="background:var(--red)">🚨 ${esc(T.doc[L])}</div><div class="danger"><b>${esc(h.red[L])}</b></div>`;
@@ -102,13 +142,16 @@ function booklet(h, L) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="copyright" content="KidGrow Pro — all rights reserved">
 <title>${esc(h.title[L])} — KidGrow</title>
 <style>${CSS}</style>
 </head>
 <body>
 <div class="topbar"><span>${esc(T.brand[L])}</span><span>${h.icon} ${esc(grp)}</span></div>
 <div class="wrap">${body}</div>
-<div class="footer">KidGrow Pro • ${esc(T.foot[L])}</div>
+<div class="footer"><span class="copyline">${esc(copyBase)}</span><br>${esc(T.noperm[L])}</div>
+<div class="pfoot"><span class="copyline">${esc(copyBase)}</span> • ${esc(T.noperm[L])}</div>
+${LOGO_SCRIPT}
 </body>
 </html>`;
 }

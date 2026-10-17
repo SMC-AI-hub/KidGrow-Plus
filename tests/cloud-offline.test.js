@@ -1011,6 +1011,12 @@ async function main() {
   ok(bkSample.includes("First foods 6–24 months") && bkSample.includes("WHEN TO SEE YOUR DOCTOR") && bkSample.includes("AVOID THESE MISTAKES"), "sample booklet carries full sections");
   ok(sb.document.getElementById("handBox").innerHTML.includes("handbook/booklet-hb08-ta.html"), "toolbar booklet link follows topic+lang");
 
+  // ---- v10.15.0: enriched First Foods + logo/copyright ----
+  const bkSol = fs.readFileSync(path.join(R, "handbook", "booklet-solids-en.html"), "utf8");
+  ok(bkSol.includes("Millets") && bkSol.includes("336") && bkSol.includes("Ragi Porridge"), "compfeed enrichment renders (guides + recipes)");
+  ok(bkSol.includes("MYTHS VS FACTS") && bkSol.includes("hospLogo") && bkSol.includes("kidgrow_pro_v1"), "myths + hospital-logo hook present");
+  ok(bkSol.includes("copyline") && bkSol.includes("All rights reserved") && bkSol.includes("without permission"), "copyright protection lines present");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
