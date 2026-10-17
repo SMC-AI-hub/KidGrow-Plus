@@ -1,10 +1,10 @@
 /* =====================================================================
    KidGrow Pro — Growth engine (birth to 18 years)
-   EXACT references : WHO MGRS 2006 daily LMS (0-5 y) · CDC 2000 + 2022
-                      extended BMI (2-20 y) · IAP adult-equiv BMI lines
+   EXACT references : WHO MGRS 2006 daily LMS (0-5 y) · CDC 2000 LMS (2-20 y,
+                      severe obesity by % of P95) · IAP adult-equiv BMI lines
    SCREENING curves : IAP 2015-aligned (5-18 y, calibrated to published
                       18-y means/P97 — confirm labels on official charts)
-   Preterm: corrected age to 24 mo + PMA display (Fenton data is licensed;
+   Preterm: corrected age to 24 mo + PMA display (Fenton data not embedded;
    use official Fenton charts in NICU — link in Standards tab).
    ===================================================================== */
 
@@ -246,7 +246,7 @@ function assessMeasure(c, m) {
       if (cb && !cb.oos) {
         const r = lmsAt(CDC_REF.bmi[sxB(c.sex)], ageM), p95 = lmsVal(r.M, r.S, r.L, 1.6449);
         const pct95 = p95 > 0 ? (m.bmi / p95) * 100 : NaN;
-        const cls = cb.pct >= 95 ? (pct95 >= 140 ? "Class III (severe)" : pct95 >= 120 ? "Class II" : "Class I") : cb.pct >= 85 ? "Overweight range" : "Healthy range";
+        const cls = cb.pct >= 95 ? (pct95 >= 140 ? "Class III (severe)" : pct95 >= 120 ? "Class II" : "Class I") : cb.pct >= 85 ? "Overweight range" : cb.pct < 5 ? "Underweight range" : "Healthy range";
         cdcNote = `CDC: ${fmtPct(cb.pct)} · ${!isNaN(pct95) ? pct95.toFixed(0) + "% of P95 — " : ""}${cls}.`;
         A.pct95 = pct95;
       }
@@ -648,9 +648,9 @@ function renderGRef() {
   <div class="grid g2">
     <div class="card"><h3>📚 References used (exact data)</h3><div style="font-size:13.5px;line-height:1.9">
       • <b>0–5 y — WHO MGRS 2006:</b> daily LMS tables for weight, length/height, BMI, head circumference (0–1826 d), MUAC (91–1826 d), weight-for-length 45–110 cm & weight-for-height 65–120 cm (0.5 cm). Source: WHO igrowup tables (WorldHealthOrganization/anthro).<br>
-      • <b>2–20 y alternative — CDC 2000 + 2022 extended BMI:</b> exact LMS for weight, stature, BMI (24–240 mo). Source: cdc.gov growth-chart z-score files.<br>
+      • <b>2–20 y alternative — CDC 2000:</b> exact LMS for weight, stature, BMI (24–240 mo); severe obesity classed by % of P95. Source: cdc.gov growth-chart z-score files.<br>
       • <b>5–18 y default — IAP 2015-aligned:</b> screening curves calibrated to revised IAP charts (Khadilkar et al., Indian Pediatr 2015); overweight/obesity = <b>adult-equivalent 23 / 27</b> lines. Confirm diagnostic labels on official IAP charts.<br>
-      • <b>Preterm:</b> corrected age to 24 mo (standard practice). Fenton 2013 chart data are licensed — use official charts: <b>ucalgary.ca/fenton</b> / fentongrowth.ca (now with 2025 3rd-generation charts).</div></div>
+      • <b>Preterm:</b> corrected age to 24 mo (standard practice). Fenton chart data aren't embedded in-app — use official charts: <b>ucalgary.ca/fenton</b> / fentongrowth.ca (now with 2025 3rd-generation charts).</div></div>
     <div class="card"><h3>🧮 Methods & cutoffs</h3><div style="font-size:13.5px;line-height:1.9">
       • z = ((X/M)<sup>L</sup> − 1)/(L·S); WHO extreme values use the <b>restricted-SD method</b> beyond ±3.<br>
       • <b>Length/height:</b> &lt;24 mo compared as length, ≥24 mo as height; wrong position auto-adjusted ±0.7 cm (WHO rule). Record actual position for accuracy.<br>

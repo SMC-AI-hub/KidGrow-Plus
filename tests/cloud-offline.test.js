@@ -964,6 +964,15 @@ async function main() {
   const refH = sb.document.getElementById("gs-ref").innerHTML;
   ok(refH.includes("References used") && refH.includes("Methods & cutoffs") && refH.includes("Measuring right") && refH.includes("Limitations"), "ref tab fills all four cards on click");
 
+  // ---- v10.11.5: Standards-tab accuracy (CDC underweight + honest sourcing) ----
+  vm.runInContext(`DB.children=[normalizeChild({id:'gr2',name:'Thin Kid',sex:'boy',dob:'2020-06-01',vaccines:{}} )]; DB.activeId='gr2';`, sb);
+  const thinNote = vm.runInContext(`assessMeasure(child(), {date:todayISO(),wt:15.9,ht:115,bmi:12.0}).rows.find((r)=>r.key==="BMIZ5").note`, sb);
+  ok(thinNote.includes("Underweight range"), "CDC note flags BMI <P5");
+  sb.setGSub("ref");
+  const refH5 = sb.document.getElementById("gs-ref").innerHTML;
+  ok(!refH5.includes("2022 extended") && refH5.includes("% of P95") && !refH5.includes("are licensed"), "tab claims match implementation");
+  ok(!fs.readFileSync(path.join(R, "js", "ref-cdc.js"), "utf8").includes("2022 extended"), "CDC data header honest");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
