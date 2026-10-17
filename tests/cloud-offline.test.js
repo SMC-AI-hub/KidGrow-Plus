@@ -925,7 +925,7 @@ async function main() {
   // ---- v10.11.2: rich handouts ----
   const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);
   ok(handShape, "every handout complete in 3 languages");
-  ok(vm.runInContext(`HANDOUTS.length`, sb) === 8 && vm.runInContext(`HANDOUTS.some((h)=>h.id==="vomit") && HANDOUTS.some((h)=>h.id==="nbwarn")`, sb), "vomiting + newborn added (8 topics)");
+  ok(vm.runInContext(`HANDOUTS.length`, sb) === 9 && vm.runInContext(`HANDOUTS.some((h)=>h.id==="breastfeed") && HANDOUTS.some((h)=>h.id==="solids")`, sb), "breastfeeding + complementary feeding present (9 topics)");
   const hd = sb.handDose(12);
   ok(hd.mg === 180 && hd.syrup === 7.5 && hd.drops === 1.8, "paracetamol dose math (12 kg)");
   vm.runInContext(`DB.children=[normalizeChild({id:'hd1',name:'Dose Kid',sex:'boy',dob:'2023-01-01',vaccines:{},measures:[{date:'2026-10-01',wt:12}]} )]; DB.activeId='hd1'; HAND_SEL.h='fever'; HAND_SEL.lang='en';`, sb);
@@ -972,6 +972,23 @@ async function main() {
   const refH5 = sb.document.getElementById("gs-ref").innerHTML;
   ok(!refH5.includes("2022 extended") && refH5.includes("% of P95") && !refH5.includes("are licensed"), "tab claims match implementation");
   ok(!fs.readFileSync(path.join(R, "js", "ref-cdc.js"), "utf8").includes("2022 extended"), "CDC data header honest");
+
+  // ---- v10.12.0: breastfeeding + complementary feeding handouts ----
+  vm.runInContext(`HAND_SEL.h='breastfeed'; HAND_SEL.lang='en';`, sb);
+  sb.renderHand();
+  const handB = sb.document.getElementById("handBox").innerHTML;
+  ok(handB.includes("Expressed-milk storage") && handB.includes("Up to 4 days") && handB.includes("Never refreeze"), "milk-storage chart renders");
+  ok(handB.includes("Golden rule") && handB.includes("8–12 times") && handB.includes("colostrum"), "breastfeeding core content renders");
+  vm.runInContext(`HAND_SEL.h='solids';`, sb);
+  sb.renderHand();
+  const handS = sb.document.getElementById("handBox").innerHTML;
+  ok(handS.includes("Day-wise meal plan") && handS.includes("250 ml") && handS.includes("finger foods"), "meal-plan chart renders");
+  ok(handS.includes("Complementary feeding (6–23 mo)") && handS.includes("180 days"), "solids upgraded to full compfeed");
+  vm.runInContext(`HAND_SEL.lang='ta';`, sb);
+  sb.renderHand();
+  const handST = sb.document.getElementById("handBox").innerHTML;
+  ok(handST.includes("கிண்ணம்") && handST.includes("பொன் விதி"), "Tamil compfeed chart + pearl render");
+  ok(vm.runInContext(`HANDOUTS.find((h)=>h.id==="solids").bullets.en.length`, sb) >= 7, "compfeed has 7 steps");
 
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
