@@ -1,5 +1,16 @@
 # Changelog
 
+## v10.11.5 — 2026-10-17 — Standards-tab accuracy audit
+- 🔬 Audited every Standards & method claim against the code, the bundled LMS
+  data, and the authoritative sources (WHO anthro tables, CDC z-score files,
+  IAP 2015 paper, Fenton 2025 3rd-generation publication) — 14 of 16 claims
+  verified exact (ranges, cutoffs, formulas, flags, URLs).
+- 🐛 Fixed the 2 gaps: CDC 5+ note now flags BMI <P5 as "Underweight range"
+  (was "Healthy range"); dropped the unverifiable "2022 extended BMI" wording
+  (severe-obesity classes use the standard %–of–P95 method) and reworded the
+  Fenton note to "data aren't embedded in-app".
+- Tests: 649/649 (452 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.11.4 — 2026-10-17 — Standards & method tab fix
 - 🐛 Fixed: Growth → "ⓘ Standards & method" tab opened empty — the tab-click
   handler never called its renderer (content only appeared after a reload).
