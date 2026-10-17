@@ -920,7 +920,7 @@ async function main() {
   sb.document.getElementById("sColorPrint").checked = true;
   sb.savePrintPref();
   const cssP = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
-  ok(cssP.includes(".page.printing{animation:none;-webkit-print-color-adjust:exact") && cssP.includes("body.bw-print .page.printing{filter:grayscale(1)}"), "print CSS forces color, grayscale opt-out");
+  ok(cssP.includes(".page.printing{animation:none;-webkit-print-color-adjust:exact") && cssP.includes("body.bw-print .page.printing{filter:grayscale(1)}") && cssP.includes(".page{display:none!important}") && cssP.includes(".modal-bg"), "print CSS forces color, hides active page + modals, grayscale opt-out");
 
   // ---- v10.11.2: rich handouts ----
   const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);
