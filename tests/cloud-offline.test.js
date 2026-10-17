@@ -958,6 +958,12 @@ async function main() {
   ok(sb.document.getElementById("handBox").innerHTML.includes("vomits everything"), "fever danger signs strengthened");
   ok(!/imnci/i.test(fs.readFileSync(path.join(R, "js", "handouts.js"), "utf8")), "no source attribution in handouts");
 
+  // ---- v10.11.4: Standards & method tab renders on click ----
+  vm.runInContext(`DB.children=[normalizeChild({id:'gr1',name:'Ref Kid',sex:'girl',dob:'2022-05-05',vaccines:{}} )]; DB.activeId='gr1';`, sb);
+  sb.setGSub("ref");
+  const refH = sb.document.getElementById("gs-ref").innerHTML;
+  ok(refH.includes("References used") && refH.includes("Methods & cutoffs") && refH.includes("Measuring right") && refH.includes("Limitations"), "ref tab fills all four cards on click");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

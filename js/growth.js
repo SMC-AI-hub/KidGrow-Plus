@@ -408,6 +408,7 @@ function setGSub(t) {
   if (t === "assess") renderGAssess(child());
   if (t === "velocity") renderGVelocity(child());
   if (t === "puberty") renderGPuberty(child());
+  if (t === "ref") renderGRef();
 }
 function setGInd(v) { DB.gTab = v; save(); document.querySelectorAll("#growthTabs button").forEach((x) => x.classList.toggle("active", x.dataset.g === v)); drawGrowthChart(); }
 function setGLines(v) { DB.gLines = v; save(); document.querySelectorAll("#gLineTabs button").forEach((x) => x.classList.toggle("active", x.dataset.gl === v)); drawGrowthChart(); }

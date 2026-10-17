@@ -1,5 +1,11 @@
 # Changelog
 
+## v10.11.4 — 2026-10-17 — Standards & method tab fix
+- 🐛 Fixed: Growth → "ⓘ Standards & method" tab opened empty — the tab-click
+  handler never called its renderer (content only appeared after a reload).
+  One-line fix; all four cards now render on click.
+- Tests: 646/646 (449 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.11.3 — 2026-10-17 — Assessment-grade handouts
 - 🫁 Cold handout gains a breath-rate guide (age-wise cutoffs + chest-indrawing
   watch) so parents count for 1 minute and know exactly when to return same-day.
