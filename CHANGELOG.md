@@ -1,5 +1,19 @@
 # Changelog
 
+## v10.18.0 — 2026-10-17 — Milestones print: due/overdue + interpretation
+- 🖨️ Future age bands no longer print full unmarked tables — one
+  compact line each ("not due yet — still has time"). Bands scored
+  ahead still print fully ("assessed ahead of age").
+- 🖨️ Overdue items (marked ✗ at/past the right age) print in red as
+  "✗ Not attained at appropriate age" with highlighted rows; early
+  ✗ items read "✗ Not yet — still has time".
+- 📋 New "Overall interpretation" section at the end: verdict
+  (On track / Monitor closely / Needs attention), the overdue-item
+  list with bands, and a still-has-time note for upcoming bands.
+- 🖥️ Same due/overdue logic applied to the on-screen band verdict.
+- ✅ Verified with a headless-Chrome A4 screenshot before commit.
+- Tests: 689/689 (483 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.17.3 — 2026-10-17 — Larger, clearer sidebar logo
 - 🎨 Sidebar logo tile 56 → 66px; uploaded clinic logo now fills
   the tile on a clean white background (was a small 40px image on

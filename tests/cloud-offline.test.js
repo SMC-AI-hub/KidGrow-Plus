@@ -930,6 +930,14 @@ async function main() {
   ok(cssP.includes("#cloudBanner") && cssP.includes("#cloudToast"), "print CSS hides trial banner + toast");
   ok(cssP.includes("@page{size:A4"), "print uses A4 page rule");
   ok(cssP.includes(".brand .logo{width:66px;height:66px") && cssP.includes(".brand .logo:has(img){background:#fff"), "sidebar logo large + clear");
+  ok(sb.msBandVerdict({ A: 0, E: 0, N: 0, total: 6, scored: 0 }, 8, 4).label === "Not due yet", "ms: future unscored band not due yet");
+  ok(sb.msBandVerdict({ A: 4, E: 1, N: 1, total: 6, scored: 6 }, 8, 4).label === "Assessed ahead", "ms: future scored band assessed ahead");
+  ok(sb.msPrintStatus("N", 3, 4) === "✗ Not attained at appropriate age", "ms: overdue label at right age");
+  ok(sb.msPrintStatus("N", 8, 4) === "✗ Not yet — still has time", "ms: future N still has time");
+  ok(sb.msOverallVerdict({ milestones: { "0_0": "A", "3_0": "N", "4_3": "N" } }, 4).label === "Needs attention", "ms: 2 overdue -> needs attention");
+  const msFull = { milestones: {} };
+  vm.runInContext("MILESTONES", sb).forEach((bb, bi) => { if (bi <= 4) bb.items.forEach((_, ii) => { msFull.milestones[bi + "_" + ii] = "A"; }); });
+  ok(sb.msOverallVerdict(msFull, 4).label === "On track", "ms: all achieved -> on track");
   ok(cssP.includes(".page.printing .card,.page.printing .stat{padding:11px 13px") && cssP.includes(".page.printing table.tbl th,.page.printing table.tbl td{padding:5px 7px"), "print compacts cards + tables");
   ok(cssP.includes(".page.printing .vaxcard,.page.printing .receipt{padding:13px 15px;max-width:100%!important}") && cssP.includes(".page.printing div:empty"), "print goes full-width, hides empty blocks");
 

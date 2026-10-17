@@ -973,8 +973,11 @@ function renderMilestones() {
     list.appendChild(row);
   });
   const total = b.items.length, scored = counts.A + counts.E + counts.N;
+  const curBi = bandForAge(age.months);
   let verdict, cls;
-  if (!scored) { verdict = "Not yet assessed — complete this band during the visit."; cls = "a-blue"; }
+  if (bi > curBi && !scored) { verdict = "Not due yet — this band is ahead of the child's age; its items still have time."; cls = "a-blue"; }
+  else if (bi > curBi) { verdict = `<b>Assessed ahead:</b> scored before this age band — not-yet items still have time; review again at the right age.`; cls = "a-blue"; }
+  else if (!scored) { verdict = "Not yet assessed — complete this band during the visit."; cls = "a-blue"; }
   else if (counts.N >= 2 || (bi <= bandForAge(age.months) && counts.N >= 1 && counts.A / total < 0.5)) { verdict = `<b>Needs attention:</b> ${counts.N} item(s) not yet achieved in an age-appropriate band. Counsel parents, re-check in 4–6 weeks; refer to early intervention / developmental paediatrics if red flags or regression.`; cls = "a-red"; }
   else if (counts.N === 1 || counts.E >= 2) { verdict = `<b>Monitor closely:</b> mostly on track with ${counts.E} emerging / ${counts.N} not-yet. Give home stimulation activities and review next visit.`; cls = "a-amber"; }
   else { verdict = `<b>On track:</b> ${counts.A}/${total} achieved. Praise parents, share next-band activities.`; cls = "a-green"; }
