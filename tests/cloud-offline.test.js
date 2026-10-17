@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/kidgrow-v11/.test(sw), "SW cache bumped to v11");
+  ok(/kidgrow-v12/.test(sw), "SW cache bumped to v12");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -811,7 +811,7 @@ async function main() {
   sb.undoLastImport();
   ok(vm.runInContext("DB.children[0].id", sb) === "cur1", "undo with no fallback changes nothing");
   sb.confirm = cfOrig;
-  ok(vm.runInContext("VAX_SCHEDULE_VERSION", sb) === "IAP ACVIP 2023-24", "schedule version centralized");
+  ok(vm.runInContext("VAX_SCHEDULE_VERSION", sb) === "IAP ACVIP 2025", "schedule version centralized");
   const strayVer = [];
   for (const f of fs.readdirSync(path.join(R, "js"))) {
     if (!f.endsWith(".js") || f === "data.js") continue;
@@ -821,8 +821,13 @@ async function main() {
   const fakeSpans = [{ textContent: "" }, { textContent: "" }];
   const dqaOrig = sb.document.querySelectorAll;
   sb.document.querySelectorAll = () => fakeSpans;
-  ok(sb.applyRefVersions() === 2 && fakeSpans[0].textContent === "IAP ACVIP 2023-24", "boot stamps version into placeholders");
+  ok(sb.applyRefVersions() === 2 && fakeSpans[0].textContent === "IAP ACVIP 2025", "boot stamps version into placeholders");
   sb.document.querySelectorAll = dqaOrig;
+  const vaxCodes = vm.runInContext("VACCINE_SCHEDULE.map((v)=>v.id+':'+v.vaccines.map((x)=>x.code).join(',')).join('|')", sb);
+  ok(vm.runInContext("VACCINE_SCHEDULE.length", sb) === 18 && vm.runInContext("VACCINE_SCHEDULE.reduce((a,v)=>a+v.vaccines.length,0)", sb) === 45, "IAP 2025: 18 visits, 45 doses");
+  ok(vaxCodes.split("|").find((s) => s.startsWith("w10:")).includes("HEPB3") && !vaxCodes.includes("TCVB") && vaxCodes.includes("HEPB4") && vaxCodes.includes("HPV3") && /(^|\|)y16:/.test(vaxCodes), "IAP 2025: HepB 10/14w, no TCV booster, HPV3 + Td present");
+  vm.runInContext("var __leg=normalizeChild({id:'leg1',vaccines:{TCVB:{date:'2025-01-01',brand:'Typbar TCV'}}});", sb);
+  ok(vm.runInContext("__leg.extraVac.length", sb) === 1 && vm.runInContext("__leg.extraVac[0].name", sb) === "Typhoid Conjugate Booster" && vm.runInContext("('TCVB' in __leg.vaccines)", sb) === false, "legacy TCVB preserved as extra-dose history");
   vm.runInContext(`DB.children=[normalizeChild({id:'d1',name:'Dash Kid',sex:'boy',dob:'2024-01-01'})]; DB.activeId='d1';`, sb);
   sb.renderDashboard();
   const dStats = sb.document.getElementById("dashStats").innerHTML;
@@ -937,7 +942,7 @@ async function main() {
   ok(cardHTML.includes("vax-head") && cardHTML.includes("Hospital logo") && cardHTML.includes("vax-verify"), "card prints logo + verify code");
   ok(cardHTML.includes("Scan at any KidGrow clinic") && cardHTML.includes("<svg"), "card QR scannable + captioned");
   ok(cardHTML.includes("Recommended Vaccines") && cardHTML.includes("Brand given") && cardHTML.includes("Given on") && cardHTML.includes("Due on") && cardHTML.includes("Batch"), "card uses record-table format");
-  ok(cardHTML.includes("10\u201312 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
+  ok(cardHTML.includes("16\u201318 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
   ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");
   vm.runInContext("var __cp=" + cardPrev + "; DB.children=__cp[0]; DB.activeId=__cp[1]; DB.settings=__cp[2];", sb);
   const msPrev = vm.runInContext("JSON.stringify([DB.children,DB.activeId])", sb);

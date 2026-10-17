@@ -1,5 +1,23 @@
 # Changelog
 
+## v10.22.0 — 2026-10-17 — IAP ACVIP 2025 immunisation schedule
+- 💉 Schedule rebuilt from the IAP ACVIP 2025 timetable
+  (Indian Pediatrics 2026;63:311–324): 18 visits, 45 doses.
+  Hep-B now birth + 6/10/14 w (4th dose as combo);
+  TCV single dose at 6–9 mo with NO booster; flu is
+  trivalent, annual till 5 y; new 18–19 mo visit
+  (HepA-2 inactivated + Varicella-2); HPV single dose
+  for girls 9–<15 y, 2-dose boys, 3-dose >15 y/
+  immunocompromised; Tdap at 10 y; Td/Tdap at 16–18 y.
+- 🗂️ Legacy safety: any recorded typhoid booster (TCVB)
+  auto-moves to Additional-vaccines history on load —
+  no record is lost. Vitamin A + JE stay flagged as UIP.
+- 💊 Brand guide updated: HPV ages (Cervavac 9–26,
+  Gardasil-9), Havisure HepA, Vaximune/Pneumoguard-13
+  + Pneumoshield-14 (primary-only), PCV20 >18 y.
+- ✅ Verified with headless-Chrome A4 screenshot.
+- Tests: 700/700 (494 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.21.0 — 2026-10-17 — Immunisation card as record table (paper-schedule format)
 - 💉 Card rebuilt like the clinic's paper schedule: one row per
   visit — Age | Recommended Vaccines | Due on | Brand given |
