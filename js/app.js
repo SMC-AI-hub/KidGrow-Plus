@@ -82,6 +82,13 @@ function normalizeChild(c) {
   if (!Array.isArray(c.aefi)) c.aefi = [];
   if (!Array.isArray(c.tanner)) c.tanner = [];
   if (!Array.isArray(c.consents)) c.consents = [];
+  if (!Array.isArray(c.extraVac)) c.extraVac = [];
+  // IAP 2025 retired the routine typhoid booster — preserve any recorded TCVB as history.
+  if (c.vaccines.TCVB && !c.extraVac.some((x) => x && x.name === "Typhoid Conjugate Booster")) {
+    const _t = c.vaccines.TCVB || {};
+    c.extraVac.push({ id: (typeof uid === "function" ? uid() : "leg-" + Date.now()), name: "Typhoid Conjugate Booster", brand: _t.brand || "", mfr: _t.mfr || "", date: _t.date || "", batch: _t.batch || "", by: _t.by || "", note: "Given under pre-2025 schedule" });
+    delete c.vaccines.TCVB;
+  }
   if (!c.nicu || typeof c.nicu !== "object") c.nicu = { admissions: [] };
   if (!Array.isArray(c.nicu.admissions)) c.nicu.admissions = [];
   if (!Array.isArray(c.mar)) c.mar = [];
@@ -170,19 +177,18 @@ function seedDemo() {
   const V = (date, by) => ({ date, batch: "D-" + date.slice(2, 4) + date.slice(5, 7), site: "Thigh", by: by || "Dr. A. Sharma", aer: "", note: "" });
   ["BCG", "OPV0", "HEPB-B"].forEach((k) => (c.vaccines[k] = V("2025-01-16")));
   ["DTP1", "IPV1", "HIB1", "HEPB2", "ROTA1", "PCV1"].forEach((k) => (c.vaccines[k] = V("2025-02-26")));
-  ["DTP2", "IPV2", "HIB2", "ROTA2", "PCV2"].forEach((k) => (c.vaccines[k] = V("2025-03-26")));
-  ["DTP3", "IPV3", "HIB3", "ROTA3", "PCV3"].forEach((k) => (c.vaccines[k] = V("2025-04-23")));
-  c.vaccines["HEPB3"] = V("2025-07-15"); c.vaccines["FLU1"] = V("2025-07-15"); c.vaccines["FLU2"] = V("2025-08-14");
+  ["DTP2", "IPV2", "HIB2", "HEPB3", "ROTA2", "PCV2"].forEach((k) => (c.vaccines[k] = V("2025-03-26")));
+  ["DTP3", "IPV3", "HIB3", "HEPB4", "ROTA3", "PCV3"].forEach((k) => (c.vaccines[k] = V("2025-04-23")));
+  c.vaccines["FLU1"] = V("2025-07-15"); c.vaccines["FLU2"] = V("2025-08-14");
   c.vaccines["MMR1"] = V("2025-10-15"); c.vaccines["TCV1"] = V("2025-10-15"); c.vaccines["VITA1"] = { date: "2025-10-15", batch: "", site: "Oral", by: "Nurse", aer: "", note: "" };
   c.vaccines["HEPA1"] = V("2026-01-15");
   c.vaccines["MMR2"] = V("2026-04-15"); c.vaccines["VAR1"] = V("2026-04-15"); c.vaccines["PCVB"] = V("2026-04-15");
   const BR = (codes, brand, mfr) => codes.forEach((k) => { if (c.vaccines[k]) { c.vaccines[k].brand = brand; c.vaccines[k].mfr = mfr; } });
   BR(["BCG", "OPV0"], "Govt. UIP supply", "Govt. of India");
   BR(["HEPB-B"], "Genevac-B", "Serum Institute");
-  BR(["DTP1", "IPV1", "HIB1", "HEPB2", "DTP2", "IPV2", "HIB2", "DTP3", "IPV3", "HIB3"], "Hexaxim", "Sanofi");
+  BR(["DTP1", "IPV1", "HIB1", "HEPB2", "DTP2", "IPV2", "HIB2", "HEPB3", "DTP3", "IPV3", "HIB3", "HEPB4"], "Hexaxim", "Sanofi");
   BR(["ROTA1", "ROTA2", "ROTA3"], "Rotavac", "Bharat Biotech");
   BR(["PCV1", "PCV2", "PCV3", "PCVB"], "Prevenar 13", "Pfizer");
-  BR(["HEPB3"], "Engerix-B", "GSK");
   BR(["FLU1", "FLU2"], "Vaxigrip", "Sanofi");
   BR(["MMR1", "MMR2"], "Priorix", "GSK");
   BR(["TCV1"], "Typbar TCV", "Bharat Biotech");
@@ -212,15 +218,13 @@ function seedDemo() {
   const V2 = (date) => ({ date, batch: "D-" + date.slice(2, 4) + date.slice(5, 7), site: "Thigh", by: "Dr. A. Sharma", aer: "", note: "By chronological age (preterm protocol)" });
   ["BCG", "OPV0", "HEPB-B"].forEach((k) => (c2.vaccines[k] = V2("2026-01-22")));
   ["DTP1", "IPV1", "HIB1", "HEPB2", "ROTA1", "PCV1"].forEach((k) => (c2.vaccines[k] = V2("2026-03-03")));
-  ["DTP2", "IPV2", "HIB2", "ROTA2", "PCV2"].forEach((k) => (c2.vaccines[k] = V2("2026-03-31")));
-  ["DTP3", "IPV3", "HIB3", "ROTA3", "PCV3"].forEach((k) => (c2.vaccines[k] = V2("2026-04-28")));
-  c2.vaccines["HEPB3"] = V2("2026-07-21");
+  ["DTP2", "IPV2", "HIB2", "HEPB3", "ROTA2", "PCV2"].forEach((k) => (c2.vaccines[k] = V2("2026-03-31")));
+  ["DTP3", "IPV3", "HIB3", "HEPB4", "ROTA3", "PCV3"].forEach((k) => (c2.vaccines[k] = V2("2026-04-28")));
   const BR2 = (codes, brand, mfr) => codes.forEach((k) => { if (c2.vaccines[k]) { c2.vaccines[k].brand = brand; c2.vaccines[k].mfr = mfr; } });
   BR2(["BCG", "OPV0", "HEPB-B"], "Govt. UIP supply", "Govt. of India");
-  BR2(["DTP1", "IPV1", "HIB1", "HEPB2", "DTP2", "IPV2", "HIB2", "DTP3", "IPV3", "HIB3"], "EasySix", "Panacea Biotec");
+  BR2(["DTP1", "IPV1", "HIB1", "HEPB2", "DTP2", "IPV2", "HIB2", "HEPB3", "DTP3", "IPV3", "HIB3", "HEPB4"], "EasySix", "Panacea Biotec");
   BR2(["ROTA1", "ROTA2", "ROTA3"], "Rotavac", "Bharat Biotech");
   BR2(["PCV1", "PCV2"], "Pneumosil", "Serum Institute");
-  BR2(["HEPB3"], "Genevac-B", "Serum Institute");
   MILESTONES.forEach((b, bi) => { if (bi <= 3) b.items.forEach((_, ii) => (c2.milestones[bi + "_" + ii] = "A")); });
   c2.visits = [
     { id: uid(), date: "2026-09-20", type: "Growth review", subj: "Preterm (33 w) high-risk follow-up; feeding well, corr age 6.7 mo.", obj: "Wt 7.1 kg, thriving on corrected curve; tone normal.", plan: "Continue breastfeeds + iron; ROP/hearing done; review 2-monthly." },
@@ -694,7 +698,7 @@ function vacStatus(c, visit, vx) {
    plan labels every date "earliest" and carries the verify disclaimer. */
 function vaxSeries(code) {
   let s = String(code || "").toUpperCase().replace(/-.*$/, "").replace(/[0-9]+$/, "");
-  // Trailing-B booster marker (DTPB/HIBB/PCVB/TCVB/IPVB) chains onto the primary
+  // Trailing-B booster marker (DTPB/HIBB/PCVB/IPVB) chains onto the primary
   // series — except HEPB, where B means Hep-B, not booster.
   if (s !== "HEPB" && s.endsWith("B")) s = s.slice(0, -1);
   return s || String(code || "");
@@ -743,7 +747,7 @@ function renderVaccines() {
   let al = "";
   if (s.overdue) al += `<div class="alert a-red">⚠️ <div><b>${s.overdue} vaccine(s) overdue.</b> Please schedule catch-up at the earliest. IAP: no need to restart a series — continue from where it stopped, keeping minimum intervals.</div></div>`;
   if (s.next) al += `<div class="alert a-blue">📅 <div><b>Next:</b> ${esc(s.next.v.label)} visit — due <b>${fmtDate(s.next.due)}</b> (${esc(s.next.v.vaccines.filter((x) => !c.vaccines[x.code]).map((x) => x.code).join(", "))}).</div></div>`;
-  else al += `<div class="alert a-green">✅ <div><b>Schedule complete</b> till 10–12 y. Continue annual influenza & adolescent boosters as advised.</div></div>`;
+  else al += `<div class="alert a-green">✅ <div><b>Schedule complete</b> till 16–18 y. Continue annual influenza & adolescent boosters as advised.</div></div>`;
   const _plan = catchupPlan(c, todayISO());
   if (_plan.length) al += catchupHTML(c, _plan);
   $("vacAlerts").innerHTML = al;
@@ -973,8 +977,11 @@ function renderMilestones() {
     list.appendChild(row);
   });
   const total = b.items.length, scored = counts.A + counts.E + counts.N;
+  const curBi = bandForAge(age.months);
   let verdict, cls;
-  if (!scored) { verdict = "Not yet assessed — complete this band during the visit."; cls = "a-blue"; }
+  if (bi > curBi && !scored) { verdict = "Not due yet — this band is ahead of the child's age; its items still have time."; cls = "a-blue"; }
+  else if (bi > curBi) { verdict = `<b>Assessed ahead:</b> scored before this age band — not-yet items still have time; review again at the right age.`; cls = "a-blue"; }
+  else if (!scored) { verdict = "Not yet assessed — complete this band during the visit."; cls = "a-blue"; }
   else if (counts.N >= 2 || (bi <= bandForAge(age.months) && counts.N >= 1 && counts.A / total < 0.5)) { verdict = `<b>Needs attention:</b> ${counts.N} item(s) not yet achieved in an age-appropriate band. Counsel parents, re-check in 4–6 weeks; refer to early intervention / developmental paediatrics if red flags or regression.`; cls = "a-red"; }
   else if (counts.N === 1 || counts.E >= 2) { verdict = `<b>Monitor closely:</b> mostly on track with ${counts.E} emerging / ${counts.N} not-yet. Give home stimulation activities and review next visit.`; cls = "a-amber"; }
   else { verdict = `<b>On track:</b> ${counts.A}/${total} achieved. Praise parents, share next-band activities.`; cls = "a-green"; }

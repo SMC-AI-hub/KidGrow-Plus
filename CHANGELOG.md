@@ -1,5 +1,101 @@
 # Changelog
 
+## v10.22.0 — 2026-10-17 — IAP ACVIP 2025 immunisation schedule
+- 💉 Schedule rebuilt from the IAP ACVIP 2025 timetable
+  (Indian Pediatrics 2026;63:311–324): 18 visits, 45 doses.
+  Hep-B now birth + 6/10/14 w (4th dose as combo);
+  TCV single dose at 6–9 mo with NO booster; flu is
+  trivalent, annual till 5 y; new 18–19 mo visit
+  (HepA-2 inactivated + Varicella-2); HPV single dose
+  for girls 9–<15 y, 2-dose boys, 3-dose >15 y/
+  immunocompromised; Tdap at 10 y; Td/Tdap at 16–18 y.
+- 🗂️ Legacy safety: any recorded typhoid booster (TCVB)
+  auto-moves to Additional-vaccines history on load —
+  no record is lost. Vitamin A + JE stay flagged as UIP.
+- 💊 Brand guide updated: HPV ages (Cervavac 9–26,
+  Gardasil-9), Havisure HepA, Vaximune/Pneumoguard-13
+  + Pneumoshield-14 (primary-only), PCV20 >18 y.
+- ✅ Verified with headless-Chrome A4 screenshot.
+- Tests: 700/700 (494 offline + 107 isolation + 52 hardening + 47 api).
+
+## v10.21.0 — 2026-10-17 — Immunisation card as record table (paper-schedule format)
+- 💉 Card rebuilt like the clinic's paper schedule: one row per
+  visit — Age | Recommended Vaccines | Due on | Brand given |
+  Given on | Batch (navy header). Given cells fill from
+  records (brand + mfr + batch); pending cells stay blank so
+  the doctor can write in them. Next-due visit highlighted.
+- 📄 Same record table in the downloadable parent file
+  (wider layout, matching columns).
+- 🔄 Supersedes the v10.20 card collapse: a record card must
+  show the full schedule with writable future rows; the
+  age-exact rule still applies to reports (milestones etc.).
+- ✅ Verified with headless-Chrome A4 screenshot.
+- Tests: 697/697 (491 offline + 107 isolation + 52 hardening + 47 api).
+
+## v10.20.0 — 2026-10-17 — Clustered, age-exact printouts
+- 🌟 Milestones print: current band clustered by domain (group
+  subheads, no repetitive domain column); earlier bands are one
+  summary line each; future bands gone entirely — report shows
+  exactly the assessment age. Interpretation + overdue list kept.
+- 💉 Immunisation card: visits clustered with status subheads
+  (✅ Complete / ⏰ Due date); only given visits + next due visit
+  print in full — later visits collapse to one line. Same
+  clustering in the downloadable parent file. Cards are one page.
+- 📏 House rule going forward: printouts show age-relevant data
+  only — no long future/unmarked documents anywhere in the app.
+- ✅ Both verified with headless-Chrome A4 screenshots.
+- Tests: 696/696 (490 offline + 107 isolation + 52 hardening + 47 api).
+
+## v10.19.0 — 2026-10-17 — Immunisation card: logo, layout, useful QR
+- 🏥 Hospital logo now prints on the Digital Immunisation Card
+  (was missing — header showed name/address only).
+- 🎨 Card rebuilt as a proper certificate: letterhead band (logo +
+  clinic + doctor/address/reg), verify-code badge, tidy child-info
+  + QR row, signature + date row, audit footer.
+- 📷 QR made genuinely useful: framed scannable box with plain
+  instructions ("Scan at any KidGrow clinic to verify / import"),
+  plus a human-readable verify code (KG-XXXXXX) as fallback.
+- ✅ Verified with a headless-Chrome A4 screenshot before commit.
+- Tests: 692/692 (486 offline + 107 isolation + 52 hardening + 47 api).
+
+## v10.18.0 — 2026-10-17 — Milestones print: due/overdue + interpretation
+- 🖨️ Future age bands no longer print full unmarked tables — one
+  compact line each ("not due yet — still has time"). Bands scored
+  ahead still print fully ("assessed ahead of age").
+- 🖨️ Overdue items (marked ✗ at/past the right age) print in red as
+  "✗ Not attained at appropriate age" with highlighted rows; early
+  ✗ items read "✗ Not yet — still has time".
+- 📋 New "Overall interpretation" section at the end: verdict
+  (On track / Monitor closely / Needs attention), the overdue-item
+  list with bands, and a still-has-time note for upcoming bands.
+- 🖥️ Same due/overdue logic applied to the on-screen band verdict.
+- ✅ Verified with a headless-Chrome A4 screenshot before commit.
+- Tests: 689/689 (483 offline + 107 isolation + 52 hardening + 47 api).
+
+## v10.17.3 — 2026-10-17 — Larger, clearer sidebar logo
+- 🎨 Sidebar logo tile 56 → 66px; uploaded clinic logo now fills
+  the tile on a clean white background (was a small 40px image on
+  gradient) — clearly visible on the navy sidebar. Verified with a
+  headless-Chrome screenshot.
+- Tests: 683/683 (477 offline + 107 isolation + 52 hardening + 47 api).
+
+## v10.17.2 — 2026-10-17 — Revert side-by-side print trial
+- ↩️ Reverts v10.17.1 (never deployed): growth charts print one per
+  row again, standard resolution. A4 density (v10.17.0) kept.
+- Tests: 682/682 (476 offline + 107 isolation + 52 hardening + 47 api).
+
+## v10.17.0 — 2026-10-17 — A4 professional print density
+- 🖨️ New `@page` rule: A4 with 10/9/11mm margins — predictable,
+  full-sheet output instead of browser-default margins.
+- 🖨️ Print density overhaul (all printouts): 12px base type, compact
+  cards (11/13px padding, full width), tighter tables (5/7px cells),
+  headings, alerts, key-value lists and letterheads — no more
+  half-empty pages.
+- 🖨️ Empty blocks (blank alerts/hints) auto-hidden in print; headings
+  never strand at page bottom; tables/cards keep full-width.
+- 🖨️ Receipts + vaccine cards go full-width in print (were 560px).
+- Tests: 682/682 (476 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.16.0 — 2026-10-17 — Production billing hardening
 - 🐛 Cancelled subscriptions now keep paid access till period end
   (previously any `cancelled` status hit the paywall immediately) —

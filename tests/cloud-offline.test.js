@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/kidgrow-v11/.test(sw), "SW cache bumped to v11");
+  ok(/kidgrow-v12/.test(sw), "SW cache bumped to v12");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -811,7 +811,7 @@ async function main() {
   sb.undoLastImport();
   ok(vm.runInContext("DB.children[0].id", sb) === "cur1", "undo with no fallback changes nothing");
   sb.confirm = cfOrig;
-  ok(vm.runInContext("VAX_SCHEDULE_VERSION", sb) === "IAP ACVIP 2023-24", "schedule version centralized");
+  ok(vm.runInContext("VAX_SCHEDULE_VERSION", sb) === "IAP ACVIP 2025", "schedule version centralized");
   const strayVer = [];
   for (const f of fs.readdirSync(path.join(R, "js"))) {
     if (!f.endsWith(".js") || f === "data.js") continue;
@@ -821,8 +821,13 @@ async function main() {
   const fakeSpans = [{ textContent: "" }, { textContent: "" }];
   const dqaOrig = sb.document.querySelectorAll;
   sb.document.querySelectorAll = () => fakeSpans;
-  ok(sb.applyRefVersions() === 2 && fakeSpans[0].textContent === "IAP ACVIP 2023-24", "boot stamps version into placeholders");
+  ok(sb.applyRefVersions() === 2 && fakeSpans[0].textContent === "IAP ACVIP 2025", "boot stamps version into placeholders");
   sb.document.querySelectorAll = dqaOrig;
+  const vaxCodes = vm.runInContext("VACCINE_SCHEDULE.map((v)=>v.id+':'+v.vaccines.map((x)=>x.code).join(',')).join('|')", sb);
+  ok(vm.runInContext("VACCINE_SCHEDULE.length", sb) === 18 && vm.runInContext("VACCINE_SCHEDULE.reduce((a,v)=>a+v.vaccines.length,0)", sb) === 45, "IAP 2025: 18 visits, 45 doses");
+  ok(vaxCodes.split("|").find((s) => s.startsWith("w10:")).includes("HEPB3") && !vaxCodes.includes("TCVB") && vaxCodes.includes("HEPB4") && vaxCodes.includes("HPV3") && /(^|\|)y16:/.test(vaxCodes), "IAP 2025: HepB 10/14w, no TCV booster, HPV3 + Td present");
+  vm.runInContext("var __leg=normalizeChild({id:'leg1',vaccines:{TCVB:{date:'2025-01-01',brand:'Typbar TCV'}}});", sb);
+  ok(vm.runInContext("__leg.extraVac.length", sb) === 1 && vm.runInContext("__leg.extraVac[0].name", sb) === "Typhoid Conjugate Booster" && vm.runInContext("('TCVB' in __leg.vaccines)", sb) === false, "legacy TCVB preserved as extra-dose history");
   vm.runInContext(`DB.children=[normalizeChild({id:'d1',name:'Dash Kid',sex:'boy',dob:'2024-01-01'})]; DB.activeId='d1';`, sb);
   sb.renderDashboard();
   const dStats = sb.document.getElementById("dashStats").innerHTML;
@@ -928,6 +933,38 @@ async function main() {
   const cssP = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
   ok(cssP.includes(".page.printing{animation:none;-webkit-print-color-adjust:exact") && cssP.includes("body.bw-print .page.printing{filter:grayscale(1)}") && cssP.includes(".page{display:none!important}") && cssP.includes(".modal-bg"), "print CSS forces color, hides active page + modals, grayscale opt-out");
   ok(cssP.includes("#cloudBanner") && cssP.includes("#cloudToast"), "print CSS hides trial banner + toast");
+  ok(cssP.includes("@page{size:A4"), "print uses A4 page rule");
+  ok(cssP.includes(".brand .logo{width:66px;height:66px") && cssP.includes(".brand .logo:has(img){background:#fff"), "sidebar logo large + clear");
+  const cardPrev = vm.runInContext("JSON.stringify([DB.children,DB.activeId,DB.settings])", sb);
+  vm.runInContext("DB.children=[{id:'vx1',name:'Card Test',sex:'boy',dob:'2025-05-20',mother:'M',vaccines:{BCG:{date:'2025-05-20',brand:'B'}}}]; DB.activeId='vx1'; DB.settings=Object.assign({},DB.settings,{clinic:'Test Hospital',logo:'data:image/png,xx'});", sb);
+  sb.renderCard();
+  const cardHTML = sb.document.getElementById("cardBox").innerHTML;
+  ok(cardHTML.includes("vax-head") && cardHTML.includes("Hospital logo") && cardHTML.includes("vax-verify"), "card prints logo + verify code");
+  ok(cardHTML.includes("Scan at any KidGrow clinic") && cardHTML.includes("<svg"), "card QR scannable + captioned");
+  ok(cardHTML.includes("Recommended Vaccines") && cardHTML.includes("Brand given") && cardHTML.includes("Given on") && cardHTML.includes("Due on") && cardHTML.includes("Batch"), "card uses record-table format");
+  ok(cardHTML.includes("16\u201318 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
+  ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");
+  vm.runInContext("var __cp=" + cardPrev + "; DB.children=__cp[0]; DB.activeId=__cp[1]; DB.settings=__cp[2];", sb);
+  const msPrev = vm.runInContext("JSON.stringify([DB.children,DB.activeId])", sb);
+  sb.print = () => {};
+  vm.runInContext("DB.children=[{id:'ms8',name:'MS Test',sex:'girl',dob:'2026-02-10',milestones:{'0_0':'A','3_0':'N','4_3':'N'}}]; DB.activeId='ms8';", sb);
+  sb.printMilestonesFull();
+  const msHTML = sb.document.getElementById("msFullPrint").innerHTML;
+  ok(msHTML.includes("Overall interpretation") && !msHTML.includes("not due yet"), "ms print: interpretation, no future bands");
+  ok(msHTML.includes("Gross Motor") && !msHTML.includes("10 \u2013 12 months"), "ms print: clustered domains, age-exact");
+  const opsSrc = fs.readFileSync(path.join(R, "js", "ops.js"), "utf8");
+  ok(opsSrc.includes("Brand given") && opsSrc.includes("Recommended Vaccines") && !opsSrc.includes("Further visits"), "parent file uses record-table format");
+  vm.runInContext("var __mp=" + msPrev + "; DB.children=__mp[0]; DB.activeId=__mp[1];", sb);
+  ok(sb.msBandVerdict({ A: 0, E: 0, N: 0, total: 6, scored: 0 }, 8, 4).label === "Not due yet", "ms: future unscored band not due yet");
+  ok(sb.msBandVerdict({ A: 4, E: 1, N: 1, total: 6, scored: 6 }, 8, 4).label === "Assessed ahead", "ms: future scored band assessed ahead");
+  ok(sb.msPrintStatus("N", 3, 4) === "✗ Not attained at appropriate age", "ms: overdue label at right age");
+  ok(sb.msPrintStatus("N", 8, 4) === "✗ Not yet — still has time", "ms: future N still has time");
+  ok(sb.msOverallVerdict({ milestones: { "0_0": "A", "3_0": "N", "4_3": "N" } }, 4).label === "Needs attention", "ms: 2 overdue -> needs attention");
+  const msFull = { milestones: {} };
+  vm.runInContext("MILESTONES", sb).forEach((bb, bi) => { if (bi <= 4) bb.items.forEach((_, ii) => { msFull.milestones[bi + "_" + ii] = "A"; }); });
+  ok(sb.msOverallVerdict(msFull, 4).label === "On track", "ms: all achieved -> on track");
+  ok(cssP.includes(".page.printing .card,.page.printing .stat{padding:11px 13px") && cssP.includes(".page.printing table.tbl th,.page.printing table.tbl td{padding:5px 7px"), "print compacts cards + tables");
+  ok(cssP.includes(".page.printing .vaxcard,.page.printing .receipt{padding:13px 15px;max-width:100%!important}") && cssP.includes(".page.printing div:empty"), "print goes full-width, hides empty blocks");
 
   // ---- v10.11.2: rich handouts ----
   const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);

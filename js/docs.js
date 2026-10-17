@@ -28,6 +28,9 @@ function msBandCounts(c, bi) {
 }
 /* Plain-text twin of the renderMilestones() verdict logic in app.js. */
 function msBandVerdict(n, bi, curBi) {
+  if (bi > curBi) return n.scored
+    ? { label: "Assessed ahead", detail: "Scored before this age band — not-yet items still have time; review again when the child reaches this band." }
+    : { label: "Not due yet", detail: "Still has time — expected when the child reaches this age band." };
   if (!n.scored) return { label: "Not assessed", detail: "Complete this band during the visit." };
   if (n.N >= 2 || (bi <= curBi && n.N >= 1 && n.A / n.total < 0.5))
     return { label: "Needs attention", detail: `${n.N} item(s) not yet achieved in an age-appropriate band — counsel, re-check in 4–6 weeks; refer to early intervention / developmental paediatrics if red flags or regression.` };
@@ -36,32 +39,87 @@ function msBandVerdict(n, bi, curBi) {
   return { label: "On track", detail: `${n.A}/${n.total} achieved — praise parents, share next-band activities.` };
 }
 
+/* Print status: an N at/past the age band is overdue; an N before it still has time. Pure. */
+function msPrintStatus(v, bi, curBi) {
+  if (v === "N") return bi <= curBi ? "✗ Not attained at appropriate age" : "✗ Not yet — still has time";
+  return msValLabel(v);
+}
+/* Overdue items across age-appropriate bands only (bi <= curBi). Pure. */
+function msOverdueList(c, curBi) {
+  const out = [];
+  MILESTONES.forEach((b, bi) => {
+    if (bi > curBi) return;
+    b.items.forEach((it, ii) => {
+      if ((c.milestones || {})[bi + "_" + ii] === "N") out.push({ band: b.band, t: it.t, d: it.d });
+    });
+  });
+  return out;
+}
+/* Overall verdict across age-appropriate bands. Pure. */
+function msOverallVerdict(c, curBi) {
+  let N = 0, E = 0, unm = 0, total = 0;
+  MILESTONES.forEach((b, bi) => {
+    if (bi > curBi) return;
+    b.items.forEach((it, ii) => {
+      total++;
+      const v = (c.milestones || {})[bi + "_" + ii];
+      if (v === "N") N++; else if (v === "E") E++; else if (!v) unm++;
+    });
+  });
+  if (!total || unm === total) return { label: "Not assessed", detail: "No age-appropriate milestones scored yet — complete the assessment during the visit." };
+  if (N >= 2) return { label: "Needs attention", detail: `${N} milestone(s) not attained at appropriate age — counsel parents, re-check in 4–6 weeks; refer to early intervention / developmental paediatrics if red flags or regression.` };
+  if (N === 1 || E >= 2) return { label: "Monitor closely", detail: `${N} overdue · ${E} emerging — mostly on track; give home stimulation activities and review next visit.` };
+  if (unm) return { label: "On track so far", detail: `Scored items look good (${unm} still unmarked) — finish the remaining items to confirm.` };
+  return { label: "On track", detail: "All age-appropriate milestones reviewed — praise parents, share next-band activities." };
+}
+
 function printMilestonesFull() {
   const c = child(); if (!c) return;
   const age = ageBetween(c.dob), curBi = bandForAge(age.months);
+  // Age-exact print: only bands up to the assessment age. Future bands never print.
+  const bands = MILESTONES.map((b, bi) => ({ b, bi, n: msBandCounts(c, bi) })).filter(({ bi }) => bi <= curBi);
   let tA = 0, tE = 0, tN = 0, bandsDone = 0;
-  const bands = MILESTONES.map((b, bi) => {
-    const n = msBandCounts(c, bi);
-    tA += n.A; tE += n.E; tN += n.N; if (n.scored) bandsDone++;
-    return { b, bi, n, v: msBandVerdict(n, bi, curBi) };
-  });
+  bands.forEach(({ n }) => { tA += n.A; tE += n.E; tN += n.N; if (n.scored) bandsDone++; });
+  const cur = bands[bands.length - 1];
+  const cv = msBandVerdict(cur.n, curBi, curBi);
   const flagBands = bands.filter(({ bi, n }) => bi === curBi || n.N >= 1);
+  const over = msOverdueList(c, curBi), ov = msOverallVerdict(c, curBi);
+  const stCell = (ii) => {
+    const v = (c.milestones || {})[curBi + "_" + ii];
+    return v === "N" ? `<b style="color:#dc2626">${esc(msPrintStatus(v, curBi, curBi))}</b>` : `<b>${esc(msPrintStatus(v, curBi, curBi))}</b>`;
+  };
+  // current band clustered by domain (no repetitive domain column)
+  const domRows = Object.keys(DOMAIN_META).map((d) => {
+    const m = DOMAIN_META[d], idx = [];
+    cur.b.items.forEach((it, ii) => { if (it.d === d) idx.push(ii); });
+    if (!idx.length) return "";
+    const a = idx.filter((ii) => (c.milestones || {})[curBi + "_" + ii] === "A").length;
+    return `<tr style="background:${m.color}14"><td colspan="2"><b>${m.icon} ${m.label}</b> <span style="color:var(--muted)">(${a}/${idx.length} achieved)</span></td></tr>` +
+      idx.map((ii) => `<tr${(c.milestones || {})[curBi + "_" + ii] === "N" ? ' style="background:#fef2f2"' : ""}><td>${esc(cur.b.items[ii].t)}</td><td>${stCell(ii)}</td></tr>`).join("");
+  }).join("");
+  const pastLines = bands.filter(({ bi }) => bi < curBi).map(({ b, bi, n }) => {
+    const v = msBandVerdict(n, bi, curBi);
+    return `<div style="font-size:12.5px;margin-bottom:3px"><b>${esc(b.band)}:</b> ${esc(v.label)} (${n.A}✓/${n.E}◐/${n.N}✗ of ${n.total})</div>`;
+  }).join("");
   $("msFullPrint").innerHTML = `${clinicHeader()}
-    <div class="doc-title">🌟 DEVELOPMENTAL MILESTONES — FULL ASSESSMENT</div>
+    <div class="doc-title">🌟 DEVELOPMENTAL MILESTONES — ASSESSMENT</div>
     ${childHeader(c)}
     <dl class="kv" style="margin-bottom:10px"><dt>Assessment date</dt><dd>${fmtDate(todayISO())} · age ${ageStr(age)} · current band: <b>${esc(MILESTONES[curBi].band)}</b></dd>
-    <dt>Overall</dt><dd>${bandsDone}/${MILESTONES.length} bands scored · ✓ ${tA} achieved · ◐ ${tE} emerging · ✗ ${tN} not yet</dd></dl>
-    ${bands.map(({ b, bi, n, v }) => `
+    <dt>Overall</dt><dd>${bandsDone}/${bands.length} bands scored · ✓ ${tA} achieved · ◐ ${tE} emerging · ✗ ${tN} not yet</dd></dl>
+    ${pastLines ? `<div style="margin-top:10px"><h4 style="margin:0 0 4px;color:var(--navy)">Earlier bands</h4>${pastLines}</div>` : ""}
     <div style="margin-top:10px;break-inside:avoid">
-      <h4 style="margin:0 0 4px;color:var(--navy)">${esc(b.band)}${bi === curBi ? ' <span class="badge b-teal">current age band</span>' : ""}</h4>
-      <div style="font-size:12.5px;margin-bottom:4px"><b>${esc(v.label)}</b> (${n.A}✓/${n.E}◐/${n.N}✗ of ${n.total}) — ${esc(v.detail)}</div>
-      <table class="tbl"><thead><tr><th style="width:150px">Domain</th><th>Milestone</th><th style="width:130px">Status</th></tr></thead>
-      <tbody>${b.items.map((it, ii) => `<tr><td>${DOMAIN_META[it.d].icon} ${DOMAIN_META[it.d].label}</td><td>${esc(it.t)}</td><td><b>${msValLabel((c.milestones || {})[bi + "_" + ii])}</b></td></tr>`).join("")}</tbody></table>
-    </div>`).join("")}
+      <h4 style="margin:0 0 4px;color:var(--navy)">${esc(cur.b.band)} <span class="badge b-teal">current age band</span></h4>
+      <div style="font-size:12.5px;margin-bottom:4px"><b>${esc(cv.label)}</b> (${cur.n.A}✓/${cur.n.E}◐/${cur.n.N}✗ of ${cur.n.total}) — ${esc(cv.detail)}</div>
+      <table class="tbl"><thead><tr><th>Milestone</th><th style="width:170px">Status</th></tr></thead>
+      <tbody>${domRows}</tbody></table>
+    </div>
+    <h4 style="margin:14px 0 6px;color:var(--navy)">📋 Overall interpretation — ${esc(ov.label)}</h4>
+    <div style="font-size:13px;margin-bottom:6px">${esc(ov.detail)}</div>
+    ${over.length ? `<div style="margin-bottom:6px"><b>Not attained at appropriate age (${over.length}):</b><ul style="margin:4px 0">${over.map((o) => `<li><b>${esc(o.band)}</b> — ${esc(o.t)} <span style="color:var(--muted)">(${esc((DOMAIN_META[o.d] || {}).label || o.d)})</span></li>`).join("")}</ul></div>` : `<div style="margin-bottom:6px">✅ No overdue milestones in age-appropriate bands.</div>`}
     <h4 style="margin:14px 0 6px;color:var(--navy)">🚩 Red-flag watch</h4>
     ${flagBands.map(({ b, bi }) => `<div style="margin-bottom:6px;break-inside:avoid"><b>${esc(b.band)}${bi === curBi ? " (current)" : " (has not-yet items)"}:</b><ul style="margin:4px 0">${b.red.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div>`).join("")}
     <div class="footer-note">Any red flag, regression, or parental concern → counsel + early referral to developmental paediatrics / early intervention. Red-flag lists for all bands are visible in the app.</div>
-    ${docFooter("Milestones full assessment")}`;
+    ${docFooter("Milestones assessment")}`;
   auditSafe("Export", "Milestones full report printed");
   printPage("pg-msprint");
 }

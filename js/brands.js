@@ -72,7 +72,9 @@ const BRAND_GROUPS = {
     { b: "Prevenar 13", m: "Pfizer", n: "PCV13" },
     { b: "Pneumosil", m: "Serum Institute", n: "PCV10 (SII)" },
     { b: "Synflorix", m: "GSK", n: "PCV10" },
-    { b: "Prevenar 20", m: "Pfizer", n: "PCV20 · newer" },
+    { b: "Vaximune-13 / Pneumoguard 13", m: "Dr. Reddy's", n: "PCV13-TT · 6-10-14 w primary only, no booster" },
+    { b: "Pneumoshield-14", m: "Biological E / Abbott", n: "PCV14 · primary only, no booster" },
+    { b: "Prevenar 20", m: "Pfizer", n: "PCV20 · >18 y single dose only" },
     { b: "Pneumovax 23", m: "MSD", n: "PPSV23 · high-risk ≥2 y, not routine" },
     { b: "Govt. UIP supply (PCV)", m: "Govt. of India" },
   ]},
@@ -104,6 +106,7 @@ const BRAND_GROUPS = {
     { b: "Havrix", m: "GSK", n: "Inactivated · 2-dose" },
     { b: "Avaxim", m: "Sanofi", n: "Inactivated · 2-dose" },
     { b: "Vaqta", m: "MSD", n: "Inactivated · 2-dose" },
+    { b: "Havisure", m: "Indian Immunologicals", n: "Inactivated · indigenous · 2-dose 0–6 mo" },
     { b: "Biovac-A", m: "Wockhardt" },
     { b: "Live Hep A (single-dose)", m: "Various", n: "Only 1 dose if live attenuated" },
   ]},
@@ -122,9 +125,9 @@ const BRAND_GROUPS = {
     { b: "Td — Govt. supply", m: "Govt. of India", n: "UIP adolescent Td" },
   ]},
   hpv: { label: "HPV", items: [
-    { b: "Cervavac", m: "Serum Institute", n: "qHPV 6/11/16/18 · most affordable" },
-    { b: "Gardasil", m: "MSD", n: "qHPV 6/11/16/18" },
-    { b: "Gardasil 9", m: "MSD", n: "9-valent · broadest cover" },
+    { b: "Cervavac", m: "Serum Institute", n: "qHPV 6/11/16/18 · 9–26 y (F+M) · most affordable" },
+    { b: "Gardasil", m: "MSD", n: "qHPV 6/11/16/18 · licensed till 45 y" },
+    { b: "Gardasil 9", m: "MSD", n: "9-valent · boys 9–14, females 9–26" },
     { b: "Cervarix", m: "GSK", n: "Bivalent 16/18" },
   ]},
   /* additional / travel / seasonal (used by "Additional vaccines") */
@@ -149,7 +152,7 @@ const BRAND_GROUPS = {
   ]},
 };
 
-const CODE_GROUP = { BCG: "bcg", OPV0: "opv", VITA1: "vita", JE1: "je", TDAP: "tdap" };
+const CODE_GROUP = { BCG: "bcg", OPV0: "opv", VITA1: "vita", JE1: "je", TDAP: "tdap", TD: "tdap" };
 function groupForCode(code) {
   if (CODE_GROUP[code]) return CODE_GROUP[code];
   const p = [["DTP", "dtp"], ["IPV", "ipv"], ["HIB", "hib"], ["HEPB", "hepb"], ["ROTA", "rota"],

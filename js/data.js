@@ -1,7 +1,7 @@
 /* =====================================================================
    KidGrow Pro — Clinical Reference Data
    Sources (for screening use):
-   • Vaccines: IAP ACVIP Immunization Timetable 2023-24 (routine use)
+   • Vaccines: IAP ACVIP Immunization Timetable 2025 (routine use)
    • Growth 0–5 y: WHO Multicentre Growth Reference Study 2006
      (endorsed by IAP for under-5s)
    • Growth 5–18 y: Revised IAP Growth Charts 2015 (Khadilkar et al.)
@@ -11,7 +11,7 @@
    official printed IAP/WHO charts & clinical judgement.
    ===================================================================== */
 
-const VAX_SCHEDULE_VERSION = "IAP ACVIP 2023-24"; // single source of truth — update only after clinical review (G12)
+const VAX_SCHEDULE_VERSION = "IAP ACVIP 2025"; // single source of truth — update only after clinical review (G12)
 const VACCINE_SCHEDULE = [
   {
     id: "birth", label: "At Birth", sub: "Within 24 hours", dueDays: 0, dueMonths: 0,
@@ -36,53 +36,60 @@ const VACCINE_SCHEDULE = [
   },
   {
     id: "w10", label: "10 Weeks", sub: "70 days", dueDays: 70, dueMonths: 2.5,
-    note: "Primary series-2",
+    note: "Primary series-2 · RV1: 2 doses; all other rotavirus brands: 3 doses",
     vaccines: [
       { code: "DTP2", name: "DTwP / DTaP", dose: "Dose 2", protects: "Diphtheria, Tetanus, Pertussis", route: "IM 0.5 mL", site: "Anterolateral thigh", cat: "UIP + IAP" },
       { code: "IPV2", name: "Inactivated Polio (IPV)", dose: "Dose 2", protects: "Poliomyelitis", route: "IM / ID", site: "Thigh / arm", cat: "UIP + IAP" },
       { code: "HIB2", name: "Hib", dose: "Dose 2", protects: "H. influenzae type b", route: "IM (combo)", site: "Thigh", cat: "UIP + IAP" },
+      { code: "HEPB3", name: "Hepatitis B", dose: "Dose 3", protects: "Hepatitis B", route: "IM (combo)", site: "Thigh", cat: "UIP + IAP" },
       { code: "ROTA2", name: "Rotavirus", dose: "Dose 2", protects: "Rotavirus diarrhoea", route: "Oral", site: "Oral", cat: "UIP + IAP" },
       { code: "PCV2", name: "Pneumococcal (PCV)", dose: "Dose 2", protects: "Pneumococcal disease", route: "IM 0.5 mL", site: "Thigh", cat: "IAP" },
     ]
   },
   {
     id: "w14", label: "14 Weeks", sub: "98 days", dueDays: 98, dueMonths: 3.5,
-    note: "Primary series-3 · completes infant pentavalent/hexavalent course",
+    note: "Primary series-3 · 4th Hep-B dose safe & permitted as combo component",
     vaccines: [
       { code: "DTP3", name: "DTwP / DTaP", dose: "Dose 3", protects: "Diphtheria, Tetanus, Pertussis", route: "IM 0.5 mL", site: "Anterolateral thigh", cat: "UIP + IAP" },
       { code: "IPV3", name: "Inactivated Polio (IPV)", dose: "Dose 3", protects: "Poliomyelitis", route: "IM / ID", site: "Thigh / arm", cat: "UIP + IAP" },
       { code: "HIB3", name: "Hib", dose: "Dose 3", protects: "H. influenzae type b", route: "IM (combo)", site: "Thigh", cat: "UIP + IAP" },
+      { code: "HEPB4", name: "Hepatitis B", dose: "Dose 4 (combo)", protects: "Hepatitis B", route: "IM (combo)", site: "Thigh", cat: "UIP + IAP" },
       { code: "ROTA3", name: "Rotavirus", dose: "Dose 3*", protects: "Rotavirus diarrhoea", route: "Oral", site: "Oral", cat: "UIP + IAP" },
       { code: "PCV3", name: "Pneumococcal (PCV)", dose: "Dose 3", protects: "Pneumococcal disease", route: "IM 0.5 mL", site: "Thigh", cat: "IAP" },
     ]
   },
   {
     id: "m6", label: "6 Months", sub: "180 days", dueDays: 180, dueMonths: 6,
-    note: "Hep-B finale · start annual influenza (2 doses 4 wks apart in 1st year)",
+    note: "Uniform 0.5 mL dose from 6 mo · trivalent IIV (H1N1+H3N2+B/Victoria) · pre-monsoon",
     vaccines: [
-      { code: "HEPB3", name: "Hepatitis B", dose: "Dose 3", protects: "Hepatitis B", route: "IM 0.5 mL", site: "Thigh", cat: "UIP + IAP" },
-      { code: "FLU1", name: "Influenza (IIV)", dose: "Annual dose 1", protects: "Seasonal influenza", route: "IM", site: "Thigh / deltoid", cat: "IAP" },
+      { code: "FLU1", name: "Influenza (IIV · trivalent)", dose: "Dose 1 (≥6 mo)", protects: "Seasonal influenza", route: "IM 0.5 mL", site: "Thigh / deltoid", cat: "IAP" },
     ]
   },
   {
     id: "m7", label: "7 Months", sub: "~210 days", dueDays: 210, dueMonths: 7,
-    note: "Second flu priming dose (first year only)",
+    note: "2nd priming dose (1st year only) · annual flu every year till 5 y; high-risk till 18 y+",
     vaccines: [
-      { code: "FLU2", name: "Influenza (IIV)", dose: "Annual dose 2", protects: "Seasonal influenza", route: "IM", site: "Thigh / deltoid", cat: "IAP" },
+      { code: "FLU2", name: "Influenza (IIV · trivalent)", dose: "Dose 2 (4 wk later)", protects: "Seasonal influenza", route: "IM 0.5 mL", site: "Thigh / deltoid", cat: "IAP" },
+    ]
+  },
+  {
+    id: "m69", label: "6–9 Months", sub: "6–9 mo window", dueDays: 180, dueMonths: 6,
+    note: "Single dose 0.5 mL IM from 6 mo · NO booster needed (IAP 2025)",
+    vaccines: [
+      { code: "TCV1", name: "Typhoid Conjugate", dose: "Single dose", protects: "Typhoid fever", route: "IM 0.5 mL", site: "Thigh / deltoid", cat: "IAP" },
     ]
   },
   {
     id: "m9", label: "9 Months", sub: "270 days", dueDays: 270, dueMonths: 9,
-    note: "MMR from 9 mo (IAP) · MR under UIP · TCV 9–12 mo",
+    note: "MMR from 9 mo (IAP) · MR under UIP · Vitamin A per UIP",
     vaccines: [
       { code: "MMR1", name: "MMR", dose: "Dose 1", protects: "Measles, Mumps, Rubella", route: "SC 0.5 mL", site: "Right upper arm", cat: "UIP(MR) + IAP" },
-      { code: "TCV1", name: "Typhoid Conjugate", dose: "Dose 1", protects: "Typhoid fever", route: "IM 0.5 mL", site: "Thigh / deltoid", cat: "IAP" },
       { code: "VITA1", name: "Vitamin A", dose: "1 lakh IU", protects: "Xerophthalmia (supplement)", route: "Oral 1 mL", site: "Oral", cat: "UIP" },
     ]
   },
   {
     id: "m12", label: "12 Months", sub: "1 year", dueDays: 365, dueMonths: 12,
-    note: "Hep-A live = 1 dose; killed = 2 doses 6 mo apart",
+    note: "Hep-A: single dose if live attenuated · inactivated needs 2nd dose at 18–19 mo",
     vaccines: [
       { code: "HEPA1", name: "Hepatitis A", dose: "Dose 1", protects: "Hepatitis A", route: "IM", site: "Deltoid / thigh", cat: "IAP" },
       { code: "JE1", name: "Japanese Encephalitis*", dose: "Dose 1 (endemic areas)", protects: "Japanese encephalitis", route: "SC/IM", site: "Arm / thigh", cat: "UIP*" },
@@ -104,34 +111,59 @@ const VACCINE_SCHEDULE = [
       { code: "DTPB1", name: "DTwP / DTaP", dose: "Booster 1", protects: "Diphtheria, Tetanus, Pertussis", route: "IM 0.5 mL", site: "Anterolateral thigh", cat: "UIP + IAP" },
       { code: "HIBB", name: "Hib", dose: "Booster", protects: "H. influenzae type b", route: "IM", site: "Thigh", cat: "IAP" },
       { code: "IPVB1", name: "Inactivated Polio (IPV)", dose: "Booster 1", protects: "Poliomyelitis", route: "IM 0.5 mL", site: "Thigh / deltoid", cat: "UIP + IAP" },
-      { code: "HEPA2", name: "Hepatitis A", dose: "Dose 2 (killed)", protects: "Hepatitis A", route: "IM", site: "Deltoid", cat: "IAP" },
     ]
   },
   {
-    id: "y2", label: "2 Years", sub: "24 months", dueDays: 730, dueMonths: 24,
-    note: "Annual influenza continues · TCV booster per product",
+    id: "m18b", label: "18–19 Months", sub: "~560 days", dueDays: 548, dueMonths: 18,
+    note: "Varicella-2: 3–6 mo after dose 1 · HepA-2 only if inactivated (2-dose 0–6 mo)",
     vaccines: [
-      { code: "TCVB", name: "Typhoid Conjugate", dose: "Booster", protects: "Typhoid fever", route: "IM 0.5 mL", site: "Deltoid", cat: "IAP" },
-      { code: "FLU-Y2", name: "Influenza (IIV)", dose: "Annual", protects: "Seasonal influenza", route: "IM", site: "Deltoid", cat: "IAP" },
-    ]
-  },
-  {
-    id: "y5", label: "4–6 Years", sub: "School entry", dueDays: 1825, dueMonths: 60,
-    note: "Pre-school boosters — due any time 4–6 y",
-    vaccines: [
-      { code: "DTPB2", name: "DTwP / DTaP", dose: "Booster 2", protects: "Diphtheria, Tetanus, Pertussis", route: "IM 0.5 mL", site: "Deltoid", cat: "UIP + IAP" },
-      { code: "IPVB2", name: "Inactivated Polio (IPV)", dose: "Booster 2", protects: "Poliomyelitis", route: "IM 0.5 mL", site: "Deltoid", cat: "IAP" },
-      { code: "MMR3", name: "MMR", dose: "Dose 3", protects: "Measles, Mumps, Rubella", route: "SC 0.5 mL", site: "Upper arm", cat: "IAP" },
+      { code: "HEPA2", name: "Hepatitis A", dose: "Dose 2 (inactivated)", protects: "Hepatitis A", route: "IM", site: "Deltoid", cat: "IAP" },
       { code: "VAR2", name: "Varicella", dose: "Dose 2", protects: "Chickenpox", route: "SC 0.5 mL", site: "Upper arm", cat: "IAP" },
     ]
   },
   {
-    id: "y10", label: "10–12 Years", sub: "Pre-adolescent", dueDays: 3650, dueMonths: 120,
-    note: "Tdap once · HPV 9–14 y: 2 doses (0, 6 mo); ≥15 y or immunocompromised: 3 doses",
+    id: "y2", label: "2 Years", sub: "24 months", dueDays: 730, dueMonths: 24,
+    note: "Annual influenza — every year till 5 y (high-risk: till 18 y+)",
     vaccines: [
-      { code: "TDAP", name: "Tdap", dose: "Single", protects: "Tetanus, diphtheria, pertussis", route: "IM 0.5 mL", site: "Deltoid", cat: "UIP(Td) + IAP" },
-      { code: "HPV1", name: "HPV (Cervavac/Gardasil)", dose: "Dose 1 (9–14 y)", protects: "HPV / cervical cancer", route: "IM 0.5 mL", site: "Deltoid", cat: "IAP" },
-      { code: "HPV2", name: "HPV", dose: "Dose 2 (6 mo later)", protects: "HPV / cervical cancer", route: "IM 0.5 mL", site: "Deltoid", cat: "IAP" },
+      { code: "FLU-Y2", name: "Influenza (IIV · trivalent)", dose: "Annual", protects: "Seasonal influenza", route: "IM 0.5 mL", site: "Deltoid", cat: "IAP" },
+    ]
+  },
+  {
+    id: "y5", label: "4–6 Years", sub: "School entry", dueDays: 1825, dueMonths: 60,
+    note: "Pre-school boosters — any time 4–6 y · Tdap must NOT replace DTP-B2",
+    vaccines: [
+      { code: "DTPB2", name: "DTwP / DTaP", dose: "Booster 2", protects: "Diphtheria, Tetanus, Pertussis", route: "IM 0.5 mL", site: "Deltoid", cat: "UIP + IAP" },
+      { code: "IPVB2", name: "Inactivated Polio (IPV)", dose: "Booster 2", protects: "Poliomyelitis", route: "IM 0.5 mL", site: "Deltoid", cat: "IAP" },
+      { code: "MMR3", name: "MMR", dose: "Dose 3", protects: "Measles, Mumps, Rubella", route: "SC 0.5 mL", site: "Upper arm", cat: "IAP" },
+    ]
+  },
+  {
+    id: "y9", label: "9–15 Years", sub: "9–15 y", dueDays: 3285, dueMonths: 108,
+    note: "Girls 9–<15 y: single dose · Boys: 2 doses (0, 6 mo; gap ≥5 mo)",
+    vaccines: [
+      { code: "HPV1", name: "HPV", dose: "Single (girls) / Dose 1 (boys)", protects: "HPV / cervical cancer", route: "IM 0.5 mL", site: "Deltoid", cat: "IAP" },
+      { code: "HPV2", name: "HPV", dose: "Dose 2 — boys (6 mo after dose 1)", protects: "HPV / cervical cancer", route: "IM 0.5 mL", site: "Deltoid", cat: "IAP" },
+    ]
+  },
+  {
+    id: "y10", label: "10 Years", sub: "10 y", dueDays: 3650, dueMonths: 120,
+    note: "Tdap due even if given earlier as DTP-B2 · Td if Tdap unavailable",
+    vaccines: [
+      { code: "TDAP", name: "Tdap", dose: "Single (even if given before)", protects: "Tetanus, diphtheria, pertussis", route: "IM 0.5 mL", site: "Deltoid", cat: "UIP(Td) + IAP" },
+    ]
+  },
+  {
+    id: "y15", label: "15–18 Years", sub: "15–18 y", dueDays: 5475, dueMonths: 180,
+    note: ">15 y starters + immunocompromised (any age): 3 doses (0, 2, 6 mo)",
+    vaccines: [
+      { code: "HPV3", name: "HPV", dose: "Dose 3 (0, 2, 6 mo series)", protects: "HPV / cervical cancer", route: "IM 0.5 mL", site: "Deltoid", cat: "IAP" },
+    ]
+  },
+  {
+    id: "y16", label: "16–18 Years", sub: "16–18 y", dueDays: 5840, dueMonths: 192,
+    note: "Single dose of Td or Tdap",
+    vaccines: [
+      { code: "TD", name: "Td/Tdap", dose: "Single", protects: "Tetanus, diphtheria (± pertussis)", route: "IM 0.5 mL", site: "Deltoid", cat: "UIP(Td) + IAP" },
     ]
   },
 ];
