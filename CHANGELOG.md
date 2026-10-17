@@ -1,5 +1,12 @@
 # Changelog
 
+## v10.17.3 — 2026-10-17 — Larger, clearer sidebar logo
+- 🎨 Sidebar logo tile 56 → 66px; uploaded clinic logo now fills
+  the tile on a clean white background (was a small 40px image on
+  gradient) — clearly visible on the navy sidebar. Verified with a
+  headless-Chrome screenshot.
+- Tests: 683/683 (477 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.17.2 — 2026-10-17 — Revert side-by-side print trial
 - ↩️ Reverts v10.17.1 (never deployed): growth charts print one per
   row again, standard resolution. A4 density (v10.17.0) kept.

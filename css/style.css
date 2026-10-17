@@ -79,7 +79,7 @@ label{font-size:11.5px;font-weight:700;color:var(--muted);display:block;margin-b
 .app{display:flex;min-height:100vh}
 .sidebar{width:252px;background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 62%,var(--navy3) 100%);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:50;transition:width .22s ease;box-shadow:4px 0 24px rgba(8,20,36,.18)}
 .brand{padding:20px 18px 15px;display:flex;gap:12px;align-items:center;border-bottom:1px solid rgba(255,255,255,.12)}
-.brand .logo{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,#2dd4bf,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 0 3px rgba(45,212,191,.18),0 8px 18px rgba(0,0,0,.3);flex-shrink:0}
+.brand .logo{width:66px;height:66px;border-radius:17px;background:linear-gradient(135deg,#2dd4bf,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 0 0 3px rgba(45,212,191,.18),0 8px 18px rgba(0,0,0,.3);flex-shrink:0}
 .brand h1{font-size:17.5px;letter-spacing:-.2px}
 .brand small{display:block;font-size:10px;font-weight:600;color:#a9c4dd;letter-spacing:1.1px;text-transform:uppercase;margin-top:2px}
 .nav{padding:10px 12px 14px;display:flex;flex-direction:column;gap:3px;flex:1;overflow:auto}
@@ -313,7 +313,8 @@ label.sib input{width:14px;height:14px;accent-color:var(--teal)}
 
 /* ---------- Professional documents (letterhead, reports) ---------- */
 .report-head .report-logo{width:58px;height:58px;object-fit:contain;border-radius:12px;background:#fff;border:1px solid var(--line)}
-.brand .logo img{width:40px;height:40px;object-fit:contain}
+.brand .logo:has(img){background:#fff;padding:6px}
+.brand .logo img{width:100%;height:100%;object-fit:contain}
 canvas.chart.mini{height:250px}
 .doc-title{text-align:center;font-size:19px;font-weight:800;color:var(--navy);margin:4px 0 10px}
 .doc-foot{margin-top:22px;border-top:2px solid var(--navy);padding-top:12px;font-size:13px;break-inside:avoid}

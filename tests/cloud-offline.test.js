@@ -929,6 +929,7 @@ async function main() {
   ok(cssP.includes(".page.printing{animation:none;-webkit-print-color-adjust:exact") && cssP.includes("body.bw-print .page.printing{filter:grayscale(1)}") && cssP.includes(".page{display:none!important}") && cssP.includes(".modal-bg"), "print CSS forces color, hides active page + modals, grayscale opt-out");
   ok(cssP.includes("#cloudBanner") && cssP.includes("#cloudToast"), "print CSS hides trial banner + toast");
   ok(cssP.includes("@page{size:A4"), "print uses A4 page rule");
+  ok(cssP.includes(".brand .logo{width:66px;height:66px") && cssP.includes(".brand .logo:has(img){background:#fff"), "sidebar logo large + clear");
   ok(cssP.includes(".page.printing .card,.page.printing .stat{padding:11px 13px") && cssP.includes(".page.printing table.tbl th,.page.printing table.tbl td{padding:5px 7px"), "print compacts cards + tables");
   ok(cssP.includes(".page.printing .vaxcard,.page.printing .receipt{padding:13px 15px;max-width:100%!important}") && cssP.includes(".page.printing div:empty"), "print goes full-width, hides empty blocks");
 
