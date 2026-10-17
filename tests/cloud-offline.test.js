@@ -922,6 +922,24 @@ async function main() {
   const cssP = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
   ok(cssP.includes(".page.printing{animation:none;-webkit-print-color-adjust:exact") && cssP.includes("body.bw-print .page.printing{filter:grayscale(1)}"), "print CSS forces color, grayscale opt-out");
 
+  // ---- v10.11.2: rich handouts ----
+  const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);
+  ok(handShape, "every handout complete in 3 languages");
+  ok(vm.runInContext(`HANDOUTS.length`, sb) === 7 && vm.runInContext(`HANDOUTS.some((h)=>h.id==="vomit")`, sb), "vomiting added (7 topics)");
+  const hd = sb.handDose(12);
+  ok(hd.mg === 180 && hd.syrup === 7.5 && hd.drops === 1.8, "paracetamol dose math (12 kg)");
+  vm.runInContext(`DB.children=[normalizeChild({id:'hd1',name:'Dose Kid',sex:'boy',dob:'2023-01-01',vaccines:{},measures:[{date:'2026-10-01',wt:12}]} )]; DB.activeId='hd1'; HAND_SEL.h='fever'; HAND_SEL.lang='en';`, sb);
+  sb.renderHand();
+  const handH = sb.document.getElementById("handBox").innerHTML;
+  ok(handH.includes("180 mg") && handH.includes("7.5 mL") && handH.includes("Avoid these mistakes") && handH.includes("What to expect"), "fever renders dose strip + new sections");
+  vm.runInContext(`HAND_SEL.h='play';`, sb);
+  sb.renderHand();
+  ok(sb.document.getElementById("handBox").innerHTML.includes("3–6 years (auto by age)"), "play band auto-picks by age");
+  vm.runInContext(`HAND_SEL.h='vomit'; HAND_SEL.lang='ta';`, sb);
+  sb.renderHand();
+  const handT = sb.document.getElementById("handBox").innerHTML;
+  ok(handT.includes("வாந்தி") && handT.includes("தவிருங்கள்"), "Tamil vomiting renders");
+
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
