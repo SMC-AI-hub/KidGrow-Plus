@@ -1,5 +1,19 @@
 # Changelog
 
+## v10.12.0 — 2026-10-17 — Breastfeeding + complementary feeding handouts
+- 🤱 NEW handout: Breastfeeding complete guide — first-hour start, colostrum,
+  8–12 feeds/day, hunger cues, attachment check, hindmilk, burping, 6+ wet
+  nappies, nursing-diet reassurance, 2-year continuation + red flags.
+- 🍼 Expressed-milk storage chart (room 4h / fridge 4d / freezer 6–12mo /
+  thawed 24h, never refreeze) in all 3 languages.
+- 🍽️ "Starting solids" upgraded to full Complementary feeding (6–23 mo):
+  180-day start, meal-building formula, daily animal-source + fruit/veg,
+  day-wise meal-plan chart (frequency, katori quantities, textures),
+  illness feeding, monthly weighing, no salt/sugar <1y.
+- 🎨 Handouts now more visual: tinted section cards, gold "golden rule" boxes,
+  teal chart tables — all print in color. 9 topics, EN/TA/HI throughout.
+- Tests: 655/655 (458 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.11.5 — 2026-10-17 — Standards-tab accuracy audit
 - 🔬 Audited every Standards & method claim against the code, the bundled LMS
   data, and the authoritative sources (WHO anthro tables, CDC z-score files,

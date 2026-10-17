@@ -1,9 +1,12 @@
 /* =====================================================
    KidGrow Pro — Parent handouts EN / TA / HI (Round 4)
-   Rich format (v10.11.2+): what's happening · numbered
-   do-steps · don't-myths · what to expect · red flags ·
-   weight-based paracetamol + ORS strips · breath-rate
-   guide · clinic letterhead.
+   Rich format (v10.12.0): what's happening · golden rule ·
+   numbered do-steps · don't-myths · what to expect ·
+   red flags · weight-based strips · breath guide ·
+   meal/storage charts · clinic letterhead.
+   Feeding guidance aligned with WHO (2023), IAP and
+   standard IYCF references (incl. Elizabeth, Nutrition
+   & Child Development, latest ed.).
    ===================================================== */
 const HAND_LANGS = { en: "English", ta: "தமிழ்", hi: "हिंदी" };
 const HAND_SECLBL = {
@@ -51,6 +54,32 @@ const HANDOUTS = [
     red: { en: "Bring the SAME DAY: not feeding well, unusual sleepiness/floppiness, fast breathing (60+/min), ribs pulling in, fever or cold to touch, fits, yellow palms/soles, red cord with pus, vomiting everything.",
       ta: "அதே நாளில் கொண்டு வாருங்கள்: சரியாகப் பால் குடிக்காமை, அதிக மயக்கம்/தளர்ச்சி, வேக மூச்சு (60+/நிமிடம்), விலா உள்ளே இழுத்தல், காய்ச்சல்/தொட்டால் குளிர், வலிப்பு, உள்ளங்கை/பாதம் மஞ்சள், சீழுடன் சிவந்த தொப்புள், எல்லாம் வாந்தி.",
       hi: "उसी दिन लाएँ: ठीक से दूध न पीना, बहुत सुस्ती/ढीलापन, तेज़ साँस (60+/मिनट), पसलियाँ धँसना, बुखार या छूने पर ठंडा, दौरे, हथेली/तलवे पीले, मवाद वाली लाल नाल, सब कुछ उल्टी करना।" } },
+  { id: "breastfeed", icon: "🤱", title: { en: "Breastfeeding — complete guide", ta: "தாய்ப்பால் — முழு வழிகாட்டி", hi: "स्तनपान — पूरी मार्गदर्शिका" },
+    about: { en: "Breastmilk is complete food + drink + medicine for the first 6 months — nothing else needed, not even water. It protects against infections, builds brains, and every feed makes more milk.",
+      ta: "முதல் 6 மாதம் தாய்ப்பாலே முழு உணவு + தண்ணீர் + மருந்து — தண்ணீர் கூடத் தேவையில்லை. நோயிலிருந்து காக்கும், மூளை வளர்க்கும்; ஒவ்வொரு ஊட்டும் பாலை அதிகரிக்கும்.",
+      hi: "पहले 6 माह माँ का दूध ही पूरा खाना + पानी + दवा है — पानी तक की ज़रूरत नहीं। संक्रमण से बचाता है, दिमाग़ बढ़ाता है; हर बार पिलाने से दूध बढ़ता है।" },
+    pearl: { en: "💛 Golden rule: more suckling → more milk. Every extra feed today builds tomorrow's supply.",
+      ta: "💛 பொன் விதி: அதிக சப்புதல் → அதிக பால். இன்றைய கூடுதல் ஊட்டு நாளைய சுரப்பைக் கூட்டும்.",
+      hi: "💛 सुनहरा नियम: ज़्यादा चूसना → ज़्यादा दूध। आज का हर अतिरिक्त बार कल की आपूर्ति बढ़ाता है।" },
+    chartTitle: { en: "🍼 Expressed-milk storage", ta: "🍼 பிழிந்த பால் சேமிப்பு", hi: "🍼 निकाले दूध का भंडारण" },
+    chart: { head: { en: ["Where", "How long", "Tip"], ta: ["எங்கே", "எவ்வளவு நேரம்", "குறிப்பு"], hi: ["कहाँ", "कितनी देर", "सलाह"] },
+      rows: {
+        en: [["Room (≤25°C)", "Up to 4 hours", "Use first"], ["Fridge (4°C, back shelf)", "Up to 4 days", "Not in the door"], ["Freezer (−18°C)", "6 months best, 12 max", "Small portions"], ["Thawed milk", "24 hours in fridge", "Never refreeze"]],
+        ta: [["அறை வெப்பம் (≤25°C)", "4 மணி வரை", "முதலில் இதைப் பயன்படுத்துங்கள்"], ["ஃபிரிட்ஜ் (4°C, உள் அலமாரி)", "4 நாள் வரை", "கதவில் வேண்டாம்"], ["ஃபிரீசர் (−18°C)", "6 மாதம் நல்லது, அதிகம் 12", "சிறு பங்குகளாக"], ["உருகிய பால்", "ஃபிரிட்ஜில் 24 மணி", "மீண்டும் உறைய வேண்டாம்"]],
+        hi: [["कमरा (≤25°C)", "4 घंटे तक", "पहले इसे इस्तेमाल करें"], ["फ्रिज (4°C, अंदर की शेल्फ़)", "4 दिन तक", "दरवाज़े में नहीं"], ["फ़्रीज़र (−18°C)", "6 माह अच्छा, ज़्यादा 12", "छोटे हिस्सों में"], ["पिघला दूध", "फ्रिज में 24 घंटे", "दोबारा जमाएँ नहीं"]] } },
+    bullets: {
+      en: ["Start within 1 hour of birth — skin-to-skin; the first yellow milk (colostrum) is the baby's first vaccine.", "Feed on demand, 8–12 times a day, including night — crying is a LATE hunger sign; watch for lip-smacking, rooting, fist-sucking.", "Good attachment: mouth wide open, lower lip turned out, chin touching breast, cheeks full (not dimpled).", "Let the baby finish one breast before switching — the later hindmilk is richer in fat.", "Burp after every feed (shoulder hold, 5–10 min); 6+ wet nappies a day means enough milk.", "Mother eats + drinks normally — one extra roti/dal serving, plenty of water; no food needs banning while nursing.", "Continue breastfeeding to 2 years and beyond, alongside family foods after 6 months."],
+      ta: ["பிறந்த 1 மணிக்குள் தொடங்குங்கள் — தோலோடு தோல்; முதல் மஞ்சள் பால் (சீம்பால்) குழந்தையின் முதல் தடுப்பூசி.", "கேட்கும்போதெல்லாம் ஊட்டுங்கள் — நாளில் 8–12 முறை, இரவும் சேர்த்து; அழுகை தாமத அறிகுறி — உதடு சப்புதல், திரும்புதல், கை சப்புதலைப் பாருங்கள்.", "நல்ல பிடிப்பு: வாய் அகலத் திறந்து, கீழுதடு வெளியே மடிந்து, மோவாய் மார்பில் ஒட்டி, கன்னம் நிறைந்திருக்கும்.", "ஒரு மார்பை முடிக்க விட்டுப் பின் மாறுங்கள் — பின் வரும் பாலில் கொழுப்பு அதிகம்.", "ஒவ்வொரு ஊட்டுக்கும் பின் ஏப்பம் (தோளில் 5–10 நிமிடம்); நாளில் 6+ ஈர டயாபர் = பால் போதும்.", "தாய் சாதாரணமாகச் சாப்பிடுங்கள் — ஒரு கூடுதல் சாதம்/பருப்பு, நிறைய தண்ணீர்; பாலூட்டும்போது எந்த உணவும் தடை இல்லை.", "6 மாதத்திற்குப் பின் குடும்ப உணவுடன் 2 வயது வரை தாய்ப்பால் தொடருங்கள்."],
+      hi: ["जन्म के 1 घंटे के भीतर शुरू करें — त्वचा-से-त्वचा; पहला पीला दूध (खीस) बच्चे का पहला टीका है।", "माँग पर पिलाएँ — दिन में 8–12 बार, रात समेत; रोना देर का संकेत है — होंठ चाटना, मुँह घुमाना, मुट्ठी चूसना देखें।", "अच्छी पकड़: मुँह पूरा खुला, नीचे का होंठ बाहर मुड़ा, ठुड्डी छाती से सटी, गाल भरे (धँसे नहीं)।", "दूसरी तरफ़ जाने से पहले एक स्तन पूरा पिलाएँ — बाद वाले दूध में वसा ज़्यादा होती है।", "हर बार डकार दिलाएँ (कंधे पर 5–10 मिनट); दिन में 6+ गीले डायपर = दूध पर्याप्त।", "माँ सामान्य खाना खाएँ — एक रोटी/दाल ज़्यादा, खूब पानी; दूध पिलाते समय कोई खाना बंद नहीं।", "6 माह के बाद घर के खाने के साथ 2 साल तक माँ का दूध जारी रखें।"] },
+    dont: { en: ["Don't give water, honey, gripe water, or formula in the first 6 months — breastmilk covers all needs.", "Don't use feeding bottles — they cause nipple confusion + infections; use spoon/paladai for expressed milk.", "Don't time feeds by the clock or skip night feeds — night suckling builds supply."],
+      ta: ["முதல் 6 மாதம் தண்ணீர், தேன், கிரைப் வாட்டர், ஃபார்முலா வேண்டாம் — தாய்ப்பாலே அனைத்தும்.", "பால் பாட்டில் வேண்டாம் — குழப்பம் + தொற்று; பிழிந்த பாலை ஸ்பூன்/பாலாடையில் கொடுங்கள்.", "கடிகாரம் பார்த்து ஊட்டவோ, இரவு ஊட்டைத் தவிர்க்கவோ வேண்டாம் — இரவுப் பால் சுரப்பைக் கூட்டும்."],
+      hi: ["पहले 6 माह पानी, शहद, ग्राइप वॉटर, फ़ॉर्मूला न दें — माँ का दूध ही सब कुछ है।", "दूध की बोतल न दें — भ्रम + संक्रमण; निकाला दूध चम्मच/पलाडाई से पिलाएँ।", "घड़ी देखकर न पिलाएँ, रात का दूध न छोड़ें — रात को चूसने से आपूर्ति बढ़ती है।"] },
+    expect: { en: "Feeding feels frequent in weeks 1–2 (colostrum is small but mighty). By weeks 3–4 a rhythm sets in; breasts feel softer after feeds — softness means flow, not low supply.",
+      ta: "1–2வது வாரம் அடிக்கடி ஊட்ட வேண்டும் (சீம்பால் குறைவு, சக்தி அதிகம்). 3–4வது வாரத்தில் ஒழுங்கு வரும்; ஊட்டுக்குப் பின் மார்பு மென்மை = நல்ல ஓட்டம், குறைவு அல்ல.",
+      hi: "पहले 1–2 हफ़्ते बार-बार पिलाना पड़ता है (खीस थोड़ा पर ताकतवर)। 3–4 हफ़्तों में लय बनती है; पिलाने के बाद नरमी = अच्छा बहाव, कमी नहीं।" },
+    red: { en: "See the doctor promptly: baby not latching after 24 hrs, fewer than 6 wet nappies after day 4, weight loss >10%, fever in baby — or mother has breast redness + fever + pain (possible infection).",
+      ta: "உடனே மருத்துவரிடம்: 24 மணிக்குப் பின்னும் பிடிக்காமை, 4ம் நாளுக்குப் பின் 6க்குக் குறைவான ஈர டயாபர், 10%க்கு மேல் எடை குறைவு, குழந்தைக்குக் காய்ச்சல் — அல்லது தாய்க்கு மார்பு சிவப்பு + காய்ச்சல் + வலி.",
+      hi: "तुरंत डॉक्टर को दिखाएँ: 24 घंटे बाद भी पकड़ न बनना, चौथे दिन के बाद 6 से कम गीले डायपर, 10% से ज़्यादा वज़न घटना, बच्चे को बुखार — या माँ को स्तन में लाली + बुखार + दर्द।" } },
   { id: "fever", icon: "🌡️", dose: true, title: { en: "Fever — home care", ta: "காய்ச்சல் — வீட்டில் பராமரிப்பு", hi: "बुखार — घर पर देखभाल" },
     about: { en: "Fever (100.4°F / 38°C or more) is the body's defence against infection. Most childhood fevers are viral and settle in 2–3 days. How the child behaves matters more than the thermometer number.",
       ta: "காய்ச்சல் (100.4°F / 38°C அல்லது அதற்கு மேல்) நோயை எதிர்க்கும் உடலின் பாதுகாப்பு. பெரும்பாலான காய்ச்சல் வைரஸால் வந்து 2–3 நாட்களில் சரியாகும். தெர்மாமீட்டர் எண்ணை விட குழந்தையின் செயலே முக்கியம்.",
@@ -136,20 +165,29 @@ const HANDOUTS = [
     red: { en: "Return immediately: crying >3 hours inconsolably, seizure, floppy/unresponsive episode, breathing difficulty, fast-spreading swelling.",
       ta: "உடனே வாருங்கள்: 3 மணிக்கு மேல் தொடர் அழுகை, வலிப்பு, தளர்ந்து/மயங்கும் நிலை, மூச்சு சிரமம், வேகமாகப் பரவும் வீக்கம்.",
       hi: "तुरंत आएँ: 3 घंटे से ज़्यादा लगातार रोना, दौरे, ढीला/बेहोश होना, साँस की तकलीफ, तेज़ी से फैलती सूजन।" } },
-  { id: "solids", icon: "🥣", title: { en: "Starting solids (~6 mo)", ta: "இணை உணவு (~6 மாதம்)", hi: "ऊपर का खाना (~6 माह)" },
-    about: { en: "Around 6 months, breastmilk alone can't meet iron and energy needs — that's why family foods begin. Breastmilk continues alongside until 2 years.",
-      ta: "6 மாதத்தில் தாய்ப்பால் மட்டும் இரும்பு, சக்தித் தேவையை ஈடு செய்யாது — அதனால்தான் குடும்ப உணவு தொடங்கும். தாய்ப்பால் 2 வயது வரை தொடரும்.",
-      hi: "6 माह के आसपास सिर्फ माँ का दूध लोहे और ऊर्जा की ज़रूरत पूरी नहीं करता — इसलिए घर का खाना शुरू होता है। माँ का दूध 2 साल तक साथ चलता है।" },
+  { id: "solids", icon: "🍲", title: { en: "Complementary feeding (6–23 mo)", ta: "இணை உணவு (6–23 மாதம்)", hi: "पूरक आहार (6–23 माह)" },
+    about: { en: "At 6 months (180 days) breastmilk alone can't meet iron, zinc and energy needs — family foods begin, while breastfeeding continues to 2 years. Food before 6 months harms; after 6 months, delay harms.",
+      ta: "6 மாதத்தில் (180 நாள்) தாய்ப்பால் மட்டும் இரும்பு, துத்தநாகம், சக்தியைத் தராது — குடும்ப உணவு தொடங்கும், தாய்ப்பால் 2 வயது வரை தொடரும். 6க்கு முன் உணவு கேடு; 6க்குப் பின் தாமதம் கேடு.",
+      hi: "6 माह (180 दिन) पर सिर्फ माँ का दूध लोहा, ज़िंक, ऊर्जा नहीं दे पाता — घर का खाना शुरू होता है, माँ का दूध 2 साल तक चलता है। 6 से पहले खाना नुकसान; 6 के बाद देरी नुकसान।" },
+    pearl: { en: "🥄 Golden rule: thick enough to stay on the spoon, colourful enough to cover 4+ food groups a day.",
+      ta: "🥄 பொன் விதி: ஸ்பூனில் நிற்கும் கெட்டி, நாளில் 4+ உணவுக் குழு நிறைந்த வண்ணம்.",
+      hi: "🥄 सुनहरा नियम: चम्मच पर टिकने वाली गाढ़ापन, दिन में 4+ खाद्य-समूहों वाला रंग।" },
+    chartTitle: { en: "🍽️ Day-wise meal plan", ta: "🍽️ நாள் உணவுத் திட்டம்", hi: "🍽️ दिन-भर भोजन-योजना" },
+    chart: { head: { en: ["Age", "Meals/day", "How much", "Texture"], ta: ["வயது", "நாள் வேளை", "அளவு", "பதம்"], hi: ["उम्र", "दिन में बार", "मात्रा", "गाढ़ापन"] },
+      rows: {
+        en: [["6–8 mo", "2–3 + breastmilk", "2–3 tbsp → ½ katori", "Thick mash"], ["9–11 mo", "3–4 + 1–2 snacks", "½ katori (250 ml bowl)", "Chopped + finger foods"], ["12–23 mo", "3–4 + 1–2 snacks", "¾ to full katori", "Family foods"]],
+        ta: [["6–8 மாதம்", "2–3 + தாய்ப்பால்", "2–3 ஸ்பூன் → ½ கிண்ணம்", "கெட்டி மசியல்"], ["9–11 மாதம்", "3–4 + 1–2 சிற்றுண்டி", "½ கிண்ணம் (250 மி.லி)", "நறுக்கியது + விரல் உணவு"], ["12–23 மாதம்", "3–4 + 1–2 சிற்றுண்டி", "¾ முதல் முழு கிண்ணம்", "குடும்ப உணவு"]],
+        hi: [["6–8 माह", "2–3 + माँ का दूध", "2–3 चम्मच → ½ कटोरी", "गाढ़ा मसला"], ["9–11 माह", "3–4 + 1–2 नाश्ते", "½ कटोरी (250 मि.ली)", "कटा + उँगली-खाना"], ["12–23 माह", "3–4 + 1–2 नाश्ते", "¾ से पूरी कटोरी", "घर का खाना"]] } },
     bullets: {
-      en: ["Start around 6 months; breastmilk continues to 2 years.", "Begin with 2–3 spoonfuls once a day; increase slowly.", "First foods: rice porridge, ragi, mashed banana, dal → khichdi.", "Add a spoon of oil/ghee + mashed groundnut/egg (if taken) for energy.", "No honey, cow's milk as drink, tea, or junk food in year one.", "Try each new food for 3 days; watch for allergy."],
-      ta: ["6 மாதத்தில் தொடங்குங்கள்; தாய்ப்பால் 2 வயது வரை தொடரும்.", "முதலில் 2–3 ஸ்பூன், ஒரு வேளை; மெதுவாக அதிகரியுங்கள்.", "முதல் உணவு: அரிசி கஞ்சி, ராகி, வாழைப்பழம், பருப்பு → கிச்சடி.", "சக்திக்கு ஒரு ஸ்பூன் எண்ணெய்/நெய், அரைத்த நிலக்கடலை/முட்டை (சாப்பிட்டால்).", "முதல் வருடம் தேன், பசும்பால் (குடிக்க), டீ, துரித உணவு வேண்டாம்.", "புது உணவை 3 நாள் கொடுத்து ஒவ்வாமை பாருங்கள்."],
-      hi: ["6 माह के आसपास शुरू करें; माँ का दूध 2 साल तक जारी रखें।", "पहले 2–3 चम्मच, दिन में एक बार; धीरे-धीरे बढ़ाएँ।", "पहले खाद्य: चावल का दलिया, रागी, मसला केला, दाल → खिचड़ी।", "ताकत के लिए एक चम्मच तेल/घी, पिसी मूँगफली/अंडा (खाते हों तो)।", "पहले साल शहद, गाय का दूध (पीने को), चाय, जंक फूड नहीं।", "नया खाना 3 दिन देकर एलर्जी देखें।"] },
-    dont: { en: ["Don't force-feed or distract-feed with a phone/TV screen — it spoils hunger cues.", "Don't give honey, cow's milk as a main drink, tea, or packaged juices in year one.", "Don't delay textures — soft finger foods by 8–9 months build chewing and speech."],
-      ta: ["கட்டாயப்படுத்தி ஊட்டவோ, போன்/டிவி காட்டி ஊட்டவோ வேண்டாம் — பசி உணர்வு கெடும்.", "முதல் வருடம் தேன், பசும்பால் (முக்கிய பானமாக), டீ, பாக்கெட் ஜூஸ் வேண்டாம்.", "கடின உணவைத் தள்ளிப்போட வேண்டாம் — 8–9 மாதத்தில் மென் விரல் உணவு மெல்லல், பேச்சுக்கு உதவும்."],
-      hi: ["ज़बरदस्ती न खिलाएँ, फ़ोन/टीवी दिखाकर न खिलाएँ — भूख का अहसास बिगड़ता है।", "पहले साल शहद, गाय का दूध (मुख्य पेय), चाय, पैकेट जूस नहीं।", "नरम-सख़्त खाने में देर न करें — 8–9 माह तक उँगली-खाना चबाने और बोलने में मदद करता है।"] },
-    expect: { en: "Babies may refuse a new food 8–10 times before accepting it — keep offering without pressure. Mess is part of learning.",
-      ta: "புது உணவை 8–10 முறை மறுத்த பின்தான் குழந்தை ஏற்கலாம் — அழுத்தமின்றி தொடர்ந்து கொடுங்கள். அள்ளிறைத்தல் கற்றலின் பகுதி.",
-      hi: "बच्चा नया खाना 8–10 बार ठुकराकर फिर स्वीकार सकता है — बिना दबाव देते रहें। फैलाना सीखने का हिस्सा है।" },
+      en: ["Start at 6 months: thick porridge/mash that stays on the spoon — thin gruel fills the stomach with water, not nutrition.", "Build every meal: staple (rice/ragi/wheat) + dal/egg/meat + vegetable/fruit + a spoon of oil/ghee.", "Animal-source foods daily — egg, fish, chicken or meat; fruits + vegetables daily; groundnut/til for energy.", "Increase texture with age: mash (6–8) → chopped + finger foods (9–11) → family foods (12+).", "Wash hands + utensils; cook fresh, serve warm; no bottles — use katori-spoon.", "During illness feed more often (soft favourites + extra breastfeeds); after illness give one extra meal daily for 2 weeks.", "Weigh monthly — the growth curve tells you feeding is working before eyes can."],
+      ta: ["6 மாதத்தில் தொடங்குங்கள்: ஸ்பூனில் நிற்கும் கெட்டி கஞ்சி/மசியல் — நீர்த்த கஞ்சி வயிற்றை நீரால் நிரப்பும், சத்தால் அல்ல.", "ஒவ்வொரு வேளையும்: தானியம் (அரிசி/ராகி/கோதுமை) + பருப்பு/முட்டை/கறி + காய்/பழம் + ஒரு ஸ்பூன் எண்ணெய்/நெய்.", "தினம் அசைவம் — முட்டை, மீன், கோழி அல்லது கறி; தினம் காய் + பழம்; சக்திக்கு நிலக்கடலை/எள்.", "வயதுடன் பதம் கூட்டுங்கள்: மசியல் (6–8) → நறுக்கியது + விரல் உணவு (9–11) → குடும்ப உணவு (12+).", "கை + பாத்திரம் கழுவுங்கள்; புதிதாகச் சமைத்து இதமாகப் பரிமாறுங்கள்; பாட்டில் வேண்டாம் — கிண்ணம்-ஸ்பூன்.", "நோயில் அடிக்கடி ஊட்டுங்கள் (மென் பிடித்த உணவு + கூடுதல் தாய்ப்பால்); நோய்க்குப் பின் 2 வாரம் தினம் ஒரு வேளை கூடுதல்.", "மாதம் எடை பாருங்கள் — கண்ணுக்குத் தெரியுமுன் வளர்ச்சிக் கோடு உணவு பலனைக் காட்டும்."],
+      hi: ["6 माह पर शुरू करें: चम्मच पर टिकने वाला गाढ़ा दलिया/मसला — पतली घाट पेट पानी से भरती है, पोषण से नहीं।", "हर बार थाली बनाएँ: अनाज (चावल/रागी/गेहूँ) + दाल/अंडा/मांस + सब्ज़ी/फल + एक चम्मच तेल/घी।", "रोज़ प्राणी-आहार — अंडा, मछली, चिकन या मांस; रोज़ सब्ज़ी + फल; ताकत के लिए मूँगफली/तिल।", "उम्र के साथ गाढ़ापन बढ़ाएँ: मसला (6–8) → कटा + उँगली-खाना (9–11) → घर का खाना (12+)।", "हाथ + बर्तन धोएँ; ताज़ा पकाकर गुनगुना परोसें; बोतल नहीं — कटोरी-चम्मच।", "बीमारी में बार-बार खिलाएँ (नरम पसंदीदा + ज़्यादा माँ का दूध); बीमारी के बाद 2 हफ़्ते रोज़ एक बार ज़्यादा।", "महीने में तौलें — आँखों से पहले बढ़त-रेखा बताएगी खाना काम कर रहा है।"] },
+    dont: { en: ["Don't force-feed or distract-feed with a phone/TV — it spoils hunger cues and bonding.", "Don't give honey, cow's milk as a main drink, tea/coffee, cola, or packaged juices in year one — and no added salt/sugar before 1 year.", "Don't delay textures past 9 months — late chewing slows speech muscles too."],
+      ta: ["கட்டாயப்படுத்தி/போன்-டிவி காட்டி ஊட்ட வேண்டாம் — பசி உணர்வு, பாசம் கெடும்.", "முதல் வருடம் தேன், பசும்பால் (முக்கிய பானம்), டீ/காபி, கோலா, பாக்கெட் ஜூஸ் வேண்டாம் — 1 வயதுக்குள் உப்பு/சர்க்கரை சேர்க்க வேண்டாம்.", "9 மாதத்திற்குப் பின் பதத்தைத் தள்ளிப்போட வேண்டாம் — தாமத மெல்லல் பேச்சுத் தசையையும் தாமதிக்கும்."],
+      hi: ["ज़बरदस्ती/फ़ोन-टीवी दिखाकर न खिलाएँ — भूख का अहसास और अपनापन बिगड़ता है।", "पहले साल शहद, गाय का दूध (मुख्य पेय), चाय/कॉफ़ी, कोला, पैकेट जूस नहीं — 1 साल से पहले नमक/चीनी न मिलाएँ।", "9 माह के बाद गाढ़ेपन में देर न करें — देर से चबाना बोलने की मांसपेशी भी देर कराता है।"] },
+    expect: { en: "New foods may be refused 8–10 times before acceptance — offer, don't push. Appetite dips around 12–15 months — small frequent meals win. Non-breastfed babies need 4–5 small meals a day.",
+      ta: "புது உணவு 8–10 முறை மறுக்கப்படலாம் — கொடுங்கள், திணிக்க வேண்டாம். 12–15 மாதத்தில் பசி குறையும் — சிறு அடிக்கடி வேளைகளே வெல்லும். தாய்ப்பால் இல்லாக் குழந்தைக்கு நாளில் 4–5 சிறு வேளை தேவை.",
+      hi: "नया खाना 8–10 बार ठुकराया जा सकता है — देते रहें, ठूसें नहीं। 12–15 माह में भूख घटती है — छोटे बार-बार के भोजन जीतते हैं। माँ का दूध न पीने वाले को दिन में 4–5 छोटे भोजन चाहिए।" },
     red: { en: "Discuss with doctor: poor weight gain, frequent vomiting, blood in stool, food refusal >2 weeks.",
       ta: "மருத்துவரிடம் பேசுங்கள்: எடை கூடாமை, அடிக்கடி வாந்தி, மலத்தில் ரத்தம், 2 வாரத்திற்கு மேல் உணவு மறுப்பு.",
       hi: "डॉक्टर से बात करें: वज़न न बढ़ना, बार-बार उल्टी, दस्त में खून, 2 हफ़्ते से ज़्यादा खाना न खाना।" } },
@@ -185,8 +223,13 @@ function playPick(ageM) {
   return play.bands.find((b) => ageM <= b.maxM) || play.bands[play.bands.length - 1];
 }
 const HAND_SEL = { h: "fever", lang: "en" };
-function handSec(title, color, inner) {
-  return `<div style="margin:10px 0"><div style="font-size:13px;font-weight:800;color:${color};letter-spacing:.3px;margin-bottom:4px">${esc(title)}</div><div style="font-size:14px;line-height:1.7">${inner}</div></div>`;
+function handSec(title, color, inner, tint) {
+  return `<div style="margin:10px 0;background:${tint};border-left:4px solid ${color};border-radius:10px;padding:8px 12px"><div style="font-size:13px;font-weight:800;color:${color};letter-spacing:.3px;margin-bottom:4px">${esc(title)}</div><div style="font-size:14px;line-height:1.7">${inner}</div></div>`;
+}
+function handChart(title, head, rows) {
+  return `<div style="margin:10px 0"><div style="font-size:13px;font-weight:800;color:var(--teal-d,#0b7c72);margin-bottom:5px">${esc(title)}</div>
+  <div style="overflow:auto"><table class="tbl" style="margin:0"><tr>${head.map((c) => `<th style="background:var(--teal,#0e8f84);color:#fff;border-color:var(--teal,#0e8f84)">${esc(c)}</th>`).join("")}</tr>
+  ${rows.map((r, i) => `<tr${i % 2 ? ' style="background:#f0fdfa"' : ""}>${r.map((c, j) => j === 0 ? `<td><b>${esc(c)}</b></td>` : `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></div></div>`;
 }
 function handLetterhead(c) {
   const S = (typeof DB !== "undefined" && DB.settings) || {};
@@ -224,10 +267,12 @@ function renderHand() {
     } catch (e) {}
   }
   const breath = h.breath ? `<div class="alert a-blue" style="margin:8px 0">${HAND_BREATH[L]}</div>` : "";
-  const about = h.about ? handSec(HAND_SECLBL.about[L], "var(--teal-d,#0b7c72)", esc(h.about[L])) : "";
-  const dos = bullets.length ? handSec(HAND_SECLBL.do[L], "#15803d", `<ol style="margin:0;padding-left:20px">${bullets.map((b) => `<li style="margin:3px 0">${esc(b)}</li>`).join("")}</ol>`) : "";
-  const donts = h.dont ? handSec(HAND_SECLBL.dont[L], "#b91c1c", `<ul style="margin:0;padding-left:20px;list-style:'✕  '">${h.dont[L].map((b) => `<li style="margin:3px 0">${esc(b)}</li>`).join("")}</ul>`) : "";
-  const exp = h.expect ? handSec(HAND_SECLBL.expect[L], "#b45309", esc(h.expect[L])) : "";
+  const pearl = h.pearl ? `<div style="margin:8px 0;background:#fff8e1;border:1px solid #d4a017;border-radius:10px;padding:8px 12px;font-size:13.5px"><b>${esc(h.pearl[L])}</b></div>` : "";
+  const chart = h.chart ? handChart(h.chartTitle[L], h.chart.head[L], h.chart.rows[L]) : "";
+  const about = h.about ? handSec(HAND_SECLBL.about[L], "var(--teal-d,#0b7c72)", esc(h.about[L]), "#eefbf7") : "";
+  const dos = bullets.length ? handSec(HAND_SECLBL.do[L], "#15803d", `<ol style="margin:0;padding-left:20px">${bullets.map((b) => `<li style="margin:3px 0">${esc(b)}</li>`).join("")}</ol>`, "#f0fdf4") : "";
+  const donts = h.dont ? handSec(HAND_SECLBL.dont[L], "#b91c1c", `<ul style="margin:0;padding-left:20px;list-style:'✕  '">${h.dont[L].map((b) => `<li style="margin:3px 0">${esc(b)}</li>`).join("")}</ul>`, "#fef2f2") : "";
+  const exp = h.expect ? handSec(HAND_SECLBL.expect[L], "#b45309", esc(h.expect[L]), "#fffbeb") : "";
   $("handBox").innerHTML = `
   <div class="toolbar no-print">
     <select onchange="HAND_SEL.h=this.value;renderHand()" style="max-width:220px">${HANDOUTS.map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</select>
@@ -238,7 +283,7 @@ function renderHand() {
     ${handLetterhead(c)}
     <div style="font-size:11px;letter-spacing:1px;color:var(--muted);font-weight:800">PARENT HANDOUT · ${esc(HAND_LANGS[L]).toUpperCase()}</div>
     <h2 style="margin:2px 0 4px">${h.icon} ${esc(h.title[L])}${esc(sub)}</h2>
-    ${about}${strip}${breath}${dos}${donts}${exp}
+    ${about}${pearl}${strip}${breath}${chart}${dos}${donts}${exp}
     ${red ? `<div class="alert a-red" style="margin:10px 0 0">🚨 <div><b>${esc(red)}</b></div></div>` : ""}
     <div style="font-size:11.5px;color:var(--muted);margin-top:10px;border-top:1px dashed var(--line);padding-top:6px">${esc(HAND_SECLBL.foot[L])}</div>
   </div>`;
