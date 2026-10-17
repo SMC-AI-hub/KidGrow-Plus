@@ -936,7 +936,8 @@ async function main() {
   const cardHTML = sb.document.getElementById("cardBox").innerHTML;
   ok(cardHTML.includes("vax-head") && cardHTML.includes("Hospital logo") && cardHTML.includes("vax-verify"), "card prints logo + verify code");
   ok(cardHTML.includes("Scan at any KidGrow clinic") && cardHTML.includes("<svg"), "card QR scannable + captioned");
-  ok(cardHTML.includes("Further visits") && !cardHTML.includes("DTwP / DTaP Dose 2"), "card clusters visits, collapses later ones");
+  ok(cardHTML.includes("Recommended Vaccines") && cardHTML.includes("Brand given") && cardHTML.includes("Given on") && cardHTML.includes("Due on") && cardHTML.includes("Batch"), "card uses record-table format");
+  ok(cardHTML.includes("10\u201312 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
   ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");
   vm.runInContext("var __cp=" + cardPrev + "; DB.children=__cp[0]; DB.activeId=__cp[1]; DB.settings=__cp[2];", sb);
   const msPrev = vm.runInContext("JSON.stringify([DB.children,DB.activeId])", sb);
@@ -947,7 +948,7 @@ async function main() {
   ok(msHTML.includes("Overall interpretation") && !msHTML.includes("not due yet"), "ms print: interpretation, no future bands");
   ok(msHTML.includes("Gross Motor") && !msHTML.includes("10 \u2013 12 months"), "ms print: clustered domains, age-exact");
   const opsSrc = fs.readFileSync(path.join(R, "js", "ops.js"), "utf8");
-  ok(opsSrc.includes("Further visits (") && opsSrc.includes("showThru"), "parent file clusters visits too");
+  ok(opsSrc.includes("Brand given") && opsSrc.includes("Recommended Vaccines") && !opsSrc.includes("Further visits"), "parent file uses record-table format");
   vm.runInContext("var __mp=" + msPrev + "; DB.children=__mp[0]; DB.activeId=__mp[1];", sb);
   ok(sb.msBandVerdict({ A: 0, E: 0, N: 0, total: 6, scored: 0 }, 8, 4).label === "Not due yet", "ms: future unscored band not due yet");
   ok(sb.msBandVerdict({ A: 4, E: 1, N: 1, total: 6, scored: 6 }, 8, 4).label === "Assessed ahead", "ms: future scored band assessed ahead");

@@ -566,37 +566,35 @@ function parentCardHTML(c) {
   const S = DB.settings || {};
   const t = todayISO(), age = ageBetween(c.dob);
   const due = dueItemsForChild(c, t).filter((i) => i.band !== "upcoming").slice(0, 12);
-  const vStat = VACCINE_SCHEDULE.map((v) => {
-    const done = v.vaccines.filter((vx) => (c.vaccines || {})[vx.code]).length;
-    return { v, done, total: v.vaccines.length };
-  });
-  const firstPending = vStat.findIndex((s) => s.done < s.total);
-  const showThru = firstPending < 0 ? vStat.length : firstPending + 1;
-  const vRow = (vx) => {
-    const r = (c.vaccines || {})[vx.code];
-    return `<tr><td><b>${esc(vx.name)}</b> ${esc(vx.dose || "")}</td><td>${r ? esc(fmtDate(r.date)) + (r.brand ? " · " + esc(r.brand) : "") : "—"}</td><td>${r ? "✓" : "○"}</td></tr>`;
-  };
-  const rows = vStat.slice(0, showThru).map(({ v, done, total }) => {
-    const st = done === total ? "✅ Complete" : `⏰ Due ${esc(fmtDate(dueDateFor(c, v)))}${done ? ` · ${done}/${total} given` : ""}`;
-    return `<tr><td colspan="3" style="background:#f1f5f9"><b>${esc(v.label)}</b> (${esc(v.sub || "")}) — <b>${st}</b></td></tr>` + v.vaccines.map(vRow).join("");
+  const cVx = c.vaccines || {};
+  // Record-table format (matches the printed card): one row per visit —
+  // Age | Recommended Vaccines | Due on | Brand given | Given on | Batch.
+  const vDone = VACCINE_SCHEDULE.map((v) => v.vaccines.filter((vx) => cVx[vx.code]).length);
+  const nextIdx = vDone.findIndex((d, i) => d < VACCINE_SCHEDULE[i].vaccines.length);
+  const rows = VACCINE_SCHEDULE.map((v, vi) => {
+    const done = vDone[vi], total = v.vaccines.length;
+    const st = done === total ? `<span style="color:#16a34a">✅ Complete</span>`
+      : vi === nextIdx ? `⏰ Due ${esc(fmtDate(dueDateFor(c, v)))}${done ? ` · ${done}/${total} given` : ""}`
+      : `<span style="color:#64748b">○ Upcoming</span>`;
+    const vxCell = v.vaccines.map((vx) => `<b>${esc(vx.name)}</b> ${esc(vx.dose || "")}`).join("<br>");
+    const line = (fn) => v.vaccines.map((vx) => { const r = cVx[vx.code]; const s = r ? fn(r) : ""; return s || "&nbsp;"; }).join("<br>");
+    return `<tr${vi === nextIdx ? ` style="background:#fefce8"` : ""}><td><b>${esc(v.label)}</b><br><small style="color:#64748b">${esc(v.sub || "")}</small><br><small>${st}</small></td><td>${vxCell}</td><td>${esc(fmtDate(dueDateFor(c, v)))}</td><td>${line((r) => r.brand ? `<b>${esc(r.brand)}</b>${r.mfr ? ` (${esc(r.mfr)})` : ""}` : "")}</td><td>${line((r) => r.date ? `<b>${esc(fmtDate(r.date))}</b>` : "")}</td><td>${line((r) => r.batch ? esc(r.batch) : "")}</td></tr>`;
   }).join("");
-  const laterDoses = vStat.slice(showThru).reduce((a, s) => a + s.total, 0);
-  const laterLine = laterDoses ? `<tr><td colspan="3" style="background:#f8fafc;color:#64748b">Further visits (${esc(vStat[showThru].v.label)} → ${esc(vStat[vStat.length - 1].v.label)}): ${laterDoses} dose(s) to be scheduled — full list in the app.</td></tr>` : "";
-  const ex = (c.extraVac || []).length ? `<tr><td colspan="3" style="background:#f1f5f9"><b>Additional vaccines</b></td></tr>` + (c.extraVac || []).map((x) => `<tr><td><b>${esc(x.name)}</b>${x.brand ? " · " + esc(x.brand) : ""}</td><td>${x.date ? esc(fmtDate(x.date)) : "—"}</td><td>✓</td></tr>`).join("") : "";
+  const ex = (c.extraVac || []).map((x) => `<tr><td><b>Additional</b></td><td><b>${esc(x.name)}</b></td><td>—</td><td>${x.brand ? `<b>${esc(x.brand)}</b>${x.mfr ? ` (${esc(x.mfr)})` : ""}` : "&nbsp;"}</td><td>${x.date ? `<b>${esc(fmtDate(x.date))}</b>` : "&nbsp;"}</td><td>${x.batch ? esc(x.batch) : "&nbsp;"}</td></tr>`).join("");
   const lm = (typeof latestMeasure === "function") ? latestMeasure(c) : null;
   const qr = (typeof qrSVG === "function" && typeof encodeRecord === "function") ? qrSVG(encodeRecord(c)) : "";
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Immunisation Card — ${esc(c.name)}</title>
 <style>body{font-family:system-ui,'Segoe UI',Roboto,Arial,sans-serif;background:#f1f5f9;color:#1e293b;margin:0;padding:16px}
-.card{max-width:720px;margin:0 auto;background:#fff;border:2px solid #0e7c7b;border-radius:16px;padding:22px}
+.card{max-width:880px;margin:0 auto;background:#fff;border:2px solid #0e7c7b;border-radius:16px;padding:22px}
 .head{display:flex;gap:14px;align-items:center;border-bottom:3px solid #0e7c7b;padding-bottom:12px;margin-bottom:12px}
 .head img{width:56px;height:56px;object-fit:contain}.head .em{font-size:44px}
 .head h1{font-size:20px;margin:0;color:#0f2b4d}.head small{color:#64748b}
 .kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;font-size:14px;margin:10px 0}
 .kv dt{color:#64748b}.kv dd{margin:0;font-weight:600}
 table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
-th,td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left}
-th{background:#f1f5f9}.due{background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13.5px}
+th,td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#0f2b4d;color:#fff}.due{background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13.5px}
 .qr{text-align:center;margin-top:12px;font-size:12px;color:#64748b}
 .foot{font-size:11.5px;color:#64748b;margin-top:10px;text-align:center}</style></head><body><div class="card">
 <div class="head">${S.logo ? `<img src="${S.logo}" alt="logo">` : `<div class="em">👶</div>`}
@@ -608,9 +606,9 @@ th{background:#f1f5f9}.due{background:#fefce8;border:1px solid #fde68a;border-ra
 ${c.abha ? "<dt>ABHA</dt><dd>" + esc(c.abha) + "</dd>" : ""}
 <dt>Growth</dt><dd>${lm ? `${esc(fmtDate(lm.date))}: ${lm.wt} kg · ${lm.ht} cm` : "Not recorded yet"}</dd></dl>
 ${due.length ? `<div class="due"><b>⏰ Due / overdue:</b> ${due.map((i) => `${esc(i.name)} ${esc(i.dose || "")} (${esc(fmtDate(i.due))})`).join(" · ")}</div>` : `<div class="due"><b>✅ Up to date</b> — no pending doses.</div>`}
-<table><tr><th>Vaccine</th><th>Given</th><th>✓</th></tr>${rows}${laterLine}${ex}</table>
+<table><tr><th>Age</th><th>Recommended Vaccines</th><th>Due on</th><th>Brand given</th><th>Given on</th><th>Batch</th></tr>${rows}${ex}</table>
 ${qr ? `<div class="qr">${qr}<div>Scan at clinic to verify / import</div></div>` : ""}
-<div class="foot">Verify code <b>${parentVerifyCode(c)}</b> · Generated ${esc(fmtDate(t))} · Keep this file safe — show it at every visit.</div>
+<div class="foot">Verify code <b>${parentVerifyCode(c)}</b> · Generated ${esc(fmtDate(t))} · Seasonal influenza vaccine every year · Keep this file safe — show it at every visit.</div>
 </div></body></html>`;
 }
 function downloadParentCard() {

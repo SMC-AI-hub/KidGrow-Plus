@@ -1,5 +1,19 @@
 # Changelog
 
+## v10.21.0 — 2026-10-17 — Immunisation card as record table (paper-schedule format)
+- 💉 Card rebuilt like the clinic's paper schedule: one row per
+  visit — Age | Recommended Vaccines | Due on | Brand given |
+  Given on | Batch (navy header). Given cells fill from
+  records (brand + mfr + batch); pending cells stay blank so
+  the doctor can write in them. Next-due visit highlighted.
+- 📄 Same record table in the downloadable parent file
+  (wider layout, matching columns).
+- 🔄 Supersedes the v10.20 card collapse: a record card must
+  show the full schedule with writable future rows; the
+  age-exact rule still applies to reports (milestones etc.).
+- ✅ Verified with headless-Chrome A4 screenshot.
+- Tests: 697/697 (491 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.20.0 — 2026-10-17 — Clustered, age-exact printouts
 - 🌟 Milestones print: current band clustered by domain (group
   subheads, no repetitive domain column); earlier bands are one
