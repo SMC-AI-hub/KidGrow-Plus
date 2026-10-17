@@ -699,7 +699,7 @@ function mgmtStats(today) {
   const mk = today.slice(0, 7);
   const monthBills = (DB.bills || []).filter((b) => (b.date || "").startsWith(mk));
   const dd = new Date(today + "T00:00:00"), regs = [];
-  for (let i = 5; i >= 0; i--) regs.push({ month: new Date(dd.getFullYear(), dd.getMonth() - i, 1).toISOString().slice(0, 7), n: 0 });
+  for (let i = 5; i >= 0; i--) { const t = new Date(dd.getFullYear(), dd.getMonth() - i, 1); regs.push({ month: `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`, n: 0 }); }
   let unstamped = 0;
   (DB.children || []).forEach((c) => {
     const r = regs.find((x) => x.month === (c.created || "").slice(0, 7));

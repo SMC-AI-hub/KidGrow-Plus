@@ -3,9 +3,9 @@ const LS_KEY = "kidgrow_pro_v1";
 const $ = (id) => document.getElementById(id);
 const uid = () => "id" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => { const d = new Date(); const p = (x) => String(x).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 const fmtDate = (iso) => { if (!iso) return "—"; const d = new Date(iso + "T00:00:00"); return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); };
-const addDays = (iso, n) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const addDays = (iso, n) => { const p = String(iso || "").split("-"); const d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + (+n || 0))); return d.toISOString().slice(0, 10); };
 
 function ageBetween(dobISO, onISO) {
   const b = new Date(dobISO + "T00:00:00"), o = new Date((onISO || todayISO()) + "T00:00:00");
@@ -1531,6 +1531,23 @@ function factoryReset() {
 function openModal(id) { $(id).classList.add("open"); }
 function closeModal(id) { $(id).classList.remove("open"); }
 document.querySelectorAll(".modal-bg").forEach((m) => m.addEventListener("click", (e) => { if (e.target === m) m.classList.remove("open"); }));
+/* Direct browser-print support (Ctrl+P / phone Print menu): mark the visible
+   page for printing when the dialog opens, and always clear the mark after —
+   so a print never comes out blank and never repeats a stale page. */
+let _autoPrint = false;
+function autoPrintPrep() {
+  try {
+    if (document.querySelector(".page.printing")) return "kept";
+    const act = document.querySelector(".page.active") || document.querySelector(".page");
+    if (act && act.classList) { act.classList.add("printing"); _autoPrint = true; return "auto"; }
+  } catch (e) {}
+  return "none";
+}
+function autoPrintCleanup() {
+  try { document.querySelectorAll(".page.printing").forEach((p) => { if (p && p.classList) p.classList.remove("printing"); }); } catch (e) {}
+  _autoPrint = false;
+}
+try { if (typeof window !== "undefined" && window.addEventListener) { window.addEventListener("beforeprint", autoPrintPrep); window.addEventListener("afterprint", autoPrintCleanup); } } catch (e) {}
 function printPage(id) {
   document.querySelectorAll(".page").forEach((p) => p.classList.remove("printing"));
   $(id).classList.add("printing");

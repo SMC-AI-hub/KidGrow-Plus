@@ -1,5 +1,21 @@
 # Changelog
 
+## v10.23.0 — 2026-10-17 — IST date fixes + direct-print hardening
+- 🐛 FIX: every due/catch-up/appointment date showed ONE DAY
+  EARLY on India-timezone devices (UTC/local mix-up in
+  addDays/todayISO). Dates are now timezone-proof calendar
+  math; analytics month buckets + eMAR dose clocks fixed
+  the same way. Suite now verified under Asia/Kolkata too.
+- 🖨️ FIX: phone/browser Print menu no longer prints raw
+  screen chrome — the visible page is auto-marked for
+  printing (no more blank/stale prints), Record/Edit
+  buttons + inputs + update banner are hidden on paper,
+  and the print mark is always cleared afterwards.
+- 📲 SW cache v13 so devices pick up the fix with the
+  "new version ready" banner.
+- ✅ Verified with headless-Chrome print emulation (IST).
+- Tests: 708/708 (502 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.22.0 — 2026-10-17 — IAP ACVIP 2025 immunisation schedule
 - 💉 Schedule rebuilt from the IAP ACVIP 2025 timetable
   (Indian Pediatrics 2026;63:311–324): 18 visits, 45 doses.

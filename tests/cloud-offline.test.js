@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/kidgrow-v12/.test(sw), "SW cache bumped to v12");
+  ok(/kidgrow-v13/.test(sw), "SW cache bumped to v13");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -965,6 +965,26 @@ async function main() {
   ok(sb.msOverallVerdict(msFull, 4).label === "On track", "ms: all achieved -> on track");
   ok(cssP.includes(".page.printing .card,.page.printing .stat{padding:11px 13px") && cssP.includes(".page.printing table.tbl th,.page.printing table.tbl td{padding:5px 7px"), "print compacts cards + tables");
   ok(cssP.includes(".page.printing .vaxcard,.page.printing .receipt{padding:13px 15px;max-width:100%!important}") && cssP.includes(".page.printing div:empty"), "print goes full-width, hides empty blocks");
+
+  // ---- v10.23.0: timezone-proof dates + direct-print hardening ----
+  ok(vm.runInContext(`addDays("2025-01-15",0)==="2025-01-15"&&addDays("2026-10-17",28)==="2026-11-14"&&addDays("2025-01-31",1)==="2025-02-01"&&addDays("2024-12-31",1)==="2025-01-01"&&addDays("2025-03-01",-1)==="2025-02-28"`, sb) === true, "addDays does calendar math across month/year edges");
+  const _ld = new Date(); const _lexp = `${_ld.getFullYear()}-${String(_ld.getMonth() + 1).padStart(2, "0")}-${String(_ld.getDate()).padStart(2, "0")}`;
+  ok(vm.runInContext("todayISO()", sb) === _lexp, "todayISO is the local calendar date (not UTC)");
+  ok(sb.dueDateFor({ dob: "2025-01-15" }, { dueDays: 0 }) === "2025-01-15", "birth-visit due date equals DOB (IST off-by-one fixed)");
+  ok(JSON.stringify(sb.visitVolume([], "2026-10-17", 2).map((k) => k.month)) === JSON.stringify(["2026-09", "2026-10"]), "analytics month keys stay in-month");
+  ok(cssP.includes(".page.printing button,.page.printing input,.page.printing select,.page.printing textarea{display:none!important}") && cssP.includes("#cloudToast,#updateBar"), "print hides buttons/inputs + update banner");
+  const _qso = sb.document.querySelector, _qsao = sb.document.querySelectorAll;
+  const _pcalls = [];
+  const _fakePage = { classList: { add: (c) => _pcalls.push("add:" + c), remove: (c) => _pcalls.push("remove:" + c) } };
+  sb.document.querySelector = (s) => (s === ".page.active" ? _fakePage : null);
+  sb.document.querySelectorAll = () => [];
+  ok(sb.autoPrintPrep() === "auto" && _pcalls.join(",") === "add:printing", "beforeprint auto-marks the active page");
+  sb.document.querySelector = () => _fakePage;
+  ok(sb.autoPrintPrep() === "kept", "beforeprint keeps an explicitly marked page");
+  sb.document.querySelectorAll = () => [_fakePage];
+  sb.autoPrintCleanup();
+  ok(_pcalls.join(",") === "add:printing,remove:printing", "afterprint clears print marks");
+  sb.document.querySelector = _qso; sb.document.querySelectorAll = _qsao;
 
   // ---- v10.11.2: rich handouts ----
   const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);
