@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>खेल परामर्श — KidGrow</title>
+<style>
+:root{--cream:#FAF3E6;--paper:#FFFDF8;--ink:#4A3F35;--mut:#8A7B68;--orange:#E8722A;--rust:#B5431F;--purple:#7B5EA7;--blue:#2E6FA3;--teal:#1F7A6D;--green:#3E7A3E;--dgreen:#2F5D33;--red:#B33A3A;--line:#E7DCC8}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font-family:'Segoe UI',system-ui,Roboto,'Noto Sans Tamil','Noto Sans Devanagari',Arial,sans-serif;line-height:1.65}
+.topbar{background:var(--orange);color:#fff;font-weight:800;letter-spacing:.5px;font-size:13px;padding:10px 18px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.wrap{max-width:820px;margin:0 auto;padding:20px 18px 8px}
+.cover{text-align:center;padding:26px 10px 6px}
+.cover .badge{display:inline-flex;align-items:center;justify-content:center;width:92px;height:92px;border-radius:50%;background:#fff;border:3px solid var(--orange);font-size:46px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.cover h1{color:var(--rust);font-size:30px;margin:14px 0 4px;line-height:1.25}
+.cover .meta{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.4px}
+.cover .about{max-width:62ch;margin:12px auto 0;font-size:15.5px}
+.bar{color:#fff;font-weight:800;text-align:center;letter-spacing:.6px;font-size:14.5px;border-radius:8px;padding:9px 12px;margin:26px 0 12px}
+.bar.o{background:var(--orange)}.bar.p{background:var(--purple)}.bar.b{background:var(--blue)}.bar.t{background:var(--teal)}.bar.g{background:var(--green)}.bar.r{background:var(--red)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:0 0 12px}
+ol.steps{margin:0;padding:0;list-style:none;counter-reset:st}
+ol.steps li{counter-increment:st;display:flex;gap:12px;align-items:flex-start;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin:0 0 10px;font-size:15px}
+ol.steps li::before{content:counter(st);flex:0 0 30px;height:30px;border-radius:50%;background:var(--orange);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;margin-top:1px}
+ul.donts{margin:0;padding:0;list-style:none}
+ul.donts li{background:#FDF0EFEF;border:1px solid #E8B4B4;border-radius:12px;padding:10px 14px 10px 44px;margin:0 0 10px;font-size:15px;position:relative}
+ul.donts li::before{content:"\2715";position:absolute;left:14px;top:10px;color:var(--red);font-weight:900}
+.gold{background:#FFF6DE;border:2px solid #D9A416;border-radius:12px;padding:12px 16px;font-size:15px;margin:14px 0}
+.band-h{font-weight:800;color:var(--teal);font-size:15px;margin:16px 0 8px}
+table.bt{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;font-size:14px;margin:0 0 6px}
+table.bt th{background:var(--teal);color:#fff;padding:10px 12px;text-align:left}
+table.bt td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
+table.bt tr:nth-child(even) td{background:#F4F9F7}
+.chart-t{font-weight:800;color:var(--dgreen);margin:14px 0 8px;font-size:15.5px}
+.danger{background:#FDECEC;border:2px solid var(--red);border-radius:12px;padding:12px 16px;font-size:15px}
+.printbtn{display:inline-block;background:#fff;border:2px solid var(--orange);color:var(--rust);font-weight:800;border-radius:999px;padding:8px 22px;font-size:15px;cursor:pointer;margin:18px auto 6px}
+.center{text-align:center}
+.footer{background:var(--dgreen);color:#fff;text-align:center;font-size:12px;padding:10px 14px;margin-top:26px}
+@media print{@page{size:A4;margin:11mm}.no-print{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}ol.steps li,ul.donts li,.card,.gold,.danger{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="topbar"><span>किडग्रो • अभिभावक पर्ची</span><span>🧸 रोज़मर्रा देखभाल</span></div>
+<div class="wrap"><div class="cover"><div class="badge">🧸</div><h1>खेल परामर्श</h1><div class="meta">🩺 रोज़मर्रा देखभाल • हिंदी</div><p class="about">खेल से छोटा दिमाग़ बढ़ता है — आपके साथ 15 मिनट का ध्यान-खेल घंटों के निष्क्रिय स्क्रीन से बेहतर है। बच्चे की उम्र वाले भाग का पालन करें।</p><div class="center no-print"><button class="printbtn" onclick="window.print()">🖨️ प्रिंट करें</button></div></div><div class="band-h">🧸 0–6 माह</div><ol class="steps"><li>हर आवाज़ पर बात करें, गाएँ, मुस्कुराकर जवाब दें।</li><li>जागते समय दिन में 2–3 बार पेट के बल लिटाएँ।</li><li>साफ चित्र और झुनझुने दिखाएँ।</li><li>स्क्रीन बिल्कुल नहीं — आपका चेहरा सबसे अच्छा खिलौना है।</li></ol><div class="band-h">🧸 6–12 माह</div><ol class="steps"><li>रोज़ के कामों में चीज़ों के नाम बताएँ।</li><li>लुका-छिपी, ताली, कप जमाना।</li><li>खटखटाने, गिराने, खोजने की सुरक्षित आज़ादी दें।</li><li>रोज़ थोड़ी देर तस्वीरों वाली किताब पढ़ें।</li></ol><div class="band-h">🧸 1–3 साल</div><ol class="steps"><li>नाटक-खेल: रसोई सेट, गुड़िया, खिलौना फ़ोन।</li><li>क्रेयॉन से आड़ी-तिरछी लकीरें, आकार छाँटना।</li><li>सरल निर्देश: 'गेंद लाओ'।</li><li>रोज़ बाहर खेल + रेत/पानी का खेल।</li></ol><div class="band-h">🧸 3–6 साल</div><ol class="steps"><li>कहानी-कविता; पूछें 'फिर क्या हुआ?'।</li><li>चित्रकारी, पहेली, ब्लॉक जोड़ना।</li><li>दूसरे बच्चों से खेलना; बारी लेना सीखना।</li><li>स्क्रीन सिर्फ 1 घंटा अच्छा कंटेंट।</li></ol><div class="band-h">🧸 6 साल+</div><ol class="steps"><li>खेल + रोज़ 60 मिनट सक्रिय खेल।</li><li>पढ़ने की आदत: साथ 15 मिनट।</li><li>घर के काम ज़िम्मेदारी सिखाते हैं।</li><li>डिवाइस पर ऑनलाइन सुरक्षा की बात करें।</li></ol></div>
+<div class="footer">KidGrow Pro • सिर्फ जानकारी के लिए — हमेशा डॉक्टर से सलाह लें</div>
+</body>
+</html>

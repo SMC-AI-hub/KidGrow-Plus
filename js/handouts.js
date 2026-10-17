@@ -224,6 +224,7 @@ function playPick(ageM) {
 }
 const HAND_GRP_LBL = { care: "🩺 Everyday care", hb: "📖 Infant Feeding Handbook" };
 const HAND_LINK_TXT = { en: "Read the full illustrated chapter", ta: "முழு விளக்கப் பகுதியைப் படியுங்கள்", hi: "पूरा चित्रित अध्याय पढ़ें" };
+const HAND_BOOKLET_TXT = { en: "📖 Booklet", ta: "📖 கையேடு", hi: "📖 पुस्तिका" };
 const HAND_SEL = { h: "fever", lang: "en" };
 function handSec(title, color, inner, tint) {
   return `<div style="margin:10px 0;background:${tint};border-left:4px solid ${color};border-radius:10px;padding:8px 12px"><div style="font-size:13px;font-weight:800;color:${color};letter-spacing:.3px;margin-bottom:4px">${esc(title)}</div><div style="font-size:14px;line-height:1.7">${inner}</div></div>`;
@@ -280,7 +281,7 @@ function renderHand() {
   <div class="toolbar no-print">
     <select onchange="HAND_SEL.h=this.value;renderHand()" style="max-width:260px"><optgroup label="${HAND_GRP_LBL.care}">${HANDOUTS.filter((x) => !x.grp).map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</optgroup>${HANDOUTS.some((x) => x.grp === "hb") ? `<optgroup label="${HAND_GRP_LBL.hb}">${HANDOUTS.filter((x) => x.grp === "hb").map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</optgroup>` : ""}</select>
     <select onchange="HAND_SEL.lang=this.value;renderHand()" style="max-width:140px">${Object.keys(HAND_LANGS).map((k) => `<option value="${k}"${k === L ? " selected" : ""}>${HAND_LANGS[k]}</option>`).join("")}</select>
-    <span class="sp"></span><button class="btn btn-o btn-sm" onclick="printPage('pg-hand')">🖨️ Print handout</button>
+    <span class="sp"></span><a class="btn btn-o btn-sm" target="_blank" rel="noopener" href="handbook/booklet-${h.id}-${L}.html">${esc(HAND_BOOKLET_TXT[L])}</a> <button class="btn btn-o btn-sm" onclick="printPage('pg-hand')">🖨️ Print handout</button>
   </div>
   <div class="vaxcard" style="max-width:680px;margin:0 auto">
     ${handLetterhead(c)}
