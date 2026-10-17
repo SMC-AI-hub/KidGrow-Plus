@@ -1,5 +1,15 @@
 # Changelog
 
+## v10.15.1 — 2026-10-17 — Printout no longer mirrors the screen
+- 🐛 Fixed: printouts showed the current screen page first, then the real
+  content. Root cause: `.page.active{display:block}` (specificity 0,2,0)
+  beat the print rule `.page{display:none}` (0,1,0), so the visible page
+  leaked into print. Print-hide is now `!important`; the `.printing`
+  page still wins by source order.
+- 🐛 Same fix for open modals (`.modal-bg.open` had the same leak) —
+  modals are now hidden in print.
+- Tests: 664/664 (467 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.15.0 — 2026-10-17 — First Foods enrichment + logo & copyright
 - 🍲 Complementary-feeding booklet enriched from the reference handbook:
   6 food & calorie guides (grains, pulses, proteins, fats, veg, fruit),
