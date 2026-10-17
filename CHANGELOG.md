@@ -1,5 +1,17 @@
 # Changelog
 
+## v10.17.0 — 2026-10-17 — A4 professional print density
+- 🖨️ New `@page` rule: A4 with 10/9/11mm margins — predictable,
+  full-sheet output instead of browser-default margins.
+- 🖨️ Print density overhaul (all printouts): 12px base type, compact
+  cards (11/13px padding, full width), tighter tables (5/7px cells),
+  headings, alerts, key-value lists and letterheads — no more
+  half-empty pages.
+- 🖨️ Empty blocks (blank alerts/hints) auto-hidden in print; headings
+  never strand at page bottom; tables/cards keep full-width.
+- 🖨️ Receipts + vaccine cards go full-width in print (were 560px).
+- Tests: 682/682 (476 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.16.0 — 2026-10-17 — Production billing hardening
 - 🐛 Cancelled subscriptions now keep paid access till period end
   (previously any `cancelled` status hit the paywall immediately) —

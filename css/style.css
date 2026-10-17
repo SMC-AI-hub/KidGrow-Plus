@@ -286,6 +286,31 @@ label.sib input{width:14px;height:14px;accent-color:var(--teal)}
   body{background:#fff}
 }
 
+/* ---------- Print: fill the A4 sheet, professional density ---------- */
+@page{size:A4;margin:10mm 9mm 11mm}
+@media print{
+  body{font-size:12px;line-height:1.5}
+  .page.printing .card,.page.printing .stat{padding:11px 13px;margin:0 0 9px;border-radius:10px;max-width:100%!important}
+  .page.printing .grid{gap:9px;margin-bottom:9px}
+  .page.printing h1{font-size:18px;margin:6px 0}
+  .page.printing h2{font-size:15px;margin:8px 0 5px}
+  .page.printing .card h3{font-size:13px;margin:6px 0 4px}
+  .page.printing h1,.page.printing h2,.page.printing h3{break-after:avoid}
+  .page.printing .alert{padding:8px 11px;margin-bottom:9px;font-size:12px;border-radius:10px}
+  .page.printing table.tbl{font-size:12px}
+  .page.printing table.tbl th,.page.printing table.tbl td{padding:5px 7px}
+  .page.printing .kv{gap:3px 10px;font-size:12px}
+  .page.printing .report-head{gap:10px;padding-bottom:9px;margin-bottom:10px}
+  .page.printing .report-head .clinic{font-size:16px}
+  .page.printing .report-head .report-logo{width:44px;height:44px}
+  .page.printing .doc-title{font-size:16px;margin:2px 0 7px}
+  .page.printing .doc-foot{margin-top:12px;padding-top:8px;font-size:11.5px}
+  .page.printing .vaxcard,.page.printing .receipt{padding:13px 15px;max-width:100%!important}
+  .page.printing p,.page.printing li,.page.printing dl{orphans:3;widows:3}
+  .page.printing div:empty,.page.printing p:empty,.page.printing h3:empty{display:none}
+  .page.printing img{max-width:100%}
+}
+
 /* ---------- Professional documents (letterhead, reports) ---------- */
 .report-head .report-logo{width:58px;height:58px;object-fit:contain;border-radius:12px;background:#fff;border:1px solid var(--line)}
 .brand .logo img{width:40px;height:40px;object-fit:contain}

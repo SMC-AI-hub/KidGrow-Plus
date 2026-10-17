@@ -928,6 +928,9 @@ async function main() {
   const cssP = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
   ok(cssP.includes(".page.printing{animation:none;-webkit-print-color-adjust:exact") && cssP.includes("body.bw-print .page.printing{filter:grayscale(1)}") && cssP.includes(".page{display:none!important}") && cssP.includes(".modal-bg"), "print CSS forces color, hides active page + modals, grayscale opt-out");
   ok(cssP.includes("#cloudBanner") && cssP.includes("#cloudToast"), "print CSS hides trial banner + toast");
+  ok(cssP.includes("@page{size:A4"), "print uses A4 page rule");
+  ok(cssP.includes(".page.printing .card,.page.printing .stat{padding:11px 13px") && cssP.includes(".page.printing table.tbl th,.page.printing table.tbl td{padding:5px 7px"), "print compacts cards + tables");
+  ok(cssP.includes(".page.printing .vaxcard,.page.printing .receipt{padding:13px 15px;max-width:100%!important}") && cssP.includes(".page.printing div:empty"), "print goes full-width, hides empty blocks");
 
   // ---- v10.11.2: rich handouts ----
   const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);
