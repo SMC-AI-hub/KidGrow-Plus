@@ -1,6 +1,6 @@
 {
   "name": "kidgrow-pro",
-  "version": "10.17.1",
+  "version": "10.17.2",
   "private": true,
   "description": "KidGrow Pro — offline-first pediatric EMR PWA, evolving to multi-tenant SaaS",
   "scripts": {

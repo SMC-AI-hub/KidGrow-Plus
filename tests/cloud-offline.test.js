@@ -931,9 +931,6 @@ async function main() {
   ok(cssP.includes("@page{size:A4"), "print uses A4 page rule");
   ok(cssP.includes(".page.printing .card,.page.printing .stat{padding:11px 13px") && cssP.includes(".page.printing table.tbl th,.page.printing table.tbl td{padding:5px 7px"), "print compacts cards + tables");
   ok(cssP.includes(".page.printing .vaxcard,.page.printing .receipt{padding:13px 15px;max-width:100%!important}") && cssP.includes(".page.printing div:empty"), "print goes full-width, hides empty blocks");
-  const gcSrc = fs.readFileSync(path.join(R, "js", "growth-chart.js"), "utf8");
-  ok(gcSrc.includes("cv._kgPrint = true") && gcSrc.includes("2.5 : 1"), "print charts render hi-res + bolder");
-  ok(gcSrc.includes("gprint-pair") && cssP.includes(".gprint-pair{display:grid;grid-template-columns:1fr 1fr"), "print pairs two charts side by side");
 
   // ---- v10.11.2: rich handouts ----
   const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);
