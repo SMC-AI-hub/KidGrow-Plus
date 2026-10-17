@@ -1,8 +1,9 @@
 /* =====================================================
    KidGrow Pro — Parent handouts EN / TA / HI (Round 4)
-   Rich format (v10.11.2): what's happening · numbered
+   Rich format (v10.11.2+): what's happening · numbered
    do-steps · don't-myths · what to expect · red flags ·
-   weight-based paracetamol strip · clinic letterhead.
+   weight-based paracetamol + ORS strips · breath-rate
+   guide · clinic letterhead.
    ===================================================== */
 const HAND_LANGS = { en: "English", ta: "தமிழ்", hi: "हिंदी" };
 const HAND_SECLBL = {
@@ -17,11 +18,39 @@ const HAND_DOSE_TXT = {
   ta: (nm, wt, mg, sy, dr) => `⚖️ <b>${esc(nm)} (${wt} கிலோ)</b>: பாராசிட்டமால் 15 மி.கி/கிலோ = <b>${mg} மி.கி</b> ≈ 120 மி.கி/5 மி.லி மருந்தில் <b>${sy} மி.லி</b> <i>அல்லது</i> 100 மி.கி/மி.லி சொட்டில் <b>${dr} மி.லி</b>; தேவைப்பட்டால் 4–6 மணிக்கு ஒருமுறை (அதிகம் 4/நாள்). மருத்துவரிடம் உறுதி செய்யுங்கள்.`,
   hi: (nm, wt, mg, sy, dr) => `⚖️ <b>${esc(nm)} (${wt} किलो)</b>: पैरासिटामॉल 15 मि.ग्रा/किलो = <b>${mg} मि.ग्रा</b> ≈ 120 मि.ग्रा/5 मि.ली सिरप के <b>${sy} मि.ली</b> <i>या</i> 100 मि.ग्रा/मि.ली ड्रॉप्स के <b>${dr} मि.ली</b>; ज़रूरत पर हर 4–6 घंटे (ज़्यादा से ज़्यादा 4/दिन)। डॉक्टर से पुष्टि करें।`,
 };
+const HAND_ORS_TXT = {
+  en: (nm, wt, vol) => `💧 For <b>${esc(nm)} (${wt} kg)</b>: about <b>${vol} mL ORS over the next 4 hours</b> by spoon/small sips (roughly a glass an hour for small children), plus breastfeeding and normal feeds. If vomiting, pause 10 min then restart slower.`,
+  ta: (nm, wt, vol) => `💧 <b>${esc(nm)} (${wt} கிலோ)</b>: அடுத்த 4 மணியில் சுமார் <b>${vol} மி.லி ஓஆர்எஸ்</b> ஸ்பூனால்/சிறிதாக (சிறு குழந்தைக்கு மணிக்கு சுமார் ஒரு டம்ளர்), தாய்ப்பால் + சாதாரண உணவுடன். வாந்தி வந்தால் 10 நிமிடம் நிறுத்தி மெதுவாக மீண்டும் தொடங்குங்கள்.`,
+  hi: (nm, wt, vol) => `💧 <b>${esc(nm)} (${wt} किलो)</b>: अगले 4 घंटों में लगभग <b>${vol} मि.ली ओआरएस</b> चम्मच/छोटे घूँटों से (छोटे बच्चों को घंटे में लगभग एक गिलास), माँ के दूध + सामान्य खाने के साथ। उल्टी हो तो 10 मिनट रुककर धीरे फिर शुरू करें।`,
+};
+const HAND_BREATH = {
+  en: "🫁 <b>Breath check (1 min, while calm — not crying/feeding):</b> under 2 months — <b>60+</b> breaths/min · 2–12 months — <b>50+</b> · 1–5 years — <b>40+</b> → return the SAME DAY. Also return if ribs pull in with each breath or in-breathing is noisy.",
+  ta: "🫁 <b>மூச்சு பரிசோதனை (அமைதியாக இருக்கும்போது 1 நிமிடம் — அழாமல்/பால் குடிக்காமல்):</b> 2 மாதத்திற்குட்பட்ட — <b>60+</b> மூச்சு/நிமிடம் · 2–12 மாதம் — <b>50+</b> · 1–5 வயது — <b>40+</b> → அதே நாளில் வாருங்கள். ஒவ்வொரு மூச்சிலும் விலா உள்ளே இழுத்தாலோ, மூச்சிழுக்கும்போது சத்தம் வந்தாலோ உடனே வாருங்கள்.",
+  hi: "🫁 <b>साँस-जाँच (शांत होने पर पूरा 1 मिनट — रोता/दूध पीता न हो):</b> 2 माह से छोटा — <b>60+</b> साँस/मिनट · 2–12 माह — <b>50+</b> · 1–5 साल — <b>40+</b> → उसी दिन आएँ। हर साँस में पसली धँसे या साँस लेते समय आवाज़ आए तो तुरंत आएँ।",
+};
 function handDose(wt) {
   const mg = Math.round(wt * 15), r1 = (x) => Math.round(x * 10) / 10;
   return { mg, syrup: r1(mg / 24), drops: r1(mg / 100) };
 }
+function handOrs(wt) { return Math.round((wt * 75) / 50) * 50; }
 const HANDOUTS = [
+  { id: "nbwarn", icon: "🍼", title: { en: "Newborn warning signs (0–28 days)", ta: "பிறந்த குழந்தை எச்சரிக்கை (0–28 நாள்)", hi: "नवजात चेतावनी-लक्षण (0–28 दिन)" },
+    about: { en: "The first 28 days are the most delicate — newborns can turn serious quickly while showing only small signs. When in doubt, bring the baby the same day; do not wait and watch at home.",
+      ta: "முதல் 28 நாட்கள் மிக மென்மையானவை — பிறந்த குழந்தை சிறு அறிகுறியுடன் வேகமாக மோசமாகலாம். சந்தேகம் என்றால் அதே நாளில் கொண்டு வாருங்கள்; வீட்டில் காத்திருக்க வேண்டாம்.",
+      hi: "पहले 28 दिन सबसे नाज़ुक होते हैं — नवजात छोटे लक्षणों से जल्दी गंभीर हो सकता है। शक हो तो उसी दिन लाएँ; घर पर इंतज़ार न करें।" },
+    bullets: {
+      en: ["Feed every 2–3 hours (8–12 feeds/day); wake and feed if sleeping too long.", "Keep baby comfortably warm: cap, socks, skin-to-skin; neither too hot nor cold.", "Count breathing when calm: 60+ breaths/min in a newborn needs same-day review.", "Keep the cord stump clean and dry; fold the nappy below it.", "Wash hands before touching the baby; keep sick visitors away."],
+      ta: ["2–3 மணிக்கு ஒருமுறை (நாளில் 8–12 வேளை) பால் கொடுங்கள்; அதிகம் தூங்கினால் எழுப்பி ஊட்டுங்கள்.", "குழந்தையை இதமான சூட்டில் வையுங்கள்: தொப்பி, சாக்ஸ், தோலோடு தோல்; அதிக சூடு/குளிர் வேண்டாம்.", "அமைதியாக இருக்கும்போது மூச்சு எண்ணுங்கள்: நிமிடத்திற்கு 60+ என்றால் அதே நாள் பரிசோதனை.", "தொப்புள் கொடித் துண்டை சுத்தமாக உலர வையுங்கள்; டயாபரை அதற்குக் கீழே மடியுங்கள்.", "குழந்தையைத் தொடுமுன் கை கழுவுங்கள்; நோயுற்ற விருந்தினரை விலக்குங்கள்."],
+      hi: ["हर 2–3 घंटे (दिन में 8–12 बार) दूध पिलाएँ; ज़्यादा सोए तो जगाकर पिलाएँ।", "बच्चे को आरामदायक गरमाहट में रखें: टोपी, मोज़े, त्वचा-से-त्वचा; न ज़्यादा गर्म, न ठंडा।", "शांत होने पर साँस गिनें: नवजात में 60+/मिनट हो तो उसी दिन दिखाएँ।", "नाल-ठूँठ साफ-सूखा रखें; डायपर उसके नीचे मोड़ें।", "बच्चे को छूने से पहले हाथ धोएँ; बीमार मिलने वालों से दूर रखें।"] },
+    dont: { en: ["Don't bathe in cold water or leave the baby in direct AC draught.", "Don't apply anything (oil, ash, powder) on the cord stump.", "Don't give water, honey, or gripe water — only breastmilk unless advised."],
+      ta: ["குளிர் நீரில் குளிப்பாட்டவோ, ஏசி நேர் காற்றில் விடவோ வேண்டாம்.", "தொப்புள் துண்டில் எண்ணெய், சாம்பல், பவுடர் எதுவும் போட வேண்டாம்.", "தண்ணீர், தேன், கிரைப் வாட்டர் வேண்டாம் — மருத்துவர் சொல்லும் வரை தாய்ப்பால் மட்டும்."],
+      hi: ["ठंडे पानी से न नहलाएँ, एसी की सीधी हवा में न रखें।", "नाल-ठूँठ पर तेल, राख, पाउडर कुछ न लगाएँ।", "पानी, शहद, ग्राइप वॉटर न दें — सलाह तक सिर्फ माँ का दूध।"] },
+    expect: { en: "Weight dips slightly in week 1, then climbs. Sneezing, hiccups, and noisy breathing while feeding are usually normal in the first weeks.",
+      ta: "முதல் வாரம் எடை சிறிது குறைந்து பின் ஏறும். தும்மல், விக்கல், பால் குடிக்கும்போது மூச்சு சத்தம் — முதல் வாரங்களில் பெரும்பாலும் சாதாரணம்.",
+      hi: "पहले हफ़्ते वज़न थोड़ा घटकर फिर बढ़ता है। छींक, हिचकी, दूध पीते समय साँस की आवाज़ — पहले हफ़्तों में अक्सर सामान्य है।" },
+    red: { en: "Bring the SAME DAY: not feeding well, unusual sleepiness/floppiness, fast breathing (60+/min), ribs pulling in, fever or cold to touch, fits, yellow palms/soles, red cord with pus, vomiting everything.",
+      ta: "அதே நாளில் கொண்டு வாருங்கள்: சரியாகப் பால் குடிக்காமை, அதிக மயக்கம்/தளர்ச்சி, வேக மூச்சு (60+/நிமிடம்), விலா உள்ளே இழுத்தல், காய்ச்சல்/தொட்டால் குளிர், வலிப்பு, உள்ளங்கை/பாதம் மஞ்சள், சீழுடன் சிவந்த தொப்புள், எல்லாம் வாந்தி.",
+      hi: "उसी दिन लाएँ: ठीक से दूध न पीना, बहुत सुस्ती/ढीलापन, तेज़ साँस (60+/मिनट), पसलियाँ धँसना, बुखार या छूने पर ठंडा, दौरे, हथेली/तलवे पीले, मवाद वाली लाल नाल, सब कुछ उल्टी करना।" } },
   { id: "fever", icon: "🌡️", dose: true, title: { en: "Fever — home care", ta: "காய்ச்சல் — வீட்டில் பராமரிப்பு", hi: "बुखार — घर पर देखभाल" },
     about: { en: "Fever (100.4°F / 38°C or more) is the body's defence against infection. Most childhood fevers are viral and settle in 2–3 days. How the child behaves matters more than the thermometer number.",
       ta: "காய்ச்சல் (100.4°F / 38°C அல்லது அதற்கு மேல்) நோயை எதிர்க்கும் உடலின் பாதுகாப்பு. பெரும்பாலான காய்ச்சல் வைரஸால் வந்து 2–3 நாட்களில் சரியாகும். தெர்மாமீட்டர் எண்ணை விட குழந்தையின் செயலே முக்கியம்.",
@@ -36,17 +65,17 @@ const HANDOUTS = [
     expect: { en: "Fever often climbs in the evening for 2–3 days, then fades. Appetite returns last — keep fluids and light feeds going meanwhile.",
       ta: "2–3 நாட்கள் மாலையில் காய்ச்சல் ஏறி, பின் குறையும். பசி கடைசியாகத்தான் திரும்பும் — இடையில் திரவமும் இலகு உணவும் தொடருங்கள்.",
       hi: "2–3 दिन शाम को बुखार बढ़कर फिर घटता है। भूख सबसे आखिर में लौटती है — तब तक तरल पदार्थ और हल्का खाना जारी रखें।" },
-    red: { en: "Return immediately: fits/seizure, unusually sleepy or limp, breathing difficulty, rash with fever, fever >3 days, baby <3 months with fever.",
-      ta: "உடனே வாருங்கள்: வலிப்பு, அதிக மயக்கம்/தளர்ச்சி, மூச்சு சிரமம், காய்ச்சலுடன் தடிப்பு, 3 நாட்களுக்கு மேல் காய்ச்சல், 3 மாதத்திற்குட்பட்ட குழந்தைக்கு காய்ச்சல்.",
-      hi: "तुरंत आएँ: दौरे/झटके, बहुत सुस्ती या ढीलापन, साँस लेने में तकलीफ, बुखार के साथ दाने, 3 दिन से ज़्यादा बुखार, 3 महीने से छोटे बच्चे को बुखार।" } },
-  { id: "ors", icon: "💧", title: { en: "Diarrhoea + ORS", ta: "வயிற்றுப்போக்கு + ஓஆர்எஸ்", hi: "दस्त + ओआरएस" },
+    red: { en: "Return immediately: fits/seizure, unusually sleepy/limp, can't drink or breastfeed, vomits everything, breathing difficulty, rash with fever, fever >3 days, baby <3 months with fever.",
+      ta: "உடனே வாருங்கள்: வலிப்பு, அதிக மயக்கம்/தளர்ச்சி, குடிக்க/பால் குடிக்க முடியாமை, எல்லாம் வாந்தி, மூச்சு சிரமம், காய்ச்சலுடன் தடிப்பு, 3 நாட்களுக்கு மேல் காய்ச்சல், 3 மாதத்திற்குட்பட்ட குழந்தைக்கு காய்ச்சல்.",
+      hi: "तुरंत आएँ: दौरे/झटके, बहुत सुस्ती/ढीलापन, पी न पाना/दूध न पी पाना, सब कुछ उल्टी करना, साँस की तकलीफ, बुखार के साथ दाने, 3 दिन से ज़्यादा बुखार, 3 महीने से छोटे बच्चे को बुखार।" } },
+  { id: "ors", icon: "💧", ors: true, title: { en: "Diarrhoea + ORS", ta: "வயிற்றுப்போக்கு + ஓஆர்எஸ்", hi: "दस्त + ओआरएस" },
     about: { en: "Most diarrhoea is viral and stops by itself in 3–5 days. The real danger is dehydration (water loss) — ORS replaces water and salts better than plain water.",
       ta: "பெரும்பாலான வயிற்றுப்போக்கு வைரஸால் வந்து 3–5 நாட்களில் தானே நிற்கும். உண்மையான ஆபத்து நீரிழப்பு — சாதாரண தண்ணீரை விட ஓஆர்எஸ் நீரையும் உப்பையும் சரியாக நிரப்பும்.",
       hi: "ज़्यादातर दस्त वायरल होते हैं और 3–5 दिन में खुद रुक जाते हैं। असली खतरा निर्जलीकरण (पानी की कमी) है — सादे पानी से बेहतर ओआरएस पानी और लवण दोनों देता है।" },
     bullets: {
-      en: ["Start ORS from the first loose stool — small sips, often.", "Under 2 years: 50–100 mL after each stool. Above 2 years: 100–200 mL.", "Continue breastfeeding and normal feeds — do not starve the child.", "Give zinc (as prescribed) for 14 days.", "Wash hands with soap; give safe boiled/cooled water.", "No anti-diarrhoeal syrups or antibiotics without advice."],
-      ta: ["முதல் மலம் முதலே ஓஆர்எஸ் கொடுங்கள் — கொஞ்சம் கொஞ்சமாக, அடிக்கடி.", "2 வயதிற்குட்பட்டவருக்கு: ஒவ்வொரு மலத்திற்கும் 50–100 மி.லி. 2 வயதிற்கு மேல்: 100–200 மி.லி.", "தாய்ப்பால், சாதாரண உணவைத் தொடருங்கள் — பட்டினி போட வேண்டாம்.", "மருத்துவர் சொன்னபடி 14 நாட்கள் துத்தநாகம் (ஜிங்க்) கொடுங்கள்.", "சோப்பால் கை கழுவுங்கள்; கொதித்து ஆறிய தண்ணீர் கொடுங்கள்.", "மருத்துவர் சொல்லாமல் வயிற்றுப்போக்கு மருந்து/ஆன்டிபயாடிக் வேண்டாம்."],
-      hi: ["पहले ही पतले दस्त से ओआरएस शुरू करें — थोड़ा-थोड़ा, बार-बार।", "2 साल से छोटे: हर दस्त के बाद 50–100 मि.ली. 2 साल से बड़े: 100–200 मि.ली.", "माँ का दूध और सामान्य खाना जारी रखें — भूखा न रखें।", "डॉक्टर के बताए अनुसार 14 दिन तक ज़िंक दें।", "साबुन से हाथ धुलवाएँ; उबला-ठंडा पानी दें।", "बिना सलाह दस्त रोकने की दवा/एंटीबायोटिक न दें।"] },
+      en: ["Start ORS from the first loose stool — small sips, often.", "Under 2 years: 50–100 mL after each stool. Above 2 years: 100–200 mL.", "Continue breastfeeding and normal feeds — do not starve the child.", "Give zinc (as prescribed) for 14 days.", "Check dehydration twice a day: very thirsty, sunken eyes, skin pinch that goes back slowly, or no urine — return the same day.", "Wash hands with soap; give safe boiled/cooled water.", "No anti-diarrhoeal syrups or antibiotics without advice."],
+      ta: ["முதல் மலம் முதலே ஓஆர்எஸ் கொடுங்கள் — கொஞ்சம் கொஞ்சமாக, அடிக்கடி.", "2 வயதிற்குட்பட்டவருக்கு: ஒவ்வொரு மலத்திற்கும் 50–100 மி.லி. 2 வயதிற்கு மேல்: 100–200 மி.லி.", "தாய்ப்பால், சாதாரண உணவைத் தொடருங்கள் — பட்டினி போட வேண்டாம்.", "மருத்துவர் சொன்னபடி 14 நாட்கள் துத்தநாகம் (ஜிங்க்) கொடுங்கள்.", "தினம் 2 முறை நீரிழப்பு பாருங்கள்: அதிக தாகம், உள்ளே போன கண், கிள்ளிய தோல் மெதுவாக மீளுதல், சிறுநீர் இல்லை — அதே நாளில் வாருங்கள்.", "சோப்பால் கை கழுவுங்கள்; கொதித்து ஆறிய தண்ணீர் கொடுங்கள்.", "மருத்துவர் சொல்லாமல் வயிற்றுப்போக்கு மருந்து/ஆன்டிபயாடிக் வேண்டாம்."],
+      hi: ["पहले ही पतले दस्त से ओआरएस शुरू करें — थोड़ा-थोड़ा, बार-बार।", "2 साल से छोटे: हर दस्त के बाद 50–100 मि.ली. 2 साल से बड़े: 100–200 मि.ली.", "माँ का दूध और सामान्य खाना जारी रखें — भूखा न रखें।", "डॉक्टर के बताए अनुसार 14 दिन तक ज़िंक दें।", "दिन में 2 बार निर्जलीकरण देखें: बहुत प्यास, धँसी आँखें, चिकोटी वाली खाल धीरे लौटना, पेशाब बंद — उसी दिन आएँ।", "साबुन से हाथ धुलवाएँ; उबला-ठंडा पानी दें।", "बिना सलाह दस्त रोकने की दवा/एंटीबायोटिक न दें।"] },
     dont: { en: ["Don't stop breastmilk or feeds — an empty stomach slows recovery.", "Don't give cola, packaged juice, or sports drinks — extra sugar worsens diarrhoea.", "Don't use anti-diarrhoeal or antibiotic syrups without the doctor's advice."],
       ta: ["தாய்ப்பால்/உணவை நிறுத்த வேண்டாம் — வெறும் வயிறு குணமாவதைத் தாமதிக்கும்.", "கோலா, பாக்கெட் ஜூஸ், விளையாட்டு பானம் வேண்டாம் — அதிக சர்க்கரை வயிற்றுப்போக்கை அதிகரிக்கும்.", "மருத்துவர் சொல்லாமல் வயிற்றுப்போக்கு/ஆன்டிபயாடிக் மருந்து வேண்டாம்."],
       hi: ["माँ का दूध या खाना बंद न करें — खाली पेट ठीक होने में देर करता है।", "कोला, पैकेट जूस, स्पोर्ट्स ड्रिंक न दें — ज़्यादा चीनी दस्त बढ़ाती है।", "बिना सलाह दस्त रोकने या एंटीबायोटिक की दवा न दें।"] },
@@ -73,7 +102,7 @@ const HANDOUTS = [
     red: { en: "Return immediately: blood or green colour in vomit, severe tummy pain, no urine >8 hours, unusually sleepy, vomiting >24 hours.",
       ta: "உடனே வாருங்கள்: வாந்தியில் ரத்தம்/பச்சை நிறம், கடும் வயிற்று வலி, 8 மணிக்கு மேல் சிறுநீர் இல்லை, அதிக மயக்கம், 24 மணிக்கு மேல் வாந்தி.",
       hi: "तुरंत आएँ: उल्टी में खून या हरा रंग, तेज़ पेट दर्द, 8 घंटे से पेशाब बंद, बहुत सुस्ती, 24 घंटे से ज़्यादा उल्टी।" } },
-  { id: "cold", icon: "🤧", title: { en: "Cold + cough", ta: "சளி + இருமல்", hi: "सर्दी + खाँसी" },
+  { id: "cold", icon: "🤧", breath: true, title: { en: "Cold + cough", ta: "சளி + இருமல்", hi: "सर्दी + खाँसी" },
     about: { en: "Colds are caused by viruses and need 5–7 days to clear. Cough often lingers 1–2 weeks after the cold — a noisy cough alone is not chest infection.",
       ta: "சளி வைரஸால் வரும்; சரியாக 5–7 நாட்கள் ஆகும். சளி போன பின்னும் 1–2 வாரம் இருமல் நீடிக்கலாம் — சத்தமான இருமல் மட்டும் நுரையீரல் தொற்று அல்ல.",
       hi: "सर्दी वायरस से होती है और ठीक होने में 5–7 दिन लगते हैं। सर्दी के बाद भी 1–2 हफ़्ते खाँसी रह सकती है — सिर्फ आवाज़ वाली खाँसी छाती का संक्रमण नहीं है।" },
@@ -87,9 +116,9 @@ const HANDOUTS = [
     expect: { en: "Days 2–4 are usually the worst (blocked nose, broken sleep). Green nasal mucus alone does not mean antibiotics are needed.",
       ta: "2–4ம் நாள் மிகவும் சிரமம் (மூக்கடைப்பு, தூக்கக் கலக்கம்). பச்சை சளி மட்டும் ஆன்டிபயாடிக் தேவை என்று அர்த்தம் அல்ல.",
       hi: "दूसरे-चौथे दिन सबसे ज़्यादा तकलीफ़ होती है (बंद नाक, टूटी नींद)। सिर्फ हरे बलगम का मतलब एंटीबायोटिक नहीं है।" },
-    red: { en: "Return immediately: fast/noisy breathing, ribs pulling in, blue lips, poor feeding, ear pain with fever.",
-      ta: "உடனே வாருங்கள்: வேகமான/சத்தமான மூச்சு, விலா எலும்பு உள்ளே இழுத்தல், உதடு நீலம், பால் குடிக்க மறுத்தல், காய்ச்சலுடன் காது வலி.",
-      hi: "तुरंत आएँ: तेज़/आवाज़ वाली साँस, पसलियाँ धँसना, नीले होंठ, दूध न पीना, बुखार के साथ कान दर्द।" } },
+    red: { en: "Return immediately: fast breathing (see breath guide above), ribs pulling in, noisy in-breathing, blue lips, poor feeding, ear pain with fever.",
+      ta: "உடனே வாருங்கள்: வேக மூச்சு (மேலே மூச்சு வழிகாட்டி பாருங்கள்), விலா உள்ளே இழுத்தல், மூச்சிழுக்கும்போது சத்தம், உதடு நீலம், பால் குடிக்க மறுத்தல், காய்ச்சலுடன் காது வலி.",
+      hi: "तुरंत आएँ: तेज़ साँस (ऊपर साँस-मार्गदर्शिका देखें), पसलियाँ धँसना, साँस लेते समय आवाज़, नीले होंठ, दूध न पीना, बुखार के साथ कान दर्द।" } },
   { id: "shots", icon: "💉", title: { en: "After vaccination", ta: "தடுப்பூசி போட்ட பின்", hi: "टीका लगने के बाद" },
     about: { en: "Mild fever, pain, or a small lump after vaccines means the immune system is learning — a good sign. The BCG spot forms a tiny scar over weeks; that is normal too.",
       ta: "தடுப்பூசிக்குப் பின் லேசான காய்ச்சல், வலி, சிறு கட்டி — நோய் எதிர்ப்பு கற்றுக்கொள்கிறது என்று பொருள்; நல்ல அறிகுறி. பிசிஜி தழும்பு வாரங்களில் சிறு வடுவாகும்; அதுவும் சாதாரணம்.",
@@ -184,13 +213,17 @@ function renderHand() {
     sub = ` · ${band.label[L]} (auto by age)`;
     bullets = band.bullets[L];
   }
-  let dose = "";
-  if (h.dose && c) {
+  let strip = "";
+  if ((h.dose || h.ors) && c) {
     try {
       const lm = latestMeasure(c);
-      if (lm && +lm.wt > 0) { const d = handDose(+lm.wt); dose = `<div class="alert a-amber" style="margin:8px 0">${HAND_DOSE_TXT[L](c.name, lm.wt, d.mg, d.syrup, d.drops)}</div>`; }
+      if (lm && +lm.wt > 0) {
+        if (h.dose) { const d = handDose(+lm.wt); strip = `<div class="alert a-amber" style="margin:8px 0">${HAND_DOSE_TXT[L](c.name, lm.wt, d.mg, d.syrup, d.drops)}</div>`; }
+        if (h.ors) { strip = `<div class="alert a-amber" style="margin:8px 0">${HAND_ORS_TXT[L](c.name, lm.wt, handOrs(+lm.wt))}</div>`; }
+      }
     } catch (e) {}
   }
+  const breath = h.breath ? `<div class="alert a-blue" style="margin:8px 0">${HAND_BREATH[L]}</div>` : "";
   const about = h.about ? handSec(HAND_SECLBL.about[L], "var(--teal-d,#0b7c72)", esc(h.about[L])) : "";
   const dos = bullets.length ? handSec(HAND_SECLBL.do[L], "#15803d", `<ol style="margin:0;padding-left:20px">${bullets.map((b) => `<li style="margin:3px 0">${esc(b)}</li>`).join("")}</ol>`) : "";
   const donts = h.dont ? handSec(HAND_SECLBL.dont[L], "#b91c1c", `<ul style="margin:0;padding-left:20px;list-style:'✕  '">${h.dont[L].map((b) => `<li style="margin:3px 0">${esc(b)}</li>`).join("")}</ul>`) : "";
@@ -205,7 +238,7 @@ function renderHand() {
     ${handLetterhead(c)}
     <div style="font-size:11px;letter-spacing:1px;color:var(--muted);font-weight:800">PARENT HANDOUT · ${esc(HAND_LANGS[L]).toUpperCase()}</div>
     <h2 style="margin:2px 0 4px">${h.icon} ${esc(h.title[L])}${esc(sub)}</h2>
-    ${about}${dose}${dos}${donts}${exp}
+    ${about}${strip}${breath}${dos}${donts}${exp}
     ${red ? `<div class="alert a-red" style="margin:10px 0 0">🚨 <div><b>${esc(red)}</b></div></div>` : ""}
     <div style="font-size:11.5px;color:var(--muted);margin-top:10px;border-top:1px dashed var(--line);padding-top:6px">${esc(HAND_SECLBL.foot[L])}</div>
   </div>`;

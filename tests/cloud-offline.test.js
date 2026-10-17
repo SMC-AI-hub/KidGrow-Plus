@@ -925,7 +925,7 @@ async function main() {
   // ---- v10.11.2: rich handouts ----
   const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);
   ok(handShape, "every handout complete in 3 languages");
-  ok(vm.runInContext(`HANDOUTS.length`, sb) === 7 && vm.runInContext(`HANDOUTS.some((h)=>h.id==="vomit")`, sb), "vomiting added (7 topics)");
+  ok(vm.runInContext(`HANDOUTS.length`, sb) === 8 && vm.runInContext(`HANDOUTS.some((h)=>h.id==="vomit") && HANDOUTS.some((h)=>h.id==="nbwarn")`, sb), "vomiting + newborn added (8 topics)");
   const hd = sb.handDose(12);
   ok(hd.mg === 180 && hd.syrup === 7.5 && hd.drops === 1.8, "paracetamol dose math (12 kg)");
   vm.runInContext(`DB.children=[normalizeChild({id:'hd1',name:'Dose Kid',sex:'boy',dob:'2023-01-01',vaccines:{},measures:[{date:'2026-10-01',wt:12}]} )]; DB.activeId='hd1'; HAND_SEL.h='fever'; HAND_SEL.lang='en';`, sb);
@@ -939,6 +939,24 @@ async function main() {
   sb.renderHand();
   const handT = sb.document.getElementById("handBox").innerHTML;
   ok(handT.includes("வாந்தி") && handT.includes("தவிருங்கள்"), "Tamil vomiting renders");
+
+  // ---- v10.11.3: assessment-grade handouts (danger signs, breath guide, ORS plan, newborn) ----
+  ok(sb.handOrs(12) === 900 && sb.handOrs(8) === 600, "ORS 4-hour volume math (75 mL/kg)");
+  vm.runInContext(`HAND_SEL.h='ors'; HAND_SEL.lang='en';`, sb);
+  sb.renderHand();
+  ok(sb.document.getElementById("handBox").innerHTML.includes("900 mL ORS over the next 4 hours"), "ORS strip personalizes to weight");
+  vm.runInContext(`HAND_SEL.h='cold';`, sb);
+  sb.renderHand();
+  const handC = sb.document.getElementById("handBox").innerHTML;
+  ok(handC.includes("Breath check") && handC.includes("50+") && handC.includes("breath guide above"), "cold carries breath-rate guide");
+  vm.runInContext(`HAND_SEL.h='nbwarn';`, sb);
+  sb.renderHand();
+  const handN = sb.document.getElementById("handBox").innerHTML;
+  ok(handN.includes("cord stump") && handN.includes("SAME DAY") && handN.includes("yellow palms"), "newborn warning signs render");
+  vm.runInContext(`HAND_SEL.h='fever';`, sb);
+  sb.renderHand();
+  ok(sb.document.getElementById("handBox").innerHTML.includes("vomits everything"), "fever danger signs strengthened");
+  ok(!/imnci/i.test(fs.readFileSync(path.join(R, "js", "handouts.js"), "utf8")), "no source attribution in handouts");
 
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
