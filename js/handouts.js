@@ -222,6 +222,8 @@ function playPick(ageM) {
   const play = HANDOUTS.find((h) => h.id === "play");
   return play.bands.find((b) => ageM <= b.maxM) || play.bands[play.bands.length - 1];
 }
+const HAND_GRP_LBL = { care: "🩺 Everyday care", hb: "📖 Infant Feeding Handbook" };
+const HAND_LINK_TXT = { en: "Read the full illustrated chapter", ta: "முழு விளக்கப் பகுதியைப் படியுங்கள்", hi: "पूरा चित्रित अध्याय पढ़ें" };
 const HAND_SEL = { h: "fever", lang: "en" };
 function handSec(title, color, inner, tint) {
   return `<div style="margin:10px 0;background:${tint};border-left:4px solid ${color};border-radius:10px;padding:8px 12px"><div style="font-size:13px;font-weight:800;color:${color};letter-spacing:.3px;margin-bottom:4px">${esc(title)}</div><div style="font-size:14px;line-height:1.7">${inner}</div></div>`;
@@ -269,13 +271,14 @@ function renderHand() {
   const breath = h.breath ? `<div class="alert a-blue" style="margin:8px 0">${HAND_BREATH[L]}</div>` : "";
   const pearl = h.pearl ? `<div style="margin:8px 0;background:#fff8e1;border:1px solid #d4a017;border-radius:10px;padding:8px 12px;font-size:13.5px"><b>${esc(h.pearl[L])}</b></div>` : "";
   const chart = h.chart ? handChart(h.chartTitle[L], h.chart.head[L], h.chart.rows[L]) : "";
+  const fulllink = h.link ? `<div class="no-print" style="margin:6px 0"><a class="btn btn-o btn-sm" href="${esc(h.link)}" target="_blank" rel="noopener">📖 ${esc(HAND_LINK_TXT[L])}</a></div>` : "";
   const about = h.about ? handSec(HAND_SECLBL.about[L], "var(--teal-d,#0b7c72)", esc(h.about[L]), "#eefbf7") : "";
   const dos = bullets.length ? handSec(HAND_SECLBL.do[L], "#15803d", `<ol style="margin:0;padding-left:20px">${bullets.map((b) => `<li style="margin:3px 0">${esc(b)}</li>`).join("")}</ol>`, "#f0fdf4") : "";
   const donts = h.dont ? handSec(HAND_SECLBL.dont[L], "#b91c1c", `<ul style="margin:0;padding-left:20px;list-style:'✕  '">${h.dont[L].map((b) => `<li style="margin:3px 0">${esc(b)}</li>`).join("")}</ul>`, "#fef2f2") : "";
   const exp = h.expect ? handSec(HAND_SECLBL.expect[L], "#b45309", esc(h.expect[L]), "#fffbeb") : "";
   $("handBox").innerHTML = `
   <div class="toolbar no-print">
-    <select onchange="HAND_SEL.h=this.value;renderHand()" style="max-width:220px">${HANDOUTS.map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</select>
+    <select onchange="HAND_SEL.h=this.value;renderHand()" style="max-width:260px"><optgroup label="${HAND_GRP_LBL.care}">${HANDOUTS.filter((x) => !x.grp).map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</optgroup>${HANDOUTS.some((x) => x.grp === "hb") ? `<optgroup label="${HAND_GRP_LBL.hb}">${HANDOUTS.filter((x) => x.grp === "hb").map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</optgroup>` : ""}</select>
     <select onchange="HAND_SEL.lang=this.value;renderHand()" style="max-width:140px">${Object.keys(HAND_LANGS).map((k) => `<option value="${k}"${k === L ? " selected" : ""}>${HAND_LANGS[k]}</option>`).join("")}</select>
     <span class="sp"></span><button class="btn btn-o btn-sm" onclick="printPage('pg-hand')">🖨️ Print handout</button>
   </div>
@@ -283,7 +286,7 @@ function renderHand() {
     ${handLetterhead(c)}
     <div style="font-size:11px;letter-spacing:1px;color:var(--muted);font-weight:800">PARENT HANDOUT · ${esc(HAND_LANGS[L]).toUpperCase()}</div>
     <h2 style="margin:2px 0 4px">${h.icon} ${esc(h.title[L])}${esc(sub)}</h2>
-    ${about}${pearl}${strip}${breath}${chart}${dos}${donts}${exp}
+    ${fulllink}${about}${pearl}${strip}${breath}${chart}${dos}${donts}${exp}
     ${red ? `<div class="alert a-red" style="margin:10px 0 0">🚨 <div><b>${esc(red)}</b></div></div>` : ""}
     <div style="font-size:11.5px;color:var(--muted);margin-top:10px;border-top:1px dashed var(--line);padding-top:6px">${esc(HAND_SECLBL.foot[L])}</div>
   </div>`;
