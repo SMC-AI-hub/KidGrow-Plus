@@ -1,5 +1,16 @@
 # Changelog
 
+## v10.11.3 — 2026-10-17 — Assessment-grade handouts
+- 🫁 Cold handout gains a breath-rate guide (age-wise cutoffs + chest-indrawing
+  watch) so parents count for 1 minute and know exactly when to return same-day.
+- 💧 ORS handout gains a weight-based 4-hour ORS plan strip (75 mL/kg, rounded),
+  personalized like the paracetamol strip, plus a twice-daily dehydration check.
+- 🍼 NEW topic: newborn warning signs (0–28 days) — feeding, warmth, cord care,
+  breathing count, and a same-day return list (fits, yellow palms/soles, …).
+- 🚨 Fever/vomiting red flags strengthened with general danger signs (can't
+  drink/breastfeed, vomits everything, unusually sleepy).
+- Tests: 645/645 (448 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.11.2 — 2026-10-17 — Rich parent handouts + dose strip
 - 📄 Handouts rebuilt from plain bullets into color-coded sections: ℹ️ What's
   happening · ✅ numbered do-steps · 🚫 myth-busting don'ts · 🕐 what to expect
