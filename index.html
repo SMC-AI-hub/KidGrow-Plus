@@ -394,6 +394,7 @@
               <div><label>Registration no.</label><input id="sReg" placeholder="MCI / State reg."></div>
               <div class="full"><label>Address & phone</label><input id="sAddr" placeholder="Address · phone"></div>
               <div class="full"><label>Clinic / hospital logo (PNG/JPG · shows on sidebar + all letterheads)</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><img id="logoPrev" alt="" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;display:none"><input type="file" id="sLogo" accept="image/*" style="max-width:230px" onchange="handleLogoFile(this)"><button class="btn btn-o btn-xs" onclick="removeLogo()">Remove</button></div></div>
+              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sColorPrint" checked onchange="savePrintPref()"> 🖨️ Print in color (badges · charts · banners) — uncheck to save ink</label></div>
             </div>
             <button class="btn btn-p" onclick="saveSettings()">💾 Save clinic profile</button>
           </div>

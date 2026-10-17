@@ -1,5 +1,12 @@
 # Changelog
 
+## v10.11.1 — 2026-10-17 — Color printing + ink-saver toggle
+- 🖨️🎨 Printouts now keep their color (badges, charts, banners) — the print CSS
+  forces exact color reproduction so the browser no longer strips backgrounds.
+  New "Print in color" checkbox in Settings → Clinic profile (on by default);
+  uncheck for grayscale ink-saver mode. Applies to all reports immediately.
+- Tests: 633/633 (436 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.11.0 — 2026-10-16 — Sunrise dashboard home + MRN + lab review
 - 🌅 New **Sunrise theme** (warm cream + deep teal + gold) joins Light/Dark in a
   3-way header toggle; fresh installs start on Sunrise, saved prefs untouched.

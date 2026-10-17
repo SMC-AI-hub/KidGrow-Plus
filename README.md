@@ -22,7 +22,7 @@ when online. No build step: static files + Vercel serverless API.
 python3 -m http.server 8080   # → http://localhost:8080
 
 # tests (Node 18+; Postgres suite spins up embedded PG17 automatically)
-npm ci && npm test            # 630 green: 433 offline + 107 isolation + 52 hardening + 38 api
+npm ci && npm test            # 633 green: 436 offline + 107 isolation + 52 hardening + 38 api
 ```
 
 Cloud features need `SUPABASE_URL` + `SUPABASE_ANON_KEY` (PWA config) and, for
