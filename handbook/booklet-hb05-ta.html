@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="copyright" content="KidGrow Pro — all rights reserved">
 <title>கையேடு 5 — பருவ குழந்தையின் முதல் வாரங்கள் — KidGrow</title>
 <style>
 :root{--cream:#FAF3E6;--paper:#FFFDF8;--ink:#4A3F35;--mut:#8A7B68;--orange:#E8722A;--rust:#B5431F;--purple:#7B5EA7;--blue:#2E6FA3;--teal:#1F7A6D;--green:#3E7A3E;--dgreen:#2F5D33;--red:#B33A3A;--line:#E7DCC8}
@@ -11,9 +12,11 @@
 .wrap{max-width:820px;margin:0 auto;padding:20px 18px 8px}
 .cover{text-align:center;padding:26px 10px 6px}
 .cover .badge{display:inline-flex;align-items:center;justify-content:center;width:92px;height:92px;border-radius:50%;background:#fff;border:3px solid var(--orange);font-size:46px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.logo-center img{display:none;max-width:230px;max-height:130px;margin:0 auto;object-fit:contain}
 .cover h1{color:var(--rust);font-size:30px;margin:14px 0 4px;line-height:1.25}
 .cover .meta{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.4px}
 .cover .about{max-width:62ch;margin:12px auto 0;font-size:15.5px}
+.copyline{font-size:12.5px;color:var(--mut);font-weight:700;margin-top:10px}
 .bar{color:#fff;font-weight:800;text-align:center;letter-spacing:.6px;font-size:14.5px;border-radius:8px;padding:9px 12px;margin:26px 0 12px}
 .bar.o{background:var(--orange)}.bar.p{background:var(--purple)}.bar.b{background:var(--blue)}.bar.t{background:var(--teal)}.bar.g{background:var(--green)}.bar.r{background:var(--red)}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:0 0 12px}
@@ -30,16 +33,27 @@ table.bt th{background:var(--teal);color:#fff;padding:10px 12px;text-align:left}
 table.bt td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
 table.bt tr:nth-child(even) td{background:#F4F9F7}
 .chart-t{font-weight:800;color:var(--dgreen);margin:14px 0 8px;font-size:15.5px}
+.recipe{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:0 0 12px;position:relative}
+.recipe h4{color:var(--rust);margin:0 30% 6px 0;font-size:16px}
+.recipe .age{position:absolute;top:12px;right:12px;background:var(--dgreen);color:#fff;font-weight:800;font-size:12.5px;border-radius:6px;padding:3px 12px}
+.recipe p{margin:5px 0;font-size:14.5px}
+.recipe .ck{color:var(--dgreen);font-size:13.5px}
+.fine{font-size:12.5px;color:var(--mut)}
 .danger{background:#FDECEC;border:2px solid var(--red);border-radius:12px;padding:12px 16px;font-size:15px}
 .printbtn{display:inline-block;background:#fff;border:2px solid var(--orange);color:var(--rust);font-weight:800;border-radius:999px;padding:8px 22px;font-size:15px;cursor:pointer;margin:18px auto 6px}
 .center{text-align:center}
 .footer{background:var(--dgreen);color:#fff;text-align:center;font-size:12px;padding:10px 14px;margin-top:26px}
-@media print{@page{size:A4;margin:11mm}.no-print{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}ol.steps li,ul.donts li,.card,.gold,.danger{break-inside:avoid}}
+.pfoot{display:none}
+@media print{@page{size:A4;margin:11mm 11mm 16mm}.no-print{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}ol.steps li,ul.donts li,.card,.gold,.danger,.recipe{break-inside:avoid}.pfoot{display:block;position:fixed;bottom:0;left:0;right:0;background:var(--dgreen);color:#fff;text-align:center;font-size:10px;padding:6px 10px}}
 </style>
 </head>
 <body>
 <div class="topbar"><span>கிட்குரோ • பெற்றோர் குறிப்பு</span><span>👶 குழந்தை உணவு கையேடு</span></div>
-<div class="wrap"><div class="cover"><div class="badge">👶</div><h1>கையேடு 5 — பருவ குழந்தையின் முதல் வாரங்கள்</h1><div class="meta">📖 குழந்தை உணவு கையேடு • தமிழ்</div><p class="about">1 மணிக்குள் முதல் ஊட்டு, நாள் வாரி ஈரம்-மலம், 2 வாரத்தில் பிறப்பு எடை மீட்பு — ஆரோக்கியத் தொடக்க வரைபடம்.</p><div class="center no-print"><button class="printbtn" onclick="window.print()">🖨️ அச்சிடுக</button></div></div><div class="bar o">வீட்டில் செய்யுங்கள்</div><ol class="steps"><li>பிறந்ததும் தோலோடு தோல்; 1 மணிக்குள் முதல் ஊட்டு; தேன், தண்ணீர், குட்டி வேண்டாம்.</li><li>இரவும் பகலும் தாயோடு; அறிகுறியில் நாளில் 8–12 முறை, இரவும் சேர்த்து ஊட்டுங்கள்.</li><li>ஈர டயாபர் ஏறும்: நாள் 1ல் 1+, நாள் 2ல் 2+, நாள் 3–4ல் 3–5, நாள் 5 முதல் 6+.</li><li>மலம் மாறும்: கறுப்பு → பச்சை → நாள் 4–5ல் மஞ்சள் மணி மலம்.</li><li>எடை: 7% வரை குறைவு சாதாரணம், 10%க்கு மேல் பரிசோதனை, ~2 வாரத்தில் பிறப்பு எடை மீட்பு.</li><li>எடை மீளும் + வெளியேற்றம் சரியாகும் வரை 2–3 மணிக்கு தூங்கும் குழந்தையை எழுப்புங்கள்.</li></ol><div class="bar r">தவிர்க்க வேண்டியவை</div><ul class="donts"><li>கோடையிலும் தண்ணீர் வேண்டாம் — தாய்ப்பாலில் 88% தண்ணீர்.</li><li>தேன், கிரைப் வாட்டர், குட்டி வேண்டாம் — 1 வயதிற்குட்பட்டவருக்கு தேன் ஆபத்து.</li><li>ஒரு எடைக்குப் பதற வேண்டாம் — அதே தராசில் போக்கைப் பாருங்கள்.</li></ul><div class="bar t">என்ன எதிர்பார்க்கலாம்</div><div class="card">நாள் 2–3 அழுகை + மாலைக் கொத்து ஊட்டு சாதாரணம்; நாள் 3–4ல் பால் வரும்போது மார்பு கனக்கும். மருத்துவர் சொல்லும் வைட்டமின் D சொட்டை (400 IU/நாள்) தொடங்குங்கள்.</div><div class="bar r" style="background:var(--red)">🚨 மருத்துவரை எப்போது பார்க்க</div><div class="danger"><b>அதே நாளில்: ஊட்டுக்கு எழாமை, தளர்ச்சி, காய்ச்சல்/தொட்டால் குளிர், வேக மூச்சு, 48 மணியில் மலம் இல்லை, வெள்ளை மலம், பரவும் மஞ்சள் காமாலை, அடிக்கடி ஊட்டியும் குறைந்த வெளியேற்றம்.</b></div></div>
-<div class="footer">KidGrow Pro • கல்விக்காக மட்டும் — எப்போதும் மருத்துவரை அணுகுங்கள்</div>
+<div class="wrap"><div class="cover"><div class="logo-center"><img id="hospLogo" alt="Hospital logo"></div><div class="badge" id="iconBadge">👶</div><h1>கையேடு 5 — பருவ குழந்தையின் முதல் வாரங்கள்</h1><div class="meta">📖 குழந்தை உணவு கையேடு • தமிழ்</div><div class="copyline">© 2026 KidGrow Pro • அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை</div><p class="about">1 மணிக்குள் முதல் ஊட்டு, நாள் வாரி ஈரம்-மலம், 2 வாரத்தில் பிறப்பு எடை மீட்பு — ஆரோக்கியத் தொடக்க வரைபடம்.</p><div class="center no-print"><button class="printbtn" onclick="window.print()">🖨️ அச்சிடுக</button></div></div><div class="bar o">வீட்டில் செய்யுங்கள்</div><ol class="steps"><li>பிறந்ததும் தோலோடு தோல்; 1 மணிக்குள் முதல் ஊட்டு; தேன், தண்ணீர், குட்டி வேண்டாம்.</li><li>இரவும் பகலும் தாயோடு; அறிகுறியில் நாளில் 8–12 முறை, இரவும் சேர்த்து ஊட்டுங்கள்.</li><li>ஈர டயாபர் ஏறும்: நாள் 1ல் 1+, நாள் 2ல் 2+, நாள் 3–4ல் 3–5, நாள் 5 முதல் 6+.</li><li>மலம் மாறும்: கறுப்பு → பச்சை → நாள் 4–5ல் மஞ்சள் மணி மலம்.</li><li>எடை: 7% வரை குறைவு சாதாரணம், 10%க்கு மேல் பரிசோதனை, ~2 வாரத்தில் பிறப்பு எடை மீட்பு.</li><li>எடை மீளும் + வெளியேற்றம் சரியாகும் வரை 2–3 மணிக்கு தூங்கும் குழந்தையை எழுப்புங்கள்.</li></ol><div class="bar r">தவிர்க்க வேண்டியவை</div><ul class="donts"><li>கோடையிலும் தண்ணீர் வேண்டாம் — தாய்ப்பாலில் 88% தண்ணீர்.</li><li>தேன், கிரைப் வாட்டர், குட்டி வேண்டாம் — 1 வயதிற்குட்பட்டவருக்கு தேன் ஆபத்து.</li><li>ஒரு எடைக்குப் பதற வேண்டாம் — அதே தராசில் போக்கைப் பாருங்கள்.</li></ul><div class="bar t">என்ன எதிர்பார்க்கலாம்</div><div class="card">நாள் 2–3 அழுகை + மாலைக் கொத்து ஊட்டு சாதாரணம்; நாள் 3–4ல் பால் வரும்போது மார்பு கனக்கும். மருத்துவர் சொல்லும் வைட்டமின் D சொட்டை (400 IU/நாள்) தொடங்குங்கள்.</div><div class="bar r" style="background:var(--red)">🚨 மருத்துவரை எப்போது பார்க்க</div><div class="danger"><b>அதே நாளில்: ஊட்டுக்கு எழாமை, தளர்ச்சி, காய்ச்சல்/தொட்டால் குளிர், வேக மூச்சு, 48 மணியில் மலம் இல்லை, வெள்ளை மலம், பரவும் மஞ்சள் காமாலை, அடிக்கடி ஊட்டியும் குறைந்த வெளியேற்றம்.</b></div></div>
+<div class="footer"><span class="copyline">© 2026 KidGrow Pro • அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை</span><br>நோயாளி கல்விக்காக மட்டும் — அனுமதியின்றி மறுபிரசுரம் வேண்டாம்</div>
+<div class="pfoot"><span class="copyline">© 2026 KidGrow Pro • அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை</span> • நோயாளி கல்விக்காக மட்டும் — அனுமதியின்றி மறுபிரசுரம் வேண்டாம்</div>
+<script>
+(function(){try{var raw=localStorage.getItem("kidgrow_pro_v1");if(!raw)return;var db=JSON.parse(raw);var s=(db&&db.settings)||{};if(s.logo){var im=document.getElementById("hospLogo");if(im){im.src=s.logo;im.style.display="block";}var b=document.getElementById("iconBadge");if(b)b.style.display="none";}var nm=s.clinic||"KidGrow Pro";var y=new Date().getFullYear();var els=document.querySelectorAll(".copyline");for(var i=0;i<els.length;i++){els[i].textContent="\u00A9 "+y+" "+nm;}}catch(e){}})();
+</script>
 </body>
 </html>

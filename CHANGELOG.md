@@ -1,5 +1,18 @@
 # Changelog
 
+## v10.15.0 — 2026-10-17 — First Foods enrichment + logo & copyright
+- 🍲 Complementary-feeding booklet enriched from the reference handbook:
+  6 food & calorie guides (grains, pulses, proteins, fats, veg, fruit),
+  7 low-cost recipes with age badges + cost/kcal, allergy note, and a
+  myths-vs-facts table (EN first; TA/HI fall back to EN pending translation).
+- 🏥 Every booklet now centers the hospital logo on its cover — pulled
+  live from the app's clinic settings (Settings → logo); the topic icon
+  shows only when no logo is set.
+- ©️ Copyright protection: © year + clinic-name line on the cover,
+  screen footer, and a fixed footer on EVERY printed page, plus a
+  "do not reproduce without permission" notice and copyright meta tag.
+- Tests: 664/664 (467 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.14.0 — 2026-10-17 — Mother-booklet design for every handout
 - 📖 NEW booklet engine (tools/make-booklets.js): all 22 handout topics ×
   EN/TA/HI = 66 print-ready booklets in warm mother-booklet design —

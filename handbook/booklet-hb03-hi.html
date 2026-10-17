@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="copyright" content="KidGrow Pro — all rights reserved">
 <title>हैंडबुक 3 — स्थिति, पकड़ और समस्या-समाधान — KidGrow</title>
 <style>
 :root{--cream:#FAF3E6;--paper:#FFFDF8;--ink:#4A3F35;--mut:#8A7B68;--orange:#E8722A;--rust:#B5431F;--purple:#7B5EA7;--blue:#2E6FA3;--teal:#1F7A6D;--green:#3E7A3E;--dgreen:#2F5D33;--red:#B33A3A;--line:#E7DCC8}
@@ -11,9 +12,11 @@
 .wrap{max-width:820px;margin:0 auto;padding:20px 18px 8px}
 .cover{text-align:center;padding:26px 10px 6px}
 .cover .badge{display:inline-flex;align-items:center;justify-content:center;width:92px;height:92px;border-radius:50%;background:#fff;border:3px solid var(--orange);font-size:46px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.logo-center img{display:none;max-width:230px;max-height:130px;margin:0 auto;object-fit:contain}
 .cover h1{color:var(--rust);font-size:30px;margin:14px 0 4px;line-height:1.25}
 .cover .meta{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.4px}
 .cover .about{max-width:62ch;margin:12px auto 0;font-size:15.5px}
+.copyline{font-size:12.5px;color:var(--mut);font-weight:700;margin-top:10px}
 .bar{color:#fff;font-weight:800;text-align:center;letter-spacing:.6px;font-size:14.5px;border-radius:8px;padding:9px 12px;margin:26px 0 12px}
 .bar.o{background:var(--orange)}.bar.p{background:var(--purple)}.bar.b{background:var(--blue)}.bar.t{background:var(--teal)}.bar.g{background:var(--green)}.bar.r{background:var(--red)}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:0 0 12px}
@@ -30,16 +33,27 @@ table.bt th{background:var(--teal);color:#fff;padding:10px 12px;text-align:left}
 table.bt td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
 table.bt tr:nth-child(even) td{background:#F4F9F7}
 .chart-t{font-weight:800;color:var(--dgreen);margin:14px 0 8px;font-size:15.5px}
+.recipe{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:0 0 12px;position:relative}
+.recipe h4{color:var(--rust);margin:0 30% 6px 0;font-size:16px}
+.recipe .age{position:absolute;top:12px;right:12px;background:var(--dgreen);color:#fff;font-weight:800;font-size:12.5px;border-radius:6px;padding:3px 12px}
+.recipe p{margin:5px 0;font-size:14.5px}
+.recipe .ck{color:var(--dgreen);font-size:13.5px}
+.fine{font-size:12.5px;color:var(--mut)}
 .danger{background:#FDECEC;border:2px solid var(--red);border-radius:12px;padding:12px 16px;font-size:15px}
 .printbtn{display:inline-block;background:#fff;border:2px solid var(--orange);color:var(--rust);font-weight:800;border-radius:999px;padding:8px 22px;font-size:15px;cursor:pointer;margin:18px auto 6px}
 .center{text-align:center}
 .footer{background:var(--dgreen);color:#fff;text-align:center;font-size:12px;padding:10px 14px;margin-top:26px}
-@media print{@page{size:A4;margin:11mm}.no-print{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}ol.steps li,ul.donts li,.card,.gold,.danger{break-inside:avoid}}
+.pfoot{display:none}
+@media print{@page{size:A4;margin:11mm 11mm 16mm}.no-print{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}ol.steps li,ul.donts li,.card,.gold,.danger,.recipe{break-inside:avoid}.pfoot{display:block;position:fixed;bottom:0;left:0;right:0;background:var(--dgreen);color:#fff;text-align:center;font-size:10px;padding:6px 10px}}
 </style>
 </head>
 <body>
 <div class="topbar"><span>किडग्रो • अभिभावक पर्ची</span><span>🤱 शिशु आहार हैंडबुक</span></div>
-<div class="wrap"><div class="cover"><div class="badge">🤱</div><h1>हैंडबुक 3 — स्थिति, पकड़ और समस्या-समाधान</h1><div class="meta">📖 शिशु आहार हैंडबुक • हिंदी</div><p class="about">स्तनपान का ज़्यादातर दर्द स्थिति और पकड़ से होता है — दूध की कमी से नहीं। गहरी पकड़ (बड़ा मुँह, होंठ बाहर, ठुड्डी सटी) निप्पल दर्द रोकती और दूध चालू रखती है।</p><div class="center no-print"><button class="printbtn" onclick="window.print()">🖨️ प्रिंट करें</button></div></div><div class="bar o">घर पर करें</div><ol class="steps"><li>पेट माँ से, नाक निप्पल से, बच्चे को स्तन तक लाएँ — हर पकड़ में।</li><li>मुँह पूरा खुलने तक (जम्हाई जैसा) रुकें, फिर जल्दी गले लगाएँ।</li><li>अच्छी पकड़: मुँह खुला, होंठ बाहर मुड़े, ठुड्डी सटी, लय में चूसना-निगलना।</li><li>शुरुआती भूख-संकेतों पर दिन में 8–12 बार पिलाएँ — रोने का इंतज़ार न करें।</li><li>30 सेकंड से ज़्यादा दर्द, कटकट आवाज़ या लिपस्टिक-सी निप्पल = दोबारा पकड़ बनाएँ।</li><li>दूध उतरना (2–5वाँ दिन): बार-बार पिलाएँ, पहले गुनगुना, बाद में ठंडा, हाथ से नरम करें।</li></ol><div class="bar r">इन गलतियों से बचें</div><ul class="donts"><li>बच्चे के सिर के पीछे न धकेलें — गर्दन-कंधे सँभालें।</li><li>शुरू में प्रशिक्षित सलाह बिना बोतल, चुसनी या निप्पल कवच न दें।</li><li>दूध उतरने या नली जाम पर पिलाना बंद न करें — निकालना ही इलाज है; रोकना बिगाड़ता है।</li></ul><div class="bar t">क्या उम्मीद करें</div><div class="card">पहले 1–2 हफ़्ते बार-बार झुंड में पिलाना पड़ता है, अक्सर शाम को — इससे आपूर्ति बनती है, कमी साबित नहीं होती। ज़्यादातर जोड़ियाँ 3–4 हफ़्तों में लय पा लेती हैं।</div><div class="bar r" style="background:var(--red)">🚨 डॉक्टर को कब दिखाएँ</div><div class="danger"><b>उसी दिन: दर्दभरी लाल छाती के साथ बुखार, 2–3 दिन में न भरती गहरी फटी/खूनी निप्पल, या कम पेशाब-पॉटी के साथ बच्चा पिलाना छोड़े।</b></div></div>
-<div class="footer">KidGrow Pro • सिर्फ जानकारी के लिए — हमेशा डॉक्टर से सलाह लें</div>
+<div class="wrap"><div class="cover"><div class="logo-center"><img id="hospLogo" alt="Hospital logo"></div><div class="badge" id="iconBadge">🤱</div><h1>हैंडबुक 3 — स्थिति, पकड़ और समस्या-समाधान</h1><div class="meta">📖 शिशु आहार हैंडबुक • हिंदी</div><div class="copyline">© 2026 KidGrow Pro • सर्वाधिकार सुरक्षित</div><p class="about">स्तनपान का ज़्यादातर दर्द स्थिति और पकड़ से होता है — दूध की कमी से नहीं। गहरी पकड़ (बड़ा मुँह, होंठ बाहर, ठुड्डी सटी) निप्पल दर्द रोकती और दूध चालू रखती है।</p><div class="center no-print"><button class="printbtn" onclick="window.print()">🖨️ प्रिंट करें</button></div></div><div class="bar o">घर पर करें</div><ol class="steps"><li>पेट माँ से, नाक निप्पल से, बच्चे को स्तन तक लाएँ — हर पकड़ में।</li><li>मुँह पूरा खुलने तक (जम्हाई जैसा) रुकें, फिर जल्दी गले लगाएँ।</li><li>अच्छी पकड़: मुँह खुला, होंठ बाहर मुड़े, ठुड्डी सटी, लय में चूसना-निगलना।</li><li>शुरुआती भूख-संकेतों पर दिन में 8–12 बार पिलाएँ — रोने का इंतज़ार न करें।</li><li>30 सेकंड से ज़्यादा दर्द, कटकट आवाज़ या लिपस्टिक-सी निप्पल = दोबारा पकड़ बनाएँ।</li><li>दूध उतरना (2–5वाँ दिन): बार-बार पिलाएँ, पहले गुनगुना, बाद में ठंडा, हाथ से नरम करें।</li></ol><div class="bar r">इन गलतियों से बचें</div><ul class="donts"><li>बच्चे के सिर के पीछे न धकेलें — गर्दन-कंधे सँभालें।</li><li>शुरू में प्रशिक्षित सलाह बिना बोतल, चुसनी या निप्पल कवच न दें।</li><li>दूध उतरने या नली जाम पर पिलाना बंद न करें — निकालना ही इलाज है; रोकना बिगाड़ता है।</li></ul><div class="bar t">क्या उम्मीद करें</div><div class="card">पहले 1–2 हफ़्ते बार-बार झुंड में पिलाना पड़ता है, अक्सर शाम को — इससे आपूर्ति बनती है, कमी साबित नहीं होती। ज़्यादातर जोड़ियाँ 3–4 हफ़्तों में लय पा लेती हैं।</div><div class="bar r" style="background:var(--red)">🚨 डॉक्टर को कब दिखाएँ</div><div class="danger"><b>उसी दिन: दर्दभरी लाल छाती के साथ बुखार, 2–3 दिन में न भरती गहरी फटी/खूनी निप्पल, या कम पेशाब-पॉटी के साथ बच्चा पिलाना छोड़े।</b></div></div>
+<div class="footer"><span class="copyline">© 2026 KidGrow Pro • सर्वाधिकार सुरक्षित</span><br>सिर्फ रोगी-शिक्षा के लिए — बिना अनुमति पुनर्मुद्रण न करें</div>
+<div class="pfoot"><span class="copyline">© 2026 KidGrow Pro • सर्वाधिकार सुरक्षित</span> • सिर्फ रोगी-शिक्षा के लिए — बिना अनुमति पुनर्मुद्रण न करें</div>
+<script>
+(function(){try{var raw=localStorage.getItem("kidgrow_pro_v1");if(!raw)return;var db=JSON.parse(raw);var s=(db&&db.settings)||{};if(s.logo){var im=document.getElementById("hospLogo");if(im){im.src=s.logo;im.style.display="block";}var b=document.getElementById("iconBadge");if(b)b.style.display="none";}var nm=s.clinic||"KidGrow Pro";var y=new Date().getFullYear();var els=document.querySelectorAll(".copyline");for(var i=0;i<els.length;i++){els[i].textContent="\u00A9 "+y+" "+nm;}}catch(e){}})();
+</script>
 </body>
 </html>
