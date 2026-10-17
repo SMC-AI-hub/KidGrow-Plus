@@ -160,22 +160,27 @@ function renderCard() {
       <button class="btn btn-o btn-sm" onclick="copyParentSummary()">⧉ Parent summary</button>
     </div>
     <div class="vaxcard">
-      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
-        <div style="flex:1;min-width:220px">
-          <div style="font-size:11px;letter-spacing:1px;color:var(--muted);font-weight:800">DIGITAL IMMUNISATION CARD</div>
-          <h2 style="margin:2px 0 4px">${esc(DB.settings.clinic || "KidGrow Pro Clinic")}</h2>
-          <div style="font-size:13px;color:var(--muted)">${esc(DB.settings.doctor || "")} ${esc(DB.settings.addr ? "· " + DB.settings.addr : "")}</div>
-          <dl class="kv" style="margin-top:10px">
-            <dt>Child</dt><dd><b>${esc(c.name)}</b> · ${c.sex === "boy" ? "Boy" : "Girl"}</dd>
-            <dt>Born</dt><dd>${fmtDate(c.dob)} (${esc(ageStr(ageBetween(c.dob)))})${c.birthWt ? ` · Birth wt ${c.birthWt} kg` : ""}</dd>
-            <dt>Parent</dt><dd>${esc([c.mother, c.father].filter(Boolean).join(" & ") || "—")}${c.phone ? ` · ☎ ${esc(c.phone)}` : ""}</dd>
-            <dt>Blood</dt><dd>${esc(c.blood || "—")}${c.allergy ? ` · ⚠️ ${esc(c.allergy)}` : ""}</dd>
-          </dl>
+      <div class="vax-head">
+        ${(DB.settings.logo || "") ? `<img src="${DB.settings.logo}" alt="Hospital logo">` : ""}
+        <div style="min-width:0">
+          <div class="eyebrow">DIGITAL IMMUNISATION CARD</div>
+          <h2>${esc(DB.settings.clinic || "KidGrow Pro Clinic")}</h2>
+          <div class="sub">${esc(DB.settings.doctor || "")}${DB.settings.addr ? ` · ${esc(DB.settings.addr)}` : ""}${DB.settings.reg ? ` · Reg: ${esc(DB.settings.reg)}` : ""}</div>
         </div>
-        <div class="qrbox" style="text-align:center">${qrSVG(code)}<div style="font-size:11px;color:var(--muted)">Scan to verify / import</div></div>
+        ${(typeof parentVerifyCode === "function") ? `<div class="vax-verify">Verify code<br><b>${esc(parentVerifyCode(c))}</b></div>` : ""}
+      </div>
+      <div class="vax-body">
+        <dl class="kv">
+          <dt>Child</dt><dd><b>${esc(c.name)}</b> · ${c.sex === "boy" ? "Boy" : "Girl"}</dd>
+          <dt>Born</dt><dd>${fmtDate(c.dob)} (${esc(ageStr(ageBetween(c.dob)))})${c.birthWt ? ` · Birth wt ${c.birthWt} kg` : ""}</dd>
+          <dt>Parent</dt><dd>${esc([c.mother, c.father].filter(Boolean).join(" & ") || "—")}${c.phone ? ` · ☎ ${esc(c.phone)}` : ""}</dd>
+          <dt>Blood</dt><dd>${esc(c.blood || "—")}${c.allergy ? ` · ⚠️ ${esc(c.allergy)}` : ""}</dd>
+        </dl>
+        <div class="qrbox" style="text-align:center">${qrSVG(code)}<div style="font-size:11px;color:var(--muted);margin-top:4px">Scan at any KidGrow clinic<br>to verify / import this record</div></div>
       </div>
       <table class="tbl" style="margin-top:10px"><tr><th>Visit</th><th>Vaccine</th><th>Given</th><th>✓</th></tr>${given}${ex}</table>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:6px">${VAX_SCHEDULE_VERSION} schedule · ${esc(DB.settings.doctor || "")} · Generated ${fmtDate(todayISO())}</div>
+      <div class="vax-sign"><div>Doctor signature &amp; seal: ______________</div><div style="margin-left:auto">Date: ${fmtDate(todayISO())}</div></div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center">${VAX_SCHEDULE_VERSION} schedule · ${esc(DB.settings.doctor || "")} · Generated ${fmtDate(todayISO())} · Computer-assisted record — confirm before filing.</div>
     </div>
     <div style="height:16px"></div>
     <div class="card no-print"><h3>📥 Import a record</h3>

@@ -1,5 +1,17 @@
 # Changelog
 
+## v10.19.0 — 2026-10-17 — Immunisation card: logo, layout, useful QR
+- 🏥 Hospital logo now prints on the Digital Immunisation Card
+  (was missing — header showed name/address only).
+- 🎨 Card rebuilt as a proper certificate: letterhead band (logo +
+  clinic + doctor/address/reg), verify-code badge, tidy child-info
+  + QR row, signature + date row, audit footer.
+- 📷 QR made genuinely useful: framed scannable box with plain
+  instructions ("Scan at any KidGrow clinic to verify / import"),
+  plus a human-readable verify code (KG-XXXXXX) as fallback.
+- ✅ Verified with a headless-Chrome A4 screenshot before commit.
+- Tests: 692/692 (486 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.18.0 — 2026-10-17 — Milestones print: due/overdue + interpretation
 - 🖨️ Future age bands no longer print full unmarked tables — one
   compact line each ("not due yet — still has time"). Bands scored

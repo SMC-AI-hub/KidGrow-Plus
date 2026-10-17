@@ -930,6 +930,14 @@ async function main() {
   ok(cssP.includes("#cloudBanner") && cssP.includes("#cloudToast"), "print CSS hides trial banner + toast");
   ok(cssP.includes("@page{size:A4"), "print uses A4 page rule");
   ok(cssP.includes(".brand .logo{width:66px;height:66px") && cssP.includes(".brand .logo:has(img){background:#fff"), "sidebar logo large + clear");
+  const cardPrev = vm.runInContext("JSON.stringify([DB.children,DB.activeId,DB.settings])", sb);
+  vm.runInContext("DB.children=[{id:'vx1',name:'Card Test',sex:'boy',dob:'2025-05-20',mother:'M',vaccines:{BCG:{date:'2025-05-20',brand:'B'}}}]; DB.activeId='vx1'; DB.settings=Object.assign({},DB.settings,{clinic:'Test Hospital',logo:'data:image/png,xx'});", sb);
+  sb.renderCard();
+  const cardHTML = sb.document.getElementById("cardBox").innerHTML;
+  ok(cardHTML.includes("vax-head") && cardHTML.includes("Hospital logo") && cardHTML.includes("vax-verify"), "card prints logo + verify code");
+  ok(cardHTML.includes("Scan at any KidGrow clinic") && cardHTML.includes("<svg"), "card QR scannable + captioned");
+  ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");
+  vm.runInContext("var __cp=" + cardPrev + "; DB.children=__cp[0]; DB.activeId=__cp[1]; DB.settings=__cp[2];", sb);
   ok(sb.msBandVerdict({ A: 0, E: 0, N: 0, total: 6, scored: 0 }, 8, 4).label === "Not due yet", "ms: future unscored band not due yet");
   ok(sb.msBandVerdict({ A: 4, E: 1, N: 1, total: 6, scored: 6 }, 8, 4).label === "Assessed ahead", "ms: future scored band assessed ahead");
   ok(sb.msPrintStatus("N", 3, 4) === "✗ Not attained at appropriate age", "ms: overdue label at right age");
