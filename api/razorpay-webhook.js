@@ -32,20 +32,27 @@ module.exports = async function handler(req, res) {
     };
     const sb = (path, opts) => fetch(process.env.SUPABASE_URL + "/rest/v1/" + path, { headers: svc, ...opts });
 
-    let patch = null;
-    if (name === "subscription.authenticated" || name === "subscription.activated" || name === "subscription.charged") {
+    let patch = null, guardFrom = null;
+    // NOTE: authenticated (mandate ok, first charge pending) stays gated as
+    // "pending" — only activated/charged (money moved) grants active.
+    if (name === "subscription.authenticated") patch = { sub_status: "authenticated" };
+    else if (name === "subscription.activated" || name === "subscription.charged") {
       patch = { sub_status: "active" };
       if (ent.current_end) patch.current_period_end = new Date(ent.current_end * 1000).toISOString();
     } else if (name === "subscription.cancelled") patch = { sub_status: "cancelled" };
     else if (name === "subscription.completed" || name === "subscription.expired") patch = { sub_status: "expired" };
-    else if (name === "payment.failed") patch = { sub_status: "past_due" };
+    // A failed FIRST charge must not grant access: past_due only counts when
+    // the user previously paid (active/cancelled/past_due).
+    else if (name === "payment.failed") { patch = { sub_status: "past_due" }; guardFrom = ["active", "cancelled", "past_due"]; }
 
     if (patch && subId) {
       // find user by razorpay_sub_id
-      const r = await sb("profiles?razorpay_sub_id=eq." + encodeURIComponent(subId) + "&select=id");
+      const r = await sb("profiles?razorpay_sub_id=eq." + encodeURIComponent(subId) + "&select=id,sub_status");
       const rows = await r.json().catch(() => []);
       if (rows[0]) {
-        await sb("profiles?id=eq." + rows[0].id, { method: "PATCH", body: JSON.stringify(patch) });
+        if (!guardFrom || guardFrom.indexOf(rows[0].sub_status) > -1) {
+          await sb("profiles?id=eq." + rows[0].id, { method: "PATCH", body: JSON.stringify(patch) });
+        }
         await sb("subscription_events", { method: "POST", body: JSON.stringify({ user_id: rows[0].id, event: name, razorpay_sub_id: subId, payload: evt }) });
       }
     }

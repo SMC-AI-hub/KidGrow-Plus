@@ -153,6 +153,75 @@ async function main() {
   global.fetch = realFetch;
   ok(rCN._s === 400, "cancel with no subscription rejected");
 
+  // ---- webhook: HMAC signature + billing state machine ----
+  const crypto = require("crypto");
+  const { EventEmitter } = require("events");
+  const webhook = require("../api/razorpay-webhook.js");
+  process.env.RAZORPAY_WEBHOOK_SECRET = "MARKER_WEBHOOK";
+  process.env.SUPABASE_URL = "https://MARKER_URL_xyz.supabase.co";
+  process.env.SUPABASE_SERVICE_KEY = "MARKER_SERVICE_KEY_def456";
+  const mkReq = (body) => {
+    const r = new EventEmitter();
+    r.method = "POST"; r.headers = {};
+    process.nextTick(() => { r.emit("data", Buffer.from(body)); r.emit("end"); });
+    return r;
+  };
+  const seenWh = { patches: [], current: "created" };
+  global.fetch = async (url, opts) => {
+    if (String(url).includes("profiles?razorpay_sub_id")) return J([{ id: "u-wh-1", sub_status: seenWh.current }]);
+    if (String(url).includes("profiles?id=eq.")) { seenWh.patches.push(JSON.parse(opts.body)); return J({}); }
+    return J({});
+  };
+  const runWh = async (event, ent, sigOk) => {
+    const body = JSON.stringify({ event, payload: { subscription: { entity: ent } } });
+    const req = mkReq(body);
+    req.headers["x-razorpay-signature"] = sigOk
+      ? crypto.createHmac("sha256", "MARKER_WEBHOOK").update(Buffer.from(body)).digest("hex") : "bogus";
+    const rr = mkRes();
+    await webhook(req, rr);
+    return rr;
+  };
+  const rW401 = await runWh("subscription.activated", { id: "sub_9" }, false);
+  ok(rW401._s === 401, "webhook rejects bad signature");
+  seenWh.current = "created"; seenWh.patches = [];
+  const rWAuth = await runWh("subscription.authenticated", { id: "sub_9" }, true);
+  ok(rWAuth._s === 200 && seenWh.patches.length === 1 && seenWh.patches[0].sub_status === "authenticated", "webhook: authenticated stays gated (not active)");
+  seenWh.current = "authenticated"; seenWh.patches = [];
+  const rWAct = await runWh("subscription.activated", { id: "sub_9", current_end: 1763078400 }, true);
+  ok(rWAct._s === 200 && seenWh.patches[0].sub_status === "active" && !!seenWh.patches[0].current_period_end, "webhook: activated grants active + period end");
+  seenWh.current = "created"; seenWh.patches = [];
+  const rWFail = await runWh("payment.failed", { id: "pay_1", subscription_id: "sub_9" }, true);
+  ok(rWFail._s === 200 && seenWh.patches.length === 0, "webhook: failed FIRST charge grants nothing");
+  seenWh.current = "active"; seenWh.patches = [];
+  const rWFail2 = await runWh("payment.failed", { id: "pay_2", subscription_id: "sub_9" }, true);
+  ok(rWFail2._s === 200 && seenWh.patches.length === 1 && seenWh.patches[0].sub_status === "past_due", "webhook: failed recurring charge -> past_due");
+
+  // ---- create-subscription ----
+  const createSub = require("../api/create-subscription.js");
+  process.env.SUPABASE_ANON_KEY = "MARKER_ANON_KEY_abc123";
+  process.env.RAZORPAY_KEY_ID = "rzp_MARKER_KEY";
+  process.env.RAZORPAY_KEY_SECRET = "MARKER_SECRET_ghi789";
+  process.env.RAZORPAY_PLAN_ID = "plan_MARKER";
+  global.fetch = async (url, opts) => {
+    if (String(url).includes("/auth/v1/user")) return J({ id: "u-new-1", email: "new@clinic.in" });
+    if (String(url).includes("/rest/v1/profiles") && (!opts || !opts.method)) return J([{ razorpay_customer_id: "" }]);
+    if (String(url).includes("/rest/v1/profiles")) return J({});
+    if (String(url).includes("/customers")) return J({ id: "cust_new" });
+    if (String(url).includes("/subscriptions")) return J({ id: "sub_new" });
+    return J({});
+  };
+  const rS405 = mkRes();
+  await createSub({ method: "GET", headers: {} }, rS405);
+  ok(rS405._s === 405, "create-subscription POST only");
+  const rS401 = mkRes();
+  await createSub({ method: "POST", headers: {} }, rS401);
+  ok(rS401._s === 401, "create-subscription needs session");
+  const rS = mkRes();
+  await createSub({ method: "POST", headers: { authorization: "Bearer USER_JWT" } }, rS);
+  global.fetch = realFetch;
+  ok(rS._s === 200 && rS._b.subscription_id === "sub_new", "create-subscription provisions sub");
+  ok(!/MARKER_SECRET/.test(JSON.stringify(rS._b)), "create-subscription leaks no secret");
+
   for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
   Object.assign(process.env, saved);
 

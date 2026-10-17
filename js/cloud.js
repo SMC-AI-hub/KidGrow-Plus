@@ -17,7 +17,7 @@ var PLAN_PRICE = CFG.PLAN_PRICE || "";
 var TRIAL_DAYS = CFG.TRIAL_DAYS || 14;
 var GRACE_MS = (CFG.OFFLINE_GRACE_DAYS || 7) * 864e5;
 var STATUS_KEY = "kidgrow_cloud_status", HASH_KEY = "kidgrow_last_push_hash";
-var APP_VER = "v10";
+var APP_VER = "v10.16";
 
 var sb = null, session = null, profile = null;
 var pushTimer = null, suspendPush = false, rzpLoading = null;
@@ -52,6 +52,12 @@ function accessFor(p, cache, nowMs) {
       if (!pe || pe > nowMs - 3 * 864e5) return { ok: true, reason: "active" };
     }
     if (p.sub_status === "past_due") return { ok: true, reason: "past_due" };
+    // Cancelled at cycle end: paid time is honoured till current_period_end.
+    if (p.sub_status === "cancelled") {
+      var ce = p.current_period_end ? new Date(p.current_period_end).getTime() : 0;
+      if (ce > nowMs) return { ok: true, reason: "cancelled", daysLeft: Math.max(0, Math.ceil((ce - nowMs) / 864e5)) };
+      return { ok: false, reason: "expired" };
+    }
     var tl = trialLeft(p, nowMs);
     if (tl > 0 && (p.sub_status === "trialing" || p.sub_status === "created" || p.sub_status === "authenticated" || p.sub_status === "none" || !p.sub_status))
       return { ok: true, reason: "trial", daysLeft: tl };
@@ -115,6 +121,7 @@ function renderBanner(a) {
   var msg = "";
   if (a.reason === "trial") msg = "🎁 Free trial: " + a.daysLeft + " day" + (a.daysLeft === 1 ? "" : "s") + " left — <a href='#' onclick='Cloud.subscribe();return false' style='color:#fff;font-weight:700'>Subscribe</a>";
   else if (a.reason === "past_due") msg = "⚠️ Last payment failed — <a href='#' onclick='Cloud.subscribe();return false' style='color:#fff;font-weight:700'>update payment</a> to stay subscribed.";
+  else if (a.reason === "cancelled") msg = "💎 Subscription cancelled — access continues" + ((a.daysLeft != null) ? " for " + a.daysLeft + " more day" + (a.daysLeft === 1 ? "" : "s") : "") + " — <a href='#' onclick='Cloud.subscribe();return false' style='color:#fff;font-weight:700'>Resubscribe</a>";
   else if (a.reason === "grace") msg = "📴 Offline — using your last verified subscription. Will re-check when online.";
   if (!msg) return;
   var b = document.createElement("div");
@@ -340,6 +347,7 @@ function billStatusLabel(a, p) {
   if (!a || !a.ok) return (a && a.reason === "pending") ? "Completing payment…" : "Expired";
   if (a.reason === "active") return "Active" + ((p && p.current_period_end) ? " · renews " + fmtDT(p.current_period_end) : "");
   if (a.reason === "past_due") return "Past due — update payment";
+  if (a.reason === "cancelled") return "Cancelled · access till " + fmtDT(p && p.current_period_end);
   if (a.reason === "trial") return "Free trial" + ((a.daysLeft != null) ? " · " + a.daysLeft + " day(s) left" : "");
   if (a.reason === "grace") return "Offline grace";
   return a.reason || "";
@@ -363,8 +371,8 @@ function billInfoHTML(info, a) {
       + '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">Update payment</button> ';
   } else if (!a || !a.ok) {
     body += '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">Subscribe now</button> ';
-  } else if (a.reason === "trial") {
-    body += '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">Subscribe now</button> ';
+  } else if (a.reason === "trial" || a.reason === "cancelled") {
+    body += '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">' + (a.reason === "cancelled" ? "Resubscribe" : "Subscribe now") + "</button> ";
   }
   if (info.subscription && (a.ok && (a.reason === "active" || a.reason === "past_due"))) {
     body += '<button class="btn btn-o btn-sm" onclick="Cloud.cancelSub()">Cancel subscription</button> ';
@@ -377,7 +385,7 @@ function billInfoHTML(info, a) {
     body += "<table class=\"tbl\"><tr><th>Date</th><th>Amount</th><th>Status</th><th></th></tr>" + info.invoices.map(function (v) {
       return "<tr><td>" + esc(fmtDT(v.date)) + "</td><td>" + esc(fmtINR(v.amount)) + "</td>"
         + "<td>" + (v.status === "paid" ? '<span class="badge b-green">paid</span>' : v.status === "failed" ? '<span class="badge b-red">failed</span>' : esc(v.status || "—")) + "</td>"
-        + "<td>" + (v.short_url ? '<a href="' + esc(v.short_url) + '" target="_blank" rel="noopener">Download</a>' : "—") + "</td></tr>";
+        + "<td>" + (v.short_url ? '<a href="' + esc(v.short_url) + '" target="_blank" rel="noopener">Receipt</a>' : "—") + "</td></tr>";
     }).join("") + "</table>";
   }
   return body + "</div>";
