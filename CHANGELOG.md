@@ -1,5 +1,17 @@
 # Changelog
 
+## v10.11.2 — 2026-10-17 — Rich parent handouts + dose strip
+- 📄 Handouts rebuilt from plain bullets into color-coded sections: ℹ️ What's
+  happening · ✅ numbered do-steps · 🚫 myth-busting don'ts · 🕐 what to expect
+  · 🚨 red flags — all 7 topics complete in EN/TA/HI, with clinic letterhead
+  (logo, doctor, phone), child name/age/weight strip, and advice footer.
+- ⚖️ NEW: weight-based paracetamol dose strip on the fever handout — pulls the
+  child's latest weight and prints exact mg + syrup/drops mL (confirm w/ doctor).
+- 🤮 NEW topic: vomiting home care (ORS sips schedule, position, red flags).
+- 🐛 Fixed: play-prescription age band always showed "6 years+" (NaN month math)
+  — now auto-picks the correct band from the child's real age.
+- Tests: 639/639 (442 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.11.1 — 2026-10-17 — Color printing + ink-saver toggle
 - 🖨️🎨 Printouts now keep their color (badges, charts, banners) — the print CSS
   forces exact color reproduction so the browser no longer strips backgrounds.
