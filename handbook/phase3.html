@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infant Feeding Handbook v2 — Phase 3 (Chapters 6–9)</title>
+<style>
+  :root{--teal:#0e6b6e;--teal-d:#094a4c;--amber:#b45309;--rose:#be123c;--ink:#1f2937;--mut:#6b7280;--bg:#f8fafc;--card:#ffffff;--line:#e5e7eb;--green:#15803d;--blue:#1d4ed8;--violet:#6d28d9}
+  *{box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);margin:0;line-height:1.65}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px 60px}
+  header.cover{background:linear-gradient(135deg,#6d28d9,#4c1d95 60%,#1e1b4b);color:#fff;padding:52px 34px;border-radius:0 0 18px 18px}
+  header.cover h1{margin:.2em 0;font-size:2em;line-height:1.25}
+  header.cover p.sub{font-size:1.05em;opacity:.92;max-width:70ch}
+  .badge{display:inline-block;background:#fbbf24;color:#451a03;font-weight:700;border-radius:999px;padding:4px 14px;font-size:.85em;margin-right:8px}
+  .badge.ghost{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.4)}
+  nav.toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:22px 0}
+  nav.toc h2{margin-top:0;font-size:1.1em;color:#4c1d95}
+  nav.toc ol{margin:6px 0;padding-left:22px;columns:2}
+  nav.toc li{margin:4px 0}
+  section.chapter{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:26px 28px;margin:26px 0}
+  section.chapter>h2{color:#4c1d95;border-bottom:3px solid var(--violet);padding-bottom:8px;margin-top:0}
+  h3{color:#5b21b6;margin-top:1.4em}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.95em}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:#f5f3ff;color:#5b21b6}
+  tr:nth-child(even) td{background:#f9fafb}
+  .fig{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;margin:18px 0}
+  .fig svg{width:100%;height:auto;display:block}
+  .cap{font-size:.88em;color:var(--mut);margin:10px 4px 2px}
+  .cap b{color:var(--ink)}
+  .key{background:#ecfdf5;border:1px solid #6ee7b7;border-left:6px solid var(--green);border-radius:10px;padding:12px 16px;margin:16px 0}
+  .warn{background:#fffbeb;border:1px solid #fcd34d;border-left:6px solid var(--amber);border-radius:10px;padding:12px 16px;margin:16px 0}
+  .danger{background:#fef2f2;border:1px solid #fca5a5;border-left:6px solid var(--rose);border-radius:10px;padding:12px 16px;margin:16px 0}
+  .hcp{background:#eff6ff;border:1px solid #93c5fd;border-left:6px solid var(--blue);border-radius:10px;padding:12px 16px;margin:16px 0}
+  .key b.t,.warn b.t,.danger b.t,.hcp b.t{display:block;margin-bottom:4px}
+  ul.tight li,ol.tight li{margin:5px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .mini{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .mini h4{margin:.2em 0 .4em;color:#4c1d95}
+  footer{color:var(--mut);font-size:.85em;text-align:center;margin-top:30px}
+  @media print{body{background:#fff}section.chapter,nav.toc{break-inside:avoid}header.cover{border-radius:0}}
+  @media(max-width:760px){nav.toc ol{columns:1}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="cover">
+  <span class="badge">PHASE 3 OF 4</span><span class="badge ghost">Chapters 6–9</span>
+  <h1>Infant Feeding: A Practical Handbook<br>for Families &amp; Frontline Health Workers</h1>
+  <p class="sub">Phase 3 covers <b>preterm/LBW feeding</b> (KMC, mother's milk, fortification), <b>formula feeding</b> (types, safe preparation, responsive bottles), <b>complementary feeding 6–24 months</b> (timing, textures, meal building), and <b>growth monitoring</b> (measuring, chart reading, faltering). Continues from Phase 1 (Evidence Map + Ch.1–2) and Phase 2 (Ch.3–5). Figures in this phase: <b>8 figures (all original SVG)</b>.</p>
+</header>
+
+<nav class="toc">
+  <h2>Contents — Phase 3</h2>
+  <ol>
+    <li><a href="#ch6">Chapter 6 — Preterm &amp; Low-Birth-Weight Feeding</a></li>
+    <li><a href="#ch7">Chapter 7 — Formula Feeding: Safe &amp; Responsive</a></li>
+    <li><a href="#ch8">Chapter 8 — Complementary Feeding 6–24 Months</a></li>
+    <li><a href="#ch9">Chapter 9 — Growth Monitoring: Measure, Plot, Act</a></li>
+  </ol>
+  <p style="font-size:.9em;color:var(--mut)">Evidence base: see Phase 1 Evidence Map (rows E4–E12: WHO-2022-preterm, ESPGHAN-2022, IAP-QRG-2026, FSSAI 2020/2022, WHO-2023-CF, WHO growth standards). Honesty rule continues: no invented label values, nutrient tables, or brand claims — formula specifics stay as verification checklists.</p>
+</nav>
+
+<!-- ================= CHAPTER 6 ================= -->
+<section class="chapter" id="ch6">
+<h2>Chapter 6 — Preterm &amp; Low-Birth-Weight Feeding</h2>
+<p>Small babies lose heat and fluids fast, tire at the breast, and need <b>more protein and minerals per kg</b> than term babies — yet mother's own milk (MOM) remains their best feed, with donor milk next. This chapter maps the standard journey; exact unit protocols vary, and NICU staff decisions always lead.</p>
+
+<h3>6.1 Who is "small"? — quick definitions</h3>
+<table>
+<tr><th>Term</th><th>Definition</th><th>Feeding implication</th></tr>
+<tr><td><b>Preterm</b></td><td>Born &lt;37 weeks (late 34–&lt;37; moderate 32–&lt;34; very 28–&lt;32; extremely &lt;28)</td><td>The earlier, the weaker the suck–swallow–breathe coordination</td></tr>
+<tr><td><b>LBW / VLBW / ELBW</b></td><td>&lt;2500 g / &lt;1500 g / &lt;1000 g</td><td>VLBW/ELBW need scheduled tube/cup feeds + likely fortification</td></tr>
+<tr><td><b>SGA / AGA</b></td><td>Small / appropriate for gestational age</td><td>SGA babies have fewer reserves — closer monitoring, longer fortification</td></tr>
+</table>
+
+<h3>6.2 The standard journey — one map</h3>
+<div class="fig">
+<svg viewBox="0 0 1080 330" role="img" aria-label="Preterm feeding pathway: birth with immediate KMC and colostrum, early milk expression, enteral feeds progressing from tube to cup to breast, fortification decision for under 32 weeks or 1500 grams, discharge with home KMC and follow-up.">
+  <g font-family="Segoe UI,Arial" font-size="13.5">
+    <text x="540" y="26" text-anchor="middle" font-weight="bold" font-size="19" fill="#4c1d95">Preterm / LBW feeding pathway (mother's milk at every step)</text>
+    <g>
+      <rect x="8" y="50" width="160" height="150" rx="10" fill="#f5f3ff" stroke="#6d28d9" stroke-width="2"/>
+      <text x="88" y="78" text-anchor="middle" font-weight="bold" fill="#5b21b6">1. AT BIRTH</text>
+      <text x="88" y="102" text-anchor="middle">Immediate KMC</text>
+      <text x="88" y="122" text-anchor="middle">(even tiny babies,</text>
+      <text x="88" y="142" text-anchor="middle">if stable)</text>
+      <text x="88" y="168" text-anchor="middle" font-weight="bold">Colostrum oral</text>
+      <text x="88" y="188" text-anchor="middle" font-weight="bold">care from day 1</text>
+    </g>
+    <path d="M168 125 h22 m0 0 l-9 -8 M190 125 l-9 8" stroke="#6d28d9" stroke-width="3" fill="none"/>
+    <g>
+      <rect x="192" y="50" width="160" height="150" rx="10" fill="#f5f3ff" stroke="#6d28d9" stroke-width="2"/>
+      <text x="272" y="78" text-anchor="middle" font-weight="bold" fill="#5b21b6">2. HOURS 1–6</text>
+      <text x="272" y="102" text-anchor="middle">Mother starts</text>
+      <text x="272" y="122" text-anchor="middle" font-weight="bold">expressing early</text>
+      <text x="272" y="142" text-anchor="middle">+ often (8–12×/day,</text>
+      <text x="272" y="162" text-anchor="middle">incl. night; Ch.4)</text>
+      <text x="272" y="188" text-anchor="middle">Hospital-grade pump</text>
+    </g>
+    <path d="M352 125 h22 m0 0 l-9 -8 M374 125 l-9 8" stroke="#6d28d9" stroke-width="3" fill="none"/>
+    <g>
+      <rect x="376" y="50" width="190" height="150" rx="10" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+      <text x="471" y="78" text-anchor="middle" font-weight="bold" fill="#166534">3. EARLY ENTERAL</text>
+      <text x="471" y="102" text-anchor="middle">Trophic feeds fast —</text>
+      <text x="471" y="122" text-anchor="middle">even &lt;32 wk / &lt;1.5 kg</text>
+      <text x="471" y="142" text-anchor="middle">Tube → cup/paladai →</text>
+      <text x="471" y="162" text-anchor="middle" font-weight="bold">breast as soon</text>
+      <text x="471" y="182" text-anchor="middle" font-weight="bold">as cues allow</text>
+    </g>
+    <path d="M566 125 h22 m0 0 l-9 -8 M588 125 l-9 8" stroke="#6d28d9" stroke-width="3" fill="none"/>
+    <g>
+      <rect x="590" y="50" width="170" height="150" rx="10" fill="#fef9c3" stroke="#a16207" stroke-width="2"/>
+      <text x="675" y="78" text-anchor="middle" font-weight="bold" fill="#854d0e">4. FORTIFY?</text>
+      <text x="675" y="102" text-anchor="middle">Only if &lt;32 wk</text>
+      <text x="675" y="122" text-anchor="middle"or &lt;1500 g</text>
+      <text x="675" y="142" text-anchor="middle">(see Fig 6.3)</text>
+      <text x="675" y="168" text-anchor="middle" font-weight="bold">NOT routine for</text>
+      <text x="675" y="188" text-anchor="middle" font-weight="bold">bigger babies</text>
+    </g>
+    <path d="M760 125 h22 m0 0 l-9 -8 M782 125 l-9 8" stroke="#6d28d9" stroke-width="3" fill="none"/>
+    <g>
+      <rect x="784" y="50" width="288" height="150" rx="10" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="928" y="78" text-anchor="middle" font-weight="bold" fill="#1e40af">5. DISCHARGE → HOME</text>
+      <text x="928" y="102" text-anchor="middle">Feeding well + gaining + warm</text>
+      <text x="928" y="122" text-anchor="middle">Continue KMC at home (§6.3)</text>
+      <text x="928" y="142" text-anchor="middle">Supplements as prescribed (§6.7)</text>
+      <text x="928" y="162" text-anchor="middle">Close follow-up: weight, ROP,</text>
+      <text x="928" y="182" text-anchor="middle">hearing, development checks</text>
+    </g>
+    <rect x="8" y="220" width="1064" height="92" rx="10" fill="#f0fdfa" stroke="#0e6b6e"/>
+    <text x="540" y="250" text-anchor="middle" font-weight="bold" font-size="15" fill="#0f4c4e">Target intakes clinicians aim for (ESPGHAN 2022): ≈115–140 kcal/kg/day (up to 160 if needed) • protein 3.5–4.0 g/kg/day (up to 4.5) • protein–energy ratio 2.8–3.6 g/100 kcal</text>
+    <text x="540" y="278" text-anchor="middle" font-size="13" fill="#115e59">Scheduled (e.g. 3-hourly) feeds below ~34 weeks; cue-based feeding once coordinated. Volumes advance per unit protocol — families track intake/output as taught.</text>
+    <text x="540" y="300" text-anchor="middle" font-size="13" fill="#115e59">Donor human milk is the recommended fallback whenever mother's own milk is unavailable.</text>
+  </g>
+</svg>
+<p class="cap"><b>Fig 6.1 — Preterm/LBW feeding pathway.</b> Mother's milk leads at every stage; fortification is a targeted add-on for the smallest babies, not a default. (Evidence Map rows E4–E7.)</p>
+</div>
+
+<h3>6.3 Kangaroo Mother Care — position + dose</h3>
+<div class="fig">
+<svg viewBox="0 0 1080 360" role="img" aria-label="Kangaroo mother care diagram: baby upright skin-to-skin on chest, head turned, legs frogged, snug binder, cap on. Dose 8 to 24 hours daily. Benefits listed.">
+  <g font-family="Segoe UI,Arial" font-size="14">
+    <rect x="8" y="8" width="620" height="344" rx="12" fill="#fdf2f8" stroke="#be185d" stroke-width="2"/>
+    <text x="318" y="38" text-anchor="middle" font-weight="bold" font-size="17" fill="#831843">KMC position — 5 checks</text>
+    <path d="M120 300 L200 120 L330 120 L410 300" fill="none" stroke="#831843" stroke-width="4"/>
+    <circle cx="265" cy="95" r="22" fill="none" stroke="#831843" stroke-width="4"/>
+    <ellipse cx="265" cy="200" rx="48" ry="70" fill="#f9a8d4" stroke="#831843" stroke-width="3"/>
+    <circle cx="265" cy="150" r="20" fill="#fbcfe8" stroke="#831843" stroke-width="3"/>
+    <path d="M217 200 h96 M217 230 h96" stroke="#831843" stroke-width="2"/>
+    <path d="M245 268 q20 14 40 0" fill="none" stroke="#831843" stroke-width="3"/>
+    <text x="430" y="120">1. <b>Upright</b> on bare chest</text>
+    <text x="430" y="150">2. <b>Skin-to-skin</b> (nappy + cap only)</text>
+    <text x="430" y="180">3. <b>Head turned</b>, airway open,</text>
+    <text x="448" y="202">slight neck extension</text>
+    <text x="430" y="232">4. <b>Legs frogged</b>, arms flexed</text>
+    <text x="430" y="262">5. <b>Binder snug</b> — baby can't</text>
+    <text x="448" y="284">slip; mother can breathe easily</text>
+    <text x="120" y="335" font-weight="bold" fill="#831843">🧢 Cap ALWAYS on • 👀 Face visible • 😮‍💨 Breathing easy, pink &amp; warm</text>
+    <rect x="640" y="8" width="432" height="344" rx="12" fill="#f0fdfa" stroke="#0e6b6e" stroke-width="2"/>
+    <text x="856" y="38" text-anchor="middle" font-weight="bold" font-size="17" fill="#0f4c4e">Dose &amp; benefits</text>
+    <text x="856" y="78" text-anchor="middle" font-weight="bold" font-size="22" fill="#0f4c4e">8 → 24 h / day</text>
+    <text x="856" y="102" text-anchor="middle" font-size="13">Start immediately when stable;</text>
+    <text x="856" y="122" text-anchor="middle" font-size="13">longer is better; fathers can do KMC too</text>
+    <line x1="670" y1="140" x2="1042" y2="140" stroke="#99f6e4"/>
+    <text x="670" y="168">🌡️ Warmth — stabilises temperature</text>
+    <text x="670" y="196">🤱 Milk — boosts supply + feeding cues</text>
+    <text x="670" y="224">🛡️ Infection — fewer hospital infections</text>
+    <text x="670" y="252">⚖️ Growth — better weight gain</text>
+    <text x="670" y="280">💓 Bonding — calmer baby, confident parents</text>
+    <text x="670" y="312" font-size="12.5" fill="#475569">Continue KMC at home after discharge</text>
+    <text x="670" y="332" font-size="12.5" fill="#475569">until baby outgrows it (~40 wk / 2.5 kg).</text>
+  </g>
+</svg>
+<p class="cap"><b>Fig 6.2 — Kangaroo Mother Care.</b> WHO 2022: start immediately and continue 8–24 hours daily. KMC is treatment, not a "nice extra" — prescribe hours like a medicine.</p>
+</div>
+
+<h3>6.4 Mother's milk for the small baby — practical points</h3>
+<ul class="tight">
+  <li><b>Colostrum first:</b> drops by spoon/syringe for oral care + first feeds from day 1 — immune protection the NICU cannot replicate.</li>
+  <li><b>Express early and often:</b> within hours of birth, 8–12 times/24 h including night (see Ch.4). Early + frequent expression is the strongest predictor of later milk adequacy.</li>
+  <li><b>Non-nutritive sucking</b> at the emptied breast during tube feeds builds coordination and supply.</li>
+  <li><b>Transition ladder:</b> tube → cup/paladai/spoon → direct breast as rooting, latch, and stamina mature (often around 32–34 weeks, varies widely).</li>
+  <li><b>Donor milk:</b> pasteurized donor human milk from a milk bank is the recommended fallback when MOM is insufficient — ask the unit; informal sharing is discouraged (§4.9).</li>
+</ul>
+
+<h3>6.5 Fortification — targeted, not routine</h3>
+<div class="fig">
+<svg viewBox="0 0 1080 300" role="img" aria-label="Fortification decision chain: who under 32 weeks or 1500 grams, when tolerating 40 to 100 ml per kg per day, what human milk fortifier 1 gram per 25 ml, until 40 weeks if AGA or 52 weeks if SGA.">
+  <g font-family="Segoe UI,Arial" font-size="14">
+    <text x="540" y="28" text-anchor="middle" font-weight="bold" font-size="19" fill="#4c1d95">Human milk fortification — the 4-gate decision (IAP QRG 2026)</text>
+    <g><rect x="8" y="50" width="240" height="170" rx="10" fill="#f5f3ff" stroke="#6d28d9" stroke-width="2"/>
+    <text x="128" y="80" text-anchor="middle" font-weight="bold" font-size="16" fill="#5b21b6">GATE 1: WHO?</text>
+    <text x="128" y="110" text-anchor="middle" font-weight="bold" font-size="18">&lt;32 weeks</text>
+    <text x="128" y="134" text-anchor="middle">OR</text>
+    <text x="128" y="158" text-anchor="middle" font-weight="bold" font-size="18">&lt;1500 g</text>
+    <text x="128" y="188" text-anchor="middle" font-size="12.5">Bigger babies: usually</text>
+    <text x="128" y="206" text-anchor="middle" font-size="12.5">unfortified MOM suffices</text></g>
+    <path d="M248 135 h20 m0 0 l-9 -8 M268 135 l-9 8" stroke="#6d28d9" stroke-width="3" fill="none"/>
+    <g><rect x="270" y="50" width="240" height="170" rx="10" fill="#f5f3ff" stroke="#6d28d9" stroke-width="2"/>
+    <text x="390" y="80" text-anchor="middle" font-weight="bold" font-size="16" fill="#5b21b6">GATE 2: WHEN?</text>
+    <text x="390" y="110" text-anchor="middle">Tolerating feeds at</text>
+    <text x="390" y="138" text-anchor="middle" font-weight="bold" font-size="18">40–100 mL/kg/d</text>
+    <text x="390" y="168" text-anchor="middle" font-size="12.5">(most Indian units</text>
+    <text x="390" y="186" text-anchor="middle" font-size="12.5">start at ~100)</text>
+    <text x="390" y="206" text-anchor="middle" font-size="12.5">Stable, no NEC worry</text></g>
+    <path d="M510 135 h20 m0 0 l-9 -8 M530 135 l-9 8" stroke="#6d28d9" stroke-width="3" fill="none"/>
+    <g><rect x="532" y="50" width="240" height="170" rx="10" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <text x="652" y="80" text-anchor="middle" font-weight="bold" font-size="16" fill="#166534">GATE 3: WHAT?</text>
+    <text x="652" y="110" text-anchor="middle" font-weight="bold" font-size="17">HMF 1 g / 25 mL</text>
+    <text x="652" y="134" text-anchor="middle" font-weight="bold" font-size="17">of EBM</text>
+    <text x="652" y="164" text-anchor="middle" font-size="12.5">Mixed fresh per unit</text>
+    <text x="652" y="182" text-anchor="middle" font-size="12.5">protocol; monitor feeds,</text>
+    <text x="652" y="200" text-anchor="middle" font-size="12.5">stools, growth</text></g>
+    <path d="M772 135 h20 m0 0 l-9 -8 M792 135 l-9 8" stroke="#6d28d9" stroke-width="3" fill="none"/>
+    <g><rect x="794" y="50" width="278" height="170" rx="10" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+    <text x="933" y="80" text-anchor="middle" font-weight="bold" font-size="16" fill="#1e40af">GATE 4: UNTIL?</text>
+    <text x="933" y="110" text-anchor="middle" font-weight="bold" font-size="17">40 wk PMA if AGA</text>
+    <text x="933" y="134" text-anchor="middle" font-weight="bold" font-size="17">52 wk PMA if SGA</text>
+    <text x="933" y="164" text-anchor="middle" font-size="12.5">Then review: growth,</text>
+    <text x="933" y="182" text-anchor="middle" font-size="12.5">anaemia, bone health;</text>
+    <text x="933" y="200" text-anchor="middle" font-size="12.5">doctor decides stop/continue</text></g>
+    <rect x="8" y="232" width="1064" height="56" rx="10" fill="#fffbeb" stroke="#b45309"/>
+    <text x="540" y="266" text-anchor="middle" font-weight="bold" fill="#92400e">WHO 2022: do NOT fortify routinely — fortification is considered for babies &lt;32 wk / &lt;1.5 kg. Late preterm + term LBW usually thrive on unfortified breast milk.</text>
+  </g>
+</svg>
+<p class="cap"><b>Fig 6.3 — Fortification decision chain.</b> PMA = post-menstrual age. Exact HMF brand/dose follows the unit's protocol and growth response — this figure gives the standard gates, not a prescription.</p>
+</div>
+
+<h3>6.6 Supplements &amp; follow-up (doctor-led)</h3>
+<ul class="tight">
+  <li><b>Iron, vitamin D, calcium–phosphorus, multivitamin:</b> preterm babies need supplements per unit protocol — doses and timing are individualized; families should never start/stop on their own.</li>
+  <li><b>Follow-up is multi-system:</b> weight/length/HC (corrected age, §9.7), eye (ROP screening on schedule — never miss), hearing, anaemia, bone health, neurodevelopment.</li>
+  <li><b>Immunize on chronological age</b> (not corrected) per national schedule, unless the doctor defers a dose.</li>
+</ul>
+
+<h3>6.7 Discharge readiness checklist</h3>
+<table>
+<tr><th>Domain</th><th>Ready when…</th></tr>
+<tr><td>Feeding</td><td>Taking full feeds by breast/cup, gaining weight steadily (typically ≥15 g/kg/day in hospital phase)</td></tr>
+<tr><td>Warmth</td><td>Maintains temperature in KMC / open cot; family confident with KMC positioning</td></tr>
+<tr><td>Medicines</td><td>Supplements, doses, and danger signs explained + written down in the family's language</td></tr>
+<tr><td>Follow-up</td><td>Next weight check + ROP/hearing dates fixed; transport/ASHAs linkage arranged</td></tr>
+</table>
+<div class="danger"><b class="t">🚨 Take a discharged preterm baby back SAME DAY if:</b> refuses ≥2 consecutive feeds • unusually sleepy/floppy • cold to touch despite KMC • fast/noisy breathing or pauses • blue lips • vomiting everything • blood in stool • fewer wet nappies than taught • fever or hypothermia.</div>
+
+<div class="key"><b class="t">✅ Key messages — Chapter 6</b>
+<ol class="tight">
+<li>Immediate KMC, 8–24 h/day — it is treatment.</li>
+<li>Mother's milk from day 1: colostrum → early expression → enteral feeds → breast.</li>
+<li>Donor milk fills gaps; fortification is only for &lt;32 wk / &lt;1500 g per protocol.</li>
+<li>Supplements + ROP/hearing/growth follow-up are non-negotiable.</li>
+<li>Discharge with a written feeding + danger-sign plan; danger signs → same-day return.</li>
+</ol></div>
+<div class="hcp"><b class="t">👩‍⚕️ For the health worker</b>Counsel the mother before discharge using teach-back: KMC hours, feed volumes/method, supplement doses, and three danger signs she can name. Link every discharged LBW baby to the ASHA/ANM for home weight checks in week 1.</div>
+</section>
+
+<!-- ================= CHAPTER 7 ================= -->
+<section class="chapter" id="ch7">
+<h2>Chapter 7 — Formula Feeding: Safe &amp; Responsive</h2>
+<p>Some babies need formula — medically, or by informed family choice. This chapter is judgment-free and safety-first: which type (doctor decides), how to prepare it without making the baby sick, and how to bottle-feed responsively. Honesty rule: formula composition is regulated (FSSAI 2020); <b>no brand claims or invented nutrient values appear here</b> — always read the actual label.</p>
+
+<h3>7.1 When formula enters the picture</h3>
+<ul class="tight">
+  <li><b>Rare medical reasons:</b> e.g. classic galactosaemia, some maternal medicines/illnesses (doctor decides — see Ch.13 for the full list).</li>
+  <li><b>Informed choice:</b> adoption, surrogacy, maternal separation without EBM access, or a mother's supported decision after lactation help.</li>
+  <li><b>Supplementation:</b> temporary top-ups while fixing technique/supply — with a plan to return to exclusive breastfeeding where possible (see Ch.3–5 first).</li>
+</ul>
+<div class="warn"><b class="t">⚠️ What formula cannot copy (see Ch.2)</b>Antibodies, HMOs, live cells, enzymes, and adaptive composition. That is why every formula decision deserves skilled counselling first — and why mixed feeding should protect breastfeeding rather than replace it by default.</div>
+
+<h3>7.2 Formula types — doctor chooses, family verifies the label</h3>
+<table>
+<tr><th>Type</th><th>Used for</th><th>Check on the label</th></tr>
+<tr><td><b>Standard term infant formula</b></td><td>Healthy term babies needing a breast-milk substitute</td><td>"Infant formula" + age indication (from birth)</td></tr>
+<tr><td><b>Follow-up formula</b></td><td>Older infants (6+ months) as part of a mixed diet</td><td>Not for use below the stated age as sole feed</td></tr>
+<tr><td><b>Preterm / LBW formula</b></td><td>Small babies per NICU prescription</td><td>Hospital-initiated; review date for switching</td></tr>
+<tr><td><b>Lactose-free</b></td><td>Diagnosed lactose intolerance (uncommon in infants)</td><td>Doctor-diagnosed indication — not for routine fussiness</td></tr>
+<tr><td><b>Extensively hydrolysed / amino-acid</b></td><td>Diagnosed cow's-milk allergy, malabsorption</td><td>Prescription only; never self-switch for "colic"</td></tr>
+<tr><td><b>Soy formula</b></td><td>Very limited indications (e.g. galactosaemia)</td><td>Not routinely recommended for preterm/allergy use</td></tr>
+</table>
+<div class="hcp"><b class="t">👩‍⚕️ Label-verification checklist (teach every formula family)</b>
+<ol class="tight">
+<li>Right product + age range? (Infant vs follow-up — they differ.)</li>
+<li>Exact water volume + exact level scoops? (Use ONLY the enclosed scoop.)</li>
+<li>Manufacturing + expiry dates, intact seal, correct storage after opening (usually cool/dry, use within ~4 weeks — read the pack)?</li>
+<li>Preparation water temperature and use-within time as printed?</li>
+<li>Batch number noted (in case of recall/illness)?</li>
+</ol></div>
+
+<h3>7.3 Safe preparation — the 6-step sequence</h3>
+<div class="fig">
+<svg viewBox="0 0 1080 340" role="img" aria-label="Six safe formula preparation steps: sterilize, water at 70 degrees or hotter, exact scoops, mix and cool, wrist test and feed within 2 hours, discard leftovers. Never panel included.">
+  <g font-family="Segoe UI,Arial" font-size="13.5">
+    <text x="540" y="26" text-anchor="middle" font-weight="bold" font-size="19" fill="#4c1d95">Safe formula preparation — every feed, every time</text>
+    <g><circle cx="70" cy="85" r="30" fill="#6d28d9"/><text x="70" y="96" text-anchor="middle" fill="#fff" font-weight="bold" font-size="24">1</text>
+    <text x="70" y="135" text-anchor="middle" font-weight="bold">CLEAN</text><text x="70" y="155" text-anchor="middle">Wash hands;</text><text x="70" y="174" text-anchor="middle">sterilize bottle,</text><text x="70" y="193" text-anchor="middle">teat, scoop</text></g>
+    <g><circle cx="225" cy="85" r="30" fill="#6d28d9"/><text x="225" y="96" text-anchor="middle" fill="#fff" font-weight="bold" font-size="24">2</text>
+    <text x="225" y="135" text-anchor="middle" font-weight="bold">WATER ≥70 °C</text><text x="225" y="155" text-anchor="middle">Boil, then cool</text><text x="225" y="174" text-anchor="middle">&lt;30 min — kills</text><text x="225" y="193" text-anchor="middle">harmful bacteria</text></g>
+    <g><circle cx="380" cy="85" r="30" fill="#6d28d9"/><text x="380" y="96" text-anchor="middle" fill="#fff" font-weight="bold" font-size="24">3</text>
+    <text x="380" y="135" text-anchor="middle" font-weight="bold">EXACT RATIO</text><text x="380" y="155" text-anchor="middle">Water first, then</text><text x="380" y="174" text-anchor="middle">level scoops only</text><text x="380" y="193" text-anchor="middle">(no heaping!)</text></g>
+    <g><circle cx="535" cy="85" r="30" fill="#6d28d9"/><text x="535" y="96" text-anchor="middle" fill="#fff" font-weight="bold" font-size="24">4</text>
+    <text x="535" y="135" text-anchor="middle" font-weight="bold">MIX + COOL</text><text x="535" y="155" text-anchor="middle">Shake/swirl;</text><text x="535" y="174" text-anchor="middle">cool under tap</text><text x="535" y="193" text-anchor="middle">to lukewarm</text></g>
+    <g><circle cx="690" cy="85" r="30" fill="#15803d"/><text x="690" y="96" text-anchor="middle" fill="#fff" font-weight="bold" font-size="24">5</text>
+    <text x="690" y="135" text-anchor="middle" font-weight="bold">TEST + FEED</text><text x="690" y="155" text-anchor="middle">Drops on wrist;</text><text x="690" y="174" text-anchor="middle">feed within</text><text x="690" y="193" text-anchor="middle">2 hours</text></g>
+    <g><circle cx="845" cy="85" r="30" fill="#15803d"/><text x="845" y="96" text-anchor="middle" fill="#fff" font-weight="bold" font-size="24">6</text>
+    <text x="845" y="135" text-anchor="middle" font-weight="bold">DISCARD</text><text x="845" y="155" text-anchor="middle">Throw leftover</text><text x="845" y="174" text-anchor="middle">in bottle away;</text><text x="845" y="193" text-anchor="middle">wash up</text></g>
+    <g><rect x="920" y="55" width="152" height="140" rx="10" fill="#fef2f2" stroke="#be123c" stroke-width="2"/>
+    <text x="996" y="82" text-anchor="middle" font-weight="bold" fill="#9f1239">🚫 NEVER</text>
+    <text x="996" y="106" text-anchor="middle" font-size="12" fill="#7f1d1d">Microwave</text>
+    <text x="996" y="126" text-anchor="middle" font-size="12" fill="#7f1d1d">Guess ratios</text>
+    <text x="996" y="146" text-anchor="middle" font-size="12" fill="#7f1d1d">Save leftovers</text>
+    <text x="996" y="166" text-anchor="middle" font-size="12" fill="#7f1d1d">Prop the bottle</text></g>
+    <rect x="8" y="220" width="1064" height="104" rx="10" fill="#eff6ff" stroke="#1d4ed8"/>
+    <text x="540" y="250" text-anchor="middle" font-weight="bold" font-size="15" fill="#1e40af">Batch prep for the day? Cool fast + refrigerate (≤4 °C) + use within 24 h — then warm in warm water, never microwave.</text>
+    <text x="540" y="276" text-anchor="middle" font-size="13.5" fill="#1e3a8a">Powdered formula is NOT sterile — the ≥70 °C water step (WHO guidance) is what kills Cronobacter/Salmonella. Ready-to-feed liquid is sterile until opened (use per pack).</text>
+    <text x="540" y="302" text-anchor="middle" font-size="13.5" fill="#1e3a8a">How much? Your doctor calculates from weight (≈150 mL/kg/day total once established, split into feeds) — then adjust by the baby's cues (§7.4).</text>
+  </g>
+</svg>
+<p class="cap"><b>Fig 7.1 — Safe preparation sequence + batch rules.</b> Wrong ratios harm: too concentrated strains kidneys; too dilute starves. When in doubt, families should re-read the pack or call the health worker — never guess.</p>
+</div>
+
+<h3>7.4 Responsive bottle feeding</h3>
+<div class="fig">
+<svg viewBox="0 0 1080 280" role="img" aria-label="Responsive bottle feeding: upright baby, horizontal bottle, pause and burp, stop at fullness cues. Never prop the bottle.">
+  <g font-family="Segoe UI,Arial" font-size="14">
+    <g><rect x="8" y="8" width="258" height="264" rx="10" fill="#f0fdfa" stroke="#0e6b6e" stroke-width="2"/>
+    <text x="137" y="40" text-anchor="middle" font-weight="bold" fill="#0f4c4e">1. UPRIGHT BABY</text>
+    <circle cx="137" cy="80" r="18" fill="none" stroke="#0f4c4e" stroke-width="3"/>
+    <path d="M110 105 L137 100 L164 105 L164 170 L110 170 Z" fill="none" stroke="#0f4c4e" stroke-width="3"/>
+    <text x="137" y="205" text-anchor="middle">Head higher than</text>
+    <text x="137" y="227" text-anchor="middle">tummy (~45°); never</text>
+    <text x="137" y="249" text-anchor="middle">flat on the back</text></g>
+    <g><rect x="274" y="8" width="258" height="264" rx="10" fill="#f0fdfa" stroke="#0e6b6e" stroke-width="2"/>
+    <text x="403" y="40" text-anchor="middle" font-weight="bold" fill="#0f4c4e">2. FLAT BOTTLE</text>
+    <rect x="330" y="70" width="140" height="34" rx="8" fill="#fef9c3" stroke="#92400e" stroke-width="2"/>
+    <path d="M470 78 L505 87 L505 95 L470 104 Z" fill="#fde68a" stroke="#92400e" stroke-width="2"/>
+    <text x="403" y="150" text-anchor="middle">Bottle horizontal —</text>
+    <text x="403" y="172" text-anchor="middle">baby DRAWS milk,</text>
+    <text x="403" y="205" text-anchor="middle">not drowned by it.</text>
+    <text x="403" y="227" text-anchor="middle">Slow-flow teat.</text>
+    <text x="403" y="249" text-anchor="middle">Teat full, no air gulps</text></g>
+    <g><rect x="540" y="8" width="258" height="264" rx="10" fill="#f0fdfa" stroke="#0e6b6e" stroke-width="2"/>
+    <text x="669" y="40" text-anchor="middle" font-weight="bold" fill="#0f4c4e">3. PAUSE + BURP</text>
+    <text x="669" y="80" text-anchor="middle" font-size="34">⏸️</text>
+    <text x="669" y="130" text-anchor="middle">Pause mid-feed;</text>
+    <text x="669" y="152" text-anchor="middle">upright on shoulder,</text>
+    <text x="669" y="174" text-anchor="middle">gentle back pats.</text>
+    <text x="669" y="208" text-anchor="middle">Offer again —</text>
+    <text x="669" y="230" text-anchor="middle">accept refusal.</text>
+    <text x="669" y="252" text-anchor="middle">No jiggling/shaking</text></g>
+    <g><rect x="806" y="8" width="266" height="264" rx="10" fill="#fef2f2" stroke="#be123c" stroke-width="2"/>
+    <text x="939" y="40" text-anchor="middle" font-weight="bold" fill="#9f1239">4. STOP AT CUES</text>
+    <text x="939" y="80" text-anchor="middle" fill="#7f1d1d">Turns away • pushes teat</text>
+    <text x="939" y="102" text-anchor="middle" fill="#7f1d1d">Hands relax • sleepy</text>
+    <text x="939" y="124" text-anchor="middle" fill="#7f1d1d">→ STOP. Don't coax</text>
+    <text x="939" y="146" text-anchor="middle" fill="#7f1d1d">"one more ounce".</text>
+    <line x1="826" y1="168" x2="1052" y2="168" stroke="#fca5a5"/>
+    <text x="939" y="196" text-anchor="middle" font-weight="bold" fill="#9f1239">🚫 NEVER prop</text>
+    <text x="939" y="218" text-anchor="middle" fill="#9f1239" font-size="12.5">the bottle, feed flat,</text>
+    <text x="939" y="238" text-anchor="middle" fill="#9f1239" font-size="12.5">or add cereal to it</text></g>
+  </g>
+</svg>
+<p class="cap"><b>Fig 7.2 — Responsive bottle feeding.</b> The baby controls the feed — pace, pauses, and stopping. Pressuring "finish the bottle" teaches overeating; propping risks choking and ear infections.</p>
+</div>
+
+<h3>7.5 Everyday questions</h3>
+<table>
+<tr><th>Question</th><th>Answer</th></tr>
+<tr><td>Spit-ups after every feed?</td><td>Small possets with good weight gain are normal. Forceful vomiting, poor gain, blood, or distress → doctor.</td></tr>
+<tr><td>Constipation?</td><td>True constipation = hard dry pellets + straining. Formula stools are firmer than breastfed — check ratios first (too concentrated?). Don't switch formulas without advice.</td></tr>
+<tr><td>Can we change brands?</td><td>Any standard brand meeting regulations suits most babies; frequent switching for fussiness rarely helps. Suspected cow's-milk allergy (blood/mucus stools, eczema + gut symptoms, poor growth) needs <b>doctor diagnosis</b> before special formula.</td></tr>
+<tr><td>Can family foods start early "because on formula"?</td><td>No — complementary feeding still starts at 6 months (Ch.8).</td></tr>
+</table>
+<div class="hcp"><b class="t">👩‍⚕️ IMS Act reminder (India)</b>Promotion of breast-milk substitutes to families is prohibited; health facilities must not display formula branding or accept company samples/gifts. Counsel objectively: support breastfeeding first, and teach safe formula use skilfully when it is genuinely needed — both are professional duties.</div>
+
+<div class="key"><b class="t">✅ Key messages — Chapter 7</b>
+<ol class="tight">
+<li>Doctor chooses the type; family verifies the label every tin.</li>
+<li>Powder isn't sterile: water ≥70 °C, exact level scoops, feed within 2 h.</li>
+<li>Batch-made bottles: chill fast, use within 24 h, warm gently.</li>
+<li>Upright baby, flat bottle, pauses, stop at cues — never prop.</li>
+<li>Allergy/special formulas only on diagnosis — never self-switch for fussiness.</li>
+</ol></div>
+</section>
+
+<!-- ================= CHAPTER 8 ================= -->
+<section class="chapter" id="ch8">
+<h2>Chapter 8 — Complementary Feeding 6–24 Months</h2>
+<p>At 6 months, breast milk alone no longer covers iron, zinc, and energy needs — but it stays the nutritional backbone till 2 years and beyond. "Complementary" means foods <b>complement</b>, not replace, milk. (WHO 2023 complementary-feeding guideline; Evidence Map rows E8–E10.)</p>
+
+<h3>8.1 When &amp; why — readiness checklist</h3>
+<div class="grid2">
+<div class="mini"><h4>✔️ Start at 6 months (180 days) when baby:</h4><ul class="tight"><li>Sits with support, holds head steady</li><li>Brings hands/objects to mouth</li><li>Shows interest in food, opens mouth for spoon</li><li>Tongue-thrust (pushing food out) fading</li></ul></div>
+<div class="mini"><h4>⏳ Wait / ask the doctor if:</h4><ul class="tight"><li>Born preterm — usually ~6 months <b>corrected</b> age</li><li>Cannot sit supported or hold head up</li><li>Chokes/gags on every spoon (beyond normal learning gagging)</li><li>Never starts before 4 months; <b>6 months</b> is the standard</li></ul></div>
+</div>
+
+<h3>8.2 The journey: textures, frequency, amounts</h3>
+<div class="fig">
+<svg viewBox="0 0 1080 400" role="img" aria-label="Complementary feeding timeline: 6 months thick puree 2 to 3 meals, 7 to 8 months mashed plus finger foods, 9 to 11 months chopped family foods 3 to 4 meals plus snacks, 12 to 24 months family foods with continued breastfeeding.">
+  <g font-family="Segoe UI,Arial" font-size="13">
+    <text x="540" y="26" text-anchor="middle" font-weight="bold" font-size="19" fill="#4c1d95">6 → 24 months: texture ladder + meal pattern (breastfeeding continues throughout 🤱)</text>
+    <g><rect x="8" y="42" width="256" height="346" rx="10" fill="#fef9c3" stroke="#a16207" stroke-width="2"/>
+    <text x="136" y="72" text-anchor="middle" font-weight="bold" font-size="17" fill="#854d0e">6 MONTHS 🥣</text>
+    <text x="136" y="100" text-anchor="middle" font-weight="bold">START: thick purée</text>
+    <text x="136" y="120" text-anchor="middle">(stays on spoon!)</text>
+    <text x="136" y="148" text-anchor="middle" font-weight="bold">2–3 meals/day</text>
+    <text x="136" y="168" text-anchor="middle">+ breastfeeds</text>
+    <text x="136" y="196" text-anchor="middle">Start 2–3 spoons →</text>
+    <text x="136" y="216" text-anchor="middle">build to ~½ katori</text>
+    <text x="136" y="244" text-anchor="middle">≈200 kcal/day</text>
+    <text x="136" y="264" text-anchor="middle">from foods</text>
+    <text x="136" y="296" text-anchor="middle" font-size="12">First foods: rice/dal</text>
+    <text x="136" y="314" text-anchor="middle" font-size="12">mash, ragi, banana,</text>
+    <text x="136" y="332" text-anchor="middle" font-size="12">veg purée + oil</text>
+    <text x="136" y="360" text-anchor="middle" font-size="12" font-weight="bold">One new food at a time;</text>
+    <text x="136" y="376" text-anchor="middle" font-size="12" font-weight="bold">wait 2–3 days</text></g>
+    <g><rect x="272" y="42" width="256" height="346" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="2"/>
+    <text x="400" y="72" text-anchor="middle" font-weight="bold" font-size="17" fill="#9a3412">7–8 MONTHS ✊</text>
+    <text x="400" y="100" text-anchor="middle" font-weight="bold">Mashed + SOFT</text>
+    <text x="400" y="120" text-anchor="middle">finger foods</text>
+    <text x="400" y="148" text-anchor="middle" font-weight="bold">2–3 meals +</text>
+    <text x="400" y="168" text-anchor="middle">1 snack if hungry</text>
+    <text x="400" y="196" text-anchor="middle">~½–¾ katori</text>
+    <text x="400" y="216" text-anchor="middle">per meal</text>
+    <text x="400" y="244" text-anchor="middle">Add: egg yolk→whole</text>
+    <text x="400" y="264" text-anchor="middle">egg, curd, minced</text>
+    <text x="400" y="284" text-anchor="middle">meat/fish, fruit fingers</text>
+    <text x="400" y="314" text-anchor="middle" font-size="12">LUMPS by 8–9 mo</text>
+    <text x="400" y="332" text-anchor="middle" font-size="12">at the latest — late</text>
+    <text x="400" y="350" text-anchor="middle" font-size="12">lumps → later food</text>
+    <text x="400" y="368" text-anchor="middle" font-size="12">refusal. Gagging ≠</text>
+    <text x="400" y="384" text-anchor="middle" font-size="12">choking (usually).</text></g>
+    <g><rect x="536" y="42" width="256" height="346" rx="10" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <text x="664" y="72" text-anchor="middle" font-weight="bold" font-size="17" fill="#166534">9–11 MONTHS 🍲</text>
+    <text x="664" y="100" text-anchor="middle" font-weight="bold">Chopped family</text>
+    <text x="664" y="120" text-anchor="middle">foods + self-feeding</text>
+    <text x="664" y="148" text-anchor="middle" font-weight="bold">3–4 meals +</text>
+    <text x="664" y="168" text-anchor="middle">1–2 snacks</text>
+    <text x="664" y="196" text-anchor="middle">~¾–1 katori</text>
+    <text x="664" y="216" text-anchor="middle">per meal</text>
+    <text x="664" y="244" text-anchor="middle">≈300 kcal/day</text>
+    <text x="664" y="264" text-anchor="middle">from foods</text>
+    <text x="664" y="296" text-anchor="middle" font-size="12">Baby eats what family</text>
+    <text x="664" y="314" text-anchor="middle" font-size="12">eats (mashed/chopped,</text>
+    <text x="664" y="332" text-anchor="middle" font-size="12">less chilli/salt).</text>
+    <text x="664" y="360" text-anchor="middle" font-size="12" font-weight="bold">Spoon practice —</text>
+    <text x="664" y="376" text-anchor="middle" font-size="12" font-weight="bold">mess is learning!</text></g>
+    <g><rect x="800" y="42" width="272" height="346" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2"/>
+    <text x="936" y="72" text-anchor="middle" font-weight="bold" font-size="17" fill="#1e40af">12–24 MONTHS 🍛</text>
+    <text x="936" y="100" text-anchor="middle" font-weight="bold">Family foods,</text>
+    <text x="936" y="120" text-anchor="middle">cup drinking</text>
+    <text x="936" y="148" text-anchor="middle" font-weight="bold">3–4 meals +</text>
+    <text x="936" y="168" text-anchor="middle">1–2 snacks</text>
+    <text x="936" y="196" text-anchor="middle">~1 katori</text>
+    <text x="936" y="216" text-anchor="middle">per meal</text>
+    <text x="936" y="244" text-anchor="middle">≈550 kcal/day</text>
+    <text x="936" y="264" text-anchor="middle">from foods</text>
+    <text x="936" y="296" text-anchor="middle" font-size="12">Breastfeed to 2 yrs+</text>
+    <text x="936" y="314" text-anchor="middle" font-size="12">Cow's milk as a drink</text>
+    <text x="936" y="332" text-anchor="middle" font-size="12">only after 1 yr (§8.6).</text>
+    <text x="936" y="360" text-anchor="middle" font-size="12" font-weight="bold">Eat together —</text>
+    <text x="936" y="376" text-anchor="middle" font-size="12" font-weight="bold">babies copy family.</text></g>
+  </g>
+</svg>
+<p class="cap"><b>Fig 8.1 — Texture ladder + meal pattern 6–24 months.</b> Energy gaps (≈200/300/550 kcal/day) are filled by foods; breast milk covers the rest. Amounts are guides — appetite varies daily; follow hunger/fullness cues (§8.4).</p>
+</div>
+
+<h3>8.3 Building the bowl — the 4-part plate</h3>
+<div class="fig">
+<svg viewBox="0 0 1080 360" role="img" aria-label="Balanced baby meal plate: staple one third, protein one third, vegetables and fruit one third, plus a spoon of oil and continued breast milk. Indian examples for each group.">
+  <g font-family="Segoe UI,Arial" font-size="14">
+    <circle cx="270" cy="185" r="150" fill="#fff" stroke="#4c1d95" stroke-width="4"/>
+    <path d="M270 185 L270 35 A150 150 0 0 1 400 260 Z" fill="#fef9c3" stroke="#a16207" stroke-width="2"/>
+    <path d="M270 185 L400 260 A150 150 0 0 1 140 260 Z" fill="#ffedd5" stroke="#c2410c" stroke-width="2"/>
+    <path d="M270 185 L140 260 A150 150 0 0 1 270 35 Z" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <text x="300" y="110" font-weight="bold" font-size="15">🌾 STAPLE</text>
+    <text x="300" y="132" font-size="12">rice, ragi,</text>
+    <text x="300" y="150" font-size="12">wheat, jowar</text>
+    <text x="228" y="245" font-weight="bold" font-size="15">🫘 PROTEIN</text>
+    <text x="228" y="267" font-size="12">dal, egg, curd,</text>
+    <text x="228" y="285" font-size="12">fish, chicken</text>
+    <text x="150" y="140" font-weight="bold" font-size="15">🥕 VEG+FRUIT</text>
+    <text x="150" y="162" font-size="12">pumpkin, greens,</text>
+    <text x="150" y="180" font-size="12">papaya, mango</text>
+    <text x="270" y="200" text-anchor="middle" font-weight="bold" font-size="13" fill="#4c1d95">EVERY</text>
+    <text x="270" y="218" text-anchor="middle" font-weight="bold" font-size="13" fill="#4c1d95">MEAL</text>
+    <rect x="460" y="20" width="612" height="320" rx="12" fill="#f5f3ff" stroke="#6d28d9"/>
+    <text x="766" y="52" text-anchor="middle" font-weight="bold" font-size="16" fill="#5b21b6">Plus, every day:</text>
+    <text x="490" y="90">🥄 <b>A spoon of oil/ghee</b> in the bowl — small stomachs need energy-dense food.</text>
+    <text x="490" y="122">🩸 <b>Iron-rich food daily</b> — egg, meat/fish, ragi, green leaves + <b>vitamin C</b></text>
+    <text x="508" y="144">(lemon, amla, guava, tomato) to absorb it. Tea with meals blocks iron — avoid.</text>
+    <text x="490" y="178">🤱 <b>Breast milk between meals</b> — still ~⅓ to ½ of energy at 12–24 mo.</text>
+    <text x="490" y="212">💧 <b>Clean water in a cup</b> with meals; no juices, colas, or packaged drinks.</text>
+    <text x="490" y="246">🧂 <b>Minimal salt/sugar</b> — baby tastes; family adds at the table.</text>
+    <text x="490" y="280">🥜 <b>Nuts = ground/paste only</b> (whole nuts choke). Introduce peanut/egg early —</text>
+    <text x="508" y="302">delaying does NOT prevent allergy (current guidance).</text>
+  </g>
+</svg>
+<p class="cap"><b>Fig 8.2 — The 4-part baby bowl + daily add-ons.</b> Animal-source foods (egg, curd, fish, meat) most efficiently fill the iron/zinc gap; vegetarian families combine dals + grains + vit-C + oil and discuss B12/iron with the doctor.</p>
+</div>
+
+<h3>8.4 Responsive feeding — how matters as much as what</h3>
+<ul class="tight">
+  <li><b>Feed patiently, face-to-face:</b> eye contact, talk/sing, follow the child's pace. No screens, no chasing with a spoon, no force.</li>
+  <li><b>Respect stop signals:</b> turning away, pushing food, clamping mouth, playing — the meal ends. Forcing teaches food battles, not nutrition.</li>
+  <li><b>New foods need 8–10 tries:</b> tiny tastes across days, not one rejected spoonful = "dislikes". Eat the same food yourself — modelling works.</li>
+  <li><b>Let them self-feed:</b> fingers first, then spoon. Mess is motor learning; a mat under the chair saves the floor.</li>
+  <li><b>Hungry after illness?</b> Offer extra meals/snacks for 2 weeks of recovery ("catch-up feeding") — appetite returns before weight does.</li>
+</ul>
+
+<h3>8.5 Hygiene — diarrhoea prevention is nutrition</h3>
+<ul class="tight">
+  <li>Wash hands (cook + child) with soap before cooking/eating; clean utensils, safe water.</li>
+  <li><b>Cook fresh, serve promptly;</b> store leftovers covered in a cool place and <b>reheat bubbling-hot</b> before serving. Discard what the child leaves in the bowl after 2 hours.</li>
+  <li>Keep animals/flies off food; cover water vessels.</li>
+</ul>
+
+<h3>8.6 Foods to avoid or limit (under 2 years)</h3>
+<table>
+<tr><th>Food/drink</th><th>Rule</th><th>Why</th></tr>
+<tr><td><b>Honey</b></td><td>None before 1 year</td><td>Infant botulism risk</td></tr>
+<tr><td><b>Cow/buffalo milk as main drink</b></td><td>After 1 year; small amounts in cooking from ~6 mo OK</td><td>Low iron, displaces breast milk + iron-rich foods</td></tr>
+<tr><td><b>Fruit juice, colas, packaged drinks</b></td><td>Avoid entirely</td><td>Sugar without nutrition; tooth decay; displaces food</td></tr>
+<tr><td><b>Tea/coffee</b></td><td>Avoid</td><td>Block iron absorption; caffeine</td></tr>
+<tr><td><b>Whole nuts, grapes, hard sweets</b></td><td>Ground/paste only; cut grapes lengthwise after 1 yr</td><td>Choking</td></tr>
+<tr><td><b>Very salty/spicy packaged snacks</b></td><td>Avoid; family food with less chilli instead</td><td>Salt load, displaces nutritious food</td></tr>
+</table>
+
+<h3>8.7 Two sample days (examples, not prescriptions)</h3>
+<div class="grid2">
+<div class="mini"><h4>🌞 Sample day — 8 months</h4><ul class="tight"><li>Morning breastfeed + ragi porridge with ghee + mashed banana</li><li>Midday: dal-rice-vegetable mash with oil + lemon</li><li>Evening snack: soft papaya fingers / curd</li><li>Night: khichdi mash + breastfeeds through day/night</li></ul></div>
+<div class="mini"><h4>🌞 Sample day — 14 months</h4><ul class="tight"><li>Breakfast: family upma/idli pieces + egg + breastfeed</li><li>Lunch: rice + dal + greens + fish/chicken pieces + curd</li><li>Snack: banana + groundnut chikki (soft, supervised)</li><li>Dinner: family roti-sabzi (torn small) + breastfeed</li></ul></div>
+</div>
+
+<div class="key"><b class="t">✅ Key messages — Chapter 8</b>
+<ol class="tight">
+<li>Start at 6 months; breastfeed to 2 years and beyond.</li>
+<li>Thick foods from day 1; lumps by 8–9 months; family foods by 1 year.</li>
+<li>Every bowl: staple + protein + veg/fruit + oil; iron-rich food + vitamin C daily.</li>
+<li>Feed responsively: patient, face-to-face, stop at fullness, 8–10 tries for new foods.</li>
+<li>Honey and milk-as-drink wait till 1 year; juices and colas never.</li>
+</ol></div>
+<div class="hcp"><b class="t">👩‍⚕️ For the health worker</b>Demonstrate consistency ("stays on the spoon") with a real bowl at the 6-month contact — watery gruels are the commonest failure. Ask to SEE a meal's thickness and the feeding interaction, not just the food list.</div>
+</section>
+
+<!-- ================= CHAPTER 9 ================= -->
+<section class="chapter" id="ch9">
+<h2>Chapter 9 — Growth Monitoring: Measure, Plot, Act</h2>
+<p>Growth is nutrition made visible. Regular measuring + correct plotting + prompt action on faltering prevents most malnutrition — this chapter makes every health worker and parent chart-literate.</p>
+
+<h3>9.1 What to measure, with what</h3>
+<table>
+<tr><th>Measure</th><th>Tool</th><th>Technique essentials</th></tr>
+<tr><td><b>Weight</b></td><td>Calibrated infant/digital scale</td><td>Zeroed; baby naked (or noted clothing); same scale each visit</td></tr>
+<tr><td><b>Length (&lt;2 yr)</b></td><td>Length board, two people</td><td>Head touching headboard, legs straight, feet flat — no "tape on bed"</td></tr>
+<tr><td><b>Head circumference</b></td><td>Non-stretch tape</td><td>Widest point (above brows, around occiput); track trend</td></tr>
+<tr><td><b>MUAC (6–59 mo)</b></td><td>MUAC tape, left arm</td><td>Midpoint shoulder–elbow; arm relaxed; read window precisely</td></tr>
+</table>
+
+<h3>9.2 Reading a WHO growth chart — the schematic</h3>
+<div class="fig">
+<svg viewBox="0 0 1080 380" role="img" aria-label="Growth chart schematic: percentile curves with three example trajectories - tracking steadily, flattening, and falling across lines. Cutoffs explained.">
+  <g font-family="Segoe UI,Arial" font-size="14">
+    <text x="540" y="26" text-anchor="middle" font-weight="bold" font-size="19" fill="#4c1d95">Chart reading: follow the LINE, not one dot</text>
+    <rect x="20" y="44" width="660" height="300" rx="10" fill="#fff" stroke="#6d28d9" stroke-width="2"/>
+    <line x1="90" y1="300" x2="640" y2="300" stroke="#1f2937" stroke-width="2"/>
+    <line x1="90" y1="300" x2="90" y2="80" stroke="#1f2937" stroke-width="2"/>
+    <text x="360" y="330" text-anchor="middle">Age (months) →</text>
+    <text x="40" y="190" transform="rotate(-90 40 190)" text-anchor="middle">Weight →</text>
+    <path d="M90 120 Q300 130 640 150" fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="600" y="140" font-size="12" fill="#6b7280">+2 (upper line)</text>
+    <path d="M90 190 Q300 200 640 220" fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="600" y="210" font-size="12" fill="#6b7280">Median</text>
+    <path d="M90 260 Q300 270 640 290" fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="600" y="280" font-size="12" fill="#6b7280">−2 (lower line)</text>
+    <path d="M110 225 Q300 232 620 248" fill="none" stroke="#15803d" stroke-width="4"/>
+    <circle cx="200" cy="228" r="6" fill="#15803d"/><circle cx="350" cy="236" r="6" fill="#15803d"/><circle cx="500" cy="243" r="6" fill="#15803d"/>
+    <text x="180" y="200" font-weight="bold" fill="#166534">● Tracking parallel</text>
+    <text x="180" y="100" font-weight="bold" fill="#b45309">● Flattening — review feeds</text>
+    <path d="M110 180 Q350 195 620 205" fill="none" stroke="#b45309" stroke-width="4" stroke-dasharray="10 5"/>
+    <circle cx="200" cy="186" r="6" fill="#b45309"/><circle cx="350" cy="195" r="6" fill="#b45309"/><circle cx="500" cy="200" r="6" fill="#b45309"/>
+    <text x="180" y="262" font-weight="bold" fill="#be123c">● Falling across lines</text>
+    <path d="M110 200 Q300 240 500 295" fill="none" stroke="#be123c" stroke-width="4"/>
+    <circle cx="200" cy="222" r="6" fill="#be123c"/><circle cx="350" cy="258" r="6" fill="#be123c"/>
+    <text x="330" y="120" font-size="12.5" fill="#475569">← direction of the curve matters most</text>
+    <rect x="700" y="44" width="360" height="300" rx="10" fill="#f5f3ff" stroke="#6d28d9"/>
+    <text x="880" y="76" text-anchor="middle" font-weight="bold" font-size="15" fill="#5b21b6">Cutoffs (WHO)</text>
+    <text x="720" y="108">📉 <b>&lt; −2 lines:</b> underweight /</text>
+    <text x="738" y="130">stunted / wasted — act (§9.5)</text>
+    <text x="720" y="160">📈 <b>&gt; +2 lines:</b> overweight —</text>
+    <text x="738" y="182">review juices, snacks, portions</text>
+    <text x="720" y="212">➡️ <b>Parallel to a line:</b> thriving,</text>
+    <text x="738" y="234">whatever the line</text>
+    <text x="720" y="264">⚠️ <b>Crossing 2 lines down:</b></text>
+    <text x="738" y="286">faltering even if still "normal"</text>
+    <text x="720" y="316" font-size="12.5" fill="#475569">Plot weight-for-age, length-for-age,</text>
+    <text x="720" y="334" font-size="12.5" fill="#475569">weight-for-length AND head circ.</text>
+  </g>
+</svg>
+<p class="cap"><b>Fig 9.1 — Chart-reading schematic (not a real chart).</b> Always plot on genuine WHO charts/cards — this figure teaches the logic: parallel = thriving; flattening = review; falling = act. Preterm babies: use corrected age (§9.6).</p>
+</div>
+
+<h3>9.3 How often to weigh/measure</h3>
+<table>
+<tr><th>Age</th><th>Minimum frequency</th><th>Combine with</th></tr>
+<tr><td>Birth–2 weeks</td><td>Day 3–5 AND 2 weeks (§5.8)</td><td>Feeding review, jaundice check</td></tr>
+<tr><td>1–6 months</td><td>Monthly</td><td>Immunization visits</td></tr>
+<tr><td>6–12 months</td><td>Monthly (or ≥ every 2 months)</td><td>Complementary-feeding counselling</td></tr>
+<tr><td>1–2 years</td><td>Every 2–3 months</td><td>Vitamin-A/deworming contacts</td></tr>
+<tr><td>Any faltering/illness</td><td>Every 2–4 weeks until recovered</td><td>Feeding + illness review</td></tr>
+</table>
+
+<h3>9.4 MUAC quick screen (6–59 months)</h3>
+<table>
+<tr><th>MUAC reading</th><th>Meaning</th><th>Action</th></tr>
+<tr><td><b>≥ 12.5 cm (green)</b></td><td>Adequate</td><td>Routine growth monitoring</td></tr>
+<tr><td><b>11.5–12.4 cm (yellow)</b></td><td>Moderate acute malnutrition</td><td>Feeding counselling + 2-week follow-up; treat illness; supplementary nutrition per programme</td></tr>
+<tr><td><b>&lt; 11.5 cm (red) or oedema</b></td><td>Severe acute malnutrition</td><td><b>Urgent medical referral</b> — appetite test, complications check, therapeutic feeding per protocol</td></tr>
+</table>
+
+<h3>9.5 Responding to faltering — assess, counsel, follow up</h3>
+<ol class="tight">
+  <li><b>Assess intake:</b> 24-hour recall — breastfeeds (count incl. night), meal frequency, bowl contents (Fig 8.2), thickness, snacks, juices, who feeds, any force/refusal.</li>
+  <li><b>Assess illness:</b> recent diarrhoea/fever/cough, worms, TB contacts, recurrent infections; immunization status; maternal health and support.</li>
+  <li><b>Counsel specifically:</b> one or two changes (e.g. add egg + oil daily; thicken porridge; add a 4th meal) — written down, not a lecture.</li>
+  <li><b>Follow up in 2–4 weeks:</b> re-weigh same scale; improved trajectory = continue; flat/falling = refer for medical evaluation (anaemia, UTI, TB, allergy, developmental causes).</li>
+</ol>
+
+<h3>9.6 Preterm growth — corrected age + right charts</h3>
+<ul class="tight">
+  <li>Use <b>corrected age</b> (age from due date) for plotting and milestones until <b>2–3 years</b>.</li>
+  <li>In hospital: fetal/infant charts per unit (e.g. Fenton) until term; after term-equivalent age: <b>WHO charts with corrected age</b>.</li>
+  <li>Expect catch-up over months; judge the <b>trajectory</b>, and escalate flattening/falling exactly as in term babies.</li>
+</ul>
+
+<h3>9.7 The overweight side — don't miss it</h3>
+<ul class="tight">
+  <li>Rising concern in cities: weight-for-length &gt; +2 lines, rapid upward crossing.</li>
+  <li>Protective: exclusive breastfeeding 6 mo, continued to 2 yr, responsive feeding, no juices/SSBs, active floor play.</li>
+  <li>Counsel without shaming: swap sugary drinks for water/milk, shrink packaged snacks, protect sleep and play; re-plot in 1–2 months.</li>
+</ul>
+
+<div class="key"><b class="t">✅ Key messages — Chapter 9</b>
+<ol class="tight">
+<li>Measure right: zeroed scale, length board, two people, same tools.</li>
+<li>Plot all four indices on real WHO charts; read the line's direction.</li>
+<li>Parallel = thriving; flattening = review feeds; falling = act.</li>
+<li>MUAC: green routine, yellow counsel + 2-week review, red/oedema urgent referral.</li>
+<li>Preterm: corrected age to 2–3 years; WHO charts after term.</li>
+</ol></div>
+<div class="hcp"><b class="t">👩‍⚕️ For the health worker</b>Never hand a mother a plotted card without explaining what the line means and agreeing ONE next step. An unplotted weight is a wasted visit; an unexplained plot is a wasted opportunity.</div>
+</section>
+
+<footer>
+<p>Infant Feeding Handbook v2 — Phase 3 (Ch.6–9) • Phases 1–2: Evidence Map + Ch.1–5 (separate files) • Next: Phase 4 (Ch.10–13: maternal nutrition, illness, special situations, counselling + bibliography + QA report) • Original SVG illustrations, no third-party images • For education; clinical decisions need a qualified professional. Specialist paediatric sign-off required before print/distribution.</p>
+</footer>
+
+</div>
+</body>
+</html>

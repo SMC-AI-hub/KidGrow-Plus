@@ -925,7 +925,7 @@ async function main() {
   // ---- v10.11.2: rich handouts ----
   const handShape = vm.runInContext(`HANDOUTS.every((h) => ["en","ta","hi"].every((L) => h.title[L] && h.about[L] && (h.play || (h.bullets[L].length >= 5 && h.dont[L].length >= 3 && h.expect[L] && h.red[L]))))`, sb);
   ok(handShape, "every handout complete in 3 languages");
-  ok(vm.runInContext(`HANDOUTS.length`, sb) === 9 && vm.runInContext(`HANDOUTS.some((h)=>h.id==="breastfeed") && HANDOUTS.some((h)=>h.id==="solids")`, sb), "breastfeeding + complementary feeding present (9 topics)");
+  ok(vm.runInContext(`HANDOUTS.length`, sb) === 22 && vm.runInContext(`HANDOUTS.some((h)=>h.id==="breastfeed") && HANDOUTS.some((h)=>h.id==="solids") && HANDOUTS.filter((h)=>h.grp==="hb").length===13`, sb), "breastfeeding + compfeed + 13 handbook chapters (22 topics)");
   const hd = sb.handDose(12);
   ok(hd.mg === 180 && hd.syrup === 7.5 && hd.drops === 1.8, "paracetamol dose math (12 kg)");
   vm.runInContext(`DB.children=[normalizeChild({id:'hd1',name:'Dose Kid',sex:'boy',dob:'2023-01-01',vaccines:{},measures:[{date:'2026-10-01',wt:12}]} )]; DB.activeId='hd1'; HAND_SEL.h='fever'; HAND_SEL.lang='en';`, sb);
@@ -956,7 +956,9 @@ async function main() {
   vm.runInContext(`HAND_SEL.h='fever';`, sb);
   sb.renderHand();
   ok(sb.document.getElementById("handBox").innerHTML.includes("vomits everything"), "fever danger signs strengthened");
-  ok(!/imnci/i.test(fs.readFileSync(path.join(R, "js", "handouts.js"), "utf8")), "no source attribution in handouts");
+  const hbSrc = fs.readFileSync(path.join(R, "js", "handouts.js"), "utf8") + fs.readFileSync(path.join(R, "js", "handbook.js"), "utf8")
+    + [1, 2, 3, 4].map((n) => fs.readFileSync(path.join(R, "handbook", "phase" + n + ".html"), "utf8")).join("");
+  ok(!/imnci/i.test(hbSrc), "no source attribution in handouts");
 
   // ---- v10.11.4: Standards & method tab renders on click ----
   vm.runInContext(`DB.children=[normalizeChild({id:'gr1',name:'Ref Kid',sex:'girl',dob:'2022-05-05',vaccines:{}} )]; DB.activeId='gr1';`, sb);
@@ -989,6 +991,16 @@ async function main() {
   const handST = sb.document.getElementById("handBox").innerHTML;
   ok(handST.includes("கிண்ணம்") && handST.includes("பொன் விதி"), "Tamil compfeed chart + pearl render");
   ok(vm.runInContext(`HANDOUTS.find((h)=>h.id==="solids").bullets.en.length`, sb) >= 7, "compfeed has 7 steps");
+
+  // ---- v10.13.0: feeding handbook under handouts ----
+  ok(vm.runInContext(`HANDOUTS.every((h)=>!h.grp||(h.link&&h.link.indexOf("handbook/phase")===0))`, sb), "handbook entries link full chapters");
+  vm.runInContext("HAND_SEL.h='hb08'; HAND_SEL.lang='en';", sb);
+  sb.renderHand();
+  const handHB = sb.document.getElementById("handBox").innerHTML;
+  ok(handHB.includes("handbook/phase3.html#ch8") && handHB.includes("Infant Feeding Handbook") && handHB.includes("First foods 6–24 months"), "handbook chapter renders with group + link");
+  vm.runInContext("HAND_SEL.lang='ta';", sb);
+  sb.renderHand();
+  ok(sb.document.getElementById("handBox").innerHTML.includes("முழு விளக்கப்"), "Tamil handbook link renders");
 
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

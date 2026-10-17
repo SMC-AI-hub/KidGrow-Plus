@@ -1,5 +1,19 @@
 # Changelog
 
+## v10.13.0 — 2026-10-17 — Infant Feeding Handbook under Handouts
+- 📖 All 13 handbook chapters now live under Handouts as separate headings
+  (new "Infant Feeding Handbook" group): first 1,000 days, milk science,
+  position/latch, expressed milk, term first weeks, preterm/LBW, formula,
+  first foods 6–24 mo, growth monitoring, mother's health, illness feeding,
+  special situations, counselling guide — each condensed to about/do/don't/
+  expect/red-flags in EN/TA/HI.
+- 🔗 Every handbook handout links its full illustrated chapter
+  (handbook/phase1–4.html, 26 original SVG figures) — readable offline,
+  cached by the service worker, opens in a new tab, hidden on print.
+- 🗂️ Topic picker now grouped: "Everyday care" (9) + "Infant Feeding
+  Handbook" (13) = 22 handout topics, all trilingual.
+- Tests: 658/658 (461 offline + 107 isolation + 52 hardening + 38 api).
+
 ## v10.12.0 — 2026-10-17 — Breastfeeding + complementary feeding handouts
 - 🤱 NEW handout: Breastfeeding complete guide — first-hour start, colostrum,
   8–12 feeds/day, hunger cues, attachment check, hindmilk, burping, 6+ wet
