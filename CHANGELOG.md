@@ -1,5 +1,11 @@
 # Changelog
 
+## v10.28.2 — 2026-10-18 — Motion trial (reel-style animation)
+- TRIAL: pages glide, cards rise in staggered, buttons press, nav slides,
+  modals pop, login glides in. Transform/opacity only (low-end safe).
+  Topbar toggle (DB.settings.motion, default ON). Screen-only CSS,
+  reduced-motion respected — print output pixel-identical.
+
 ## v10.28.1 — 2026-10-18 — Professional letterhead (doctor separate from address)
 - FIX: clinic letterheads no longer join "doctor · address · phone · Reg"
   on one line. Doctor name + Reg print on their OWN bold line; address + phone

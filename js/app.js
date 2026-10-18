@@ -320,6 +320,18 @@ function toggleGlass() {
   DB.settings = Object.assign({}, DB.settings, { glass: on });
   save(); applyGlass();
 }
+function applyMotion() {
+  const on = ((DB.settings || {}).motion !== false); // trial default ON; one tap reverts
+  document.body.classList.toggle("motion", on);
+  const b = document.getElementById("motionToggle");
+  if (b) { b.textContent = on ? "🎬" : "⏸️"; b.title = `Screen animations: ${on ? "on" : "off"} (tap to change)`; }
+  return on;
+}
+function toggleMotion() {
+  const on = !document.body.classList.contains("motion");
+  DB.settings = Object.assign({}, DB.settings, { motion: on });
+  save(); applyMotion();
+}
 function renderBrand() {
   const s = DB.settings || {};
   const nm = $("brandName"), sb = $("brandSub"), lg = $("brandLogo");
@@ -1621,4 +1633,4 @@ function applyRefVersions() {
   try { document.querySelectorAll("[data-vaxver]").forEach((el) => { el.textContent = VAX_SCHEDULE_VERSION; n++; }); } catch (e) {}
   return n;
 }
-load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();
+load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyMotion(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();

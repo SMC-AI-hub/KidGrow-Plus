@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v20/.test(sw), "SW cache bumped to v20 (letterhead)");
+  ok(/neokid-v21/.test(sw), "SW cache bumped to v21 (motion)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -979,6 +979,17 @@ async function main() {
   ok(parLH.includes("Dr. L · Reg: R1") && parLH.includes("12 Main St · ☎ 080-1"), "parent export carries separated doctor + address lines");
   ok(typeof sb.handLetterhead === "function" && sb.handLetterhead(null).includes("12 Main St · ☎ 080-1"), "handout letterhead uses separated address line");
   vm.runInContext("DB.settings=" + prevLH + ";", sb);
+  // ---- v10.28.2: motion trial — reel-style screen animation ----
+  const cssM = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
+  const appM = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
+  const idxM = fs.readFileSync(path.join(R, "index.html"), "utf8");
+  ok(cssM.includes("@keyframes cardUp") && cssM.includes("body.motion .page.active .card") && cssM.includes("animation-delay:.25s"), "motion trial staggers card entrances");
+  ok(cssM.includes("body.motion .modal") && cssM.includes("body.motion .btn:active") && cssM.includes("body.motion .lock.show .lock-card"), "motion trial pops modals + presses buttons + glides login");
+  ok(appM.includes("function applyMotion") && appM.includes("function toggleMotion") && appM.includes("applyGlass(); applyMotion();") && idxM.includes('id="motionToggle"'), "motion toggle (default ON) in topbar");
+  ok(sb.applyMotion() === true, "motion defaults ON");
+  vm.runInContext("DB.settings.motion=false;", sb);
+  ok(sb.applyMotion() === false, "motion off sticks in settings");
+  vm.runInContext("DB.settings.motion=true;", sb); sb.applyMotion();
   const idxSrc = fs.readFileSync(path.join(R, "index.html"), "utf8");
   const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
   ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");
