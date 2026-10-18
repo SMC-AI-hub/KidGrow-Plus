@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v14/.test(sw), "SW cache bumped to v14 (rebrand)");
+  ok(/neokid-v15/.test(sw), "SW cache bumped to v15 (booklet content)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -1087,6 +1087,12 @@ async function main() {
   ok(bkSol.includes("Millets") && bkSol.includes("336") && bkSol.includes("Ragi Porridge"), "compfeed enrichment renders (guides + recipes)");
   ok(bkSol.includes("MYTHS VS FACTS") && bkSol.includes("hospLogo") && bkSol.includes("kidgrow_pro_v1"), "myths + hospital-logo hook present");
   ok(bkSol.includes("copyline") && bkSol.includes("All rights reserved") && bkSol.includes("without permission"), "copyright protection lines present");
+  // ---- v10.25.0: First Foods TA/HI complete + NeoKid Care booklet branding ----
+  const bkSolTa = fs.readFileSync(path.join(R, "handbook", "booklet-solids-ta.html"), "utf8");
+  const bkSolHi = fs.readFileSync(path.join(R, "handbook", "booklet-solids-hi.html"), "utf8");
+  ok(!bkSolTa.includes("Calories/100g") && !bkSolHi.includes("Calories/100g") && bkSolTa.includes("கலோரி/100கி") && bkSolHi.includes("कैलोरी/100ग्रा"), "solids TA/HI tables translated (no EN fallback)");
+  ok(!bkSolTa.includes("Ragi Porridge") && bkSolTa.includes("ராகி கஞ்சி") && bkSolHi.includes("रागी दलिया"), "solids TA/HI recipes translated");
+  ok(bkSol.includes("NeoKid Care") && bkSolTa.includes("நியோகிட் கேர்") && bkSolHi.includes("नियोकिड केयर") && !bkSol.includes("KidGrow") && !bkSolTa.includes("KidGrow"), "booklets carry NeoKid Care branding");
 
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

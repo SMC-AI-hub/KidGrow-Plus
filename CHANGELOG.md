@@ -1,5 +1,14 @@
 # Changelog
 
+## v10.25.0 — 2026-10-18 — First Foods TA/HI complete + booklet rebrand
+- 🌐 COMPLETE: First Foods enrichment (6 calorie guides, 7 recipes,
+  myths-vs-facts) now fully translated in Tamil + Hindi — zero
+  English fallback left in solids booklets. All 66 booklets
+  regenerated from data (tools/make-booklets.js).
+- 🎨 Booklets rebranded KidGrow → NeoKid Care (topbar, copylines,
+  titles, meta) in all 3 languages; hospital-logo hook + LS key
+  untouched. SW cache bumped to neokid-v15 for new content.
+
 ## v10.24.0 — 2026-10-18 — NeoKid Care rebrand + Subscription About
 - ✨ REBRAND: KidGrow Pro is now **NeoKid Care** — the clinic suite
   for neonatology & pediatrics. New professional logo (growth-curve
