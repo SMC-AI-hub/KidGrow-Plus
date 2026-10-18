@@ -102,29 +102,50 @@ function renderEmgDoses() {
    Compact pipe format. Fits a QR; also pasteable as text. */
 const RC_SEP = "|", RC_SUB = "~";
 function rcClean(s) { return String(s ?? "").replace(/[|~\n\r]/g, " ").trim().slice(0, 80); }
+function rcClean2(s) { return String(s ?? "").replace(/[|~;,\n\r]/g, " ").trim().slice(0, 80); } // KG2: also strips list separators
+/* Transfer seal: id-independent hash (name+dob+payload), so clinic B can
+   verify a code from clinic A. Same KG-XXXXXX style as the card code. */
+function xferSeal(str) {
+  let h = 0; const s = String(str || "");
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return "KG-" + h.toString(36).toUpperCase().padStart(6, "0").slice(-6);
+}
 function encodeRecord(c) {
   c = c || {};
   const v = Object.keys(c.vaccines || {}).sort().map((k) => {
     const r = c.vaccines[k] || {};
-    return k + RC_SUB + (r.date || "") + RC_SUB + rcClean(r.brand || "");
+    return [k, r.date || "", rcClean2(r.brand || ""), rcClean2(r.mfr || ""), rcClean2(r.batch || "")].join(RC_SUB);
   }).join(",");
-  const x = (c.extraVac || []).map((e) => rcClean(e.name) + RC_SUB + (e.date || "") + RC_SUB + rcClean(e.brand || "")).join(";");
-  return ["KG1", rcClean(c.name), c.dob || "", c.sex || "", rcClean(c.phone || ""),
-    rcClean(((c.mother || "") + (c.mother && c.father ? " & " : "") + (c.father || ""))), v, x || ""].join(RC_SEP);
+  const x = (c.extraVac || []).map((e) => [rcClean2(e.name), e.date || "", rcClean2(e.brand || ""), rcClean2(e.mfr || ""), rcClean2(e.batch || "")].join(RC_SUB)).join(";");
+  const m = (c.measures || []).map((g) => [g.date || "", g.wt ?? "", g.ht ?? "", g.hc ?? "", g.muac ?? "", g.pos || ""].join(RC_SUB)).join(";");
+  const core = ["KG2", rcClean2(c.name), c.dob || "", c.sex || "", rcClean2(c.phone || ""),
+    rcClean2(((c.mother || "") + (c.mother && c.father ? " & " : "") + (c.father || ""))), v, x || "", m || ""];
+  return core.join(RC_SEP) + RC_SEP + xferSeal(core.join(RC_SEP));
 }
 function decodeRecord(str) {
   const p = String(str || "").trim().split(RC_SEP);
-  if (p[0] !== "KG1" || p.length < 7) return null;
+  if ((p[0] !== "KG1" && p[0] !== "KG2") || p.length < 7) return null;
+  const isKG2 = p[0] === "KG2";
   const c = { name: p[1] || "Imported child", dob: p[2] || "", sex: p[3] === "girl" ? "girl" : "boy", phone: p[4] || "", mother: p[5] || "", vaccines: {}, extraVac: [] };
   (p[6] || "").split(",").filter(Boolean).forEach((t) => {
     const parts = t.split(RC_SUB), code = parts[0];
     if (!code) return;
-    c.vaccines[code] = { date: parts[1] || "", brand: parts[2] || "", mfr: "", batch: "", site: "", by: "", aer: "", note: "Imported record" };
+    c.vaccines[code] = { date: parts[1] || "", brand: parts[2] || "", mfr: parts[3] || "", batch: parts[4] || "", site: "", by: "", aer: "", note: "Imported record" };
   });
   (p[7] || "").split(";").filter(Boolean).forEach((t, i) => {
     const parts = (t || "").split(RC_SUB);
-    c.extraVac.push({ id: "imp" + Date.now().toString(36) + i, name: parts[0] || "Vaccine", date: parts[1] || "", brand: parts[2] || "", mfr: "", batch: "", by: "", note: "Imported record" });
+    c.extraVac.push({ id: "imp" + Date.now().toString(36) + i, name: parts[0] || "Vaccine", date: parts[1] || "", brand: parts[2] || "", mfr: parts[3] || "", batch: parts[4] || "", by: "", note: "Imported record" });
   });
+  c.measures = [];
+  if (isKG2) {
+    (p[8] || "").split(";").filter(Boolean).forEach((t) => {
+      const g = (t || "").split(RC_SUB);
+      if (!g[0]) return;
+      const num = (s) => (s === "" || s == null ? "" : (parseFloat(s) || ""));
+      c.measures.push({ date: g[0], wt: num(g[1]), ht: num(g[2]), hc: num(g[3]), muac: num(g[4]), pos: g[5] || "" });
+    });
+    try { c._sealOk = (xferSeal(p.slice(0, 9).join(RC_SEP)) === (p[9] || "")); } catch (e) { c._sealOk = false; }
+  } else { c._sealOk = null; c._legacy = true; }
   return c;
 }
 /* QR with auto size: ECC-M first, then ECC-L fallback */
@@ -244,10 +265,11 @@ function renderCard() {
     ${vaxRecordHTML(c)}
     <div style="height:16px"></div>
     <div class="card no-print"><h3>📥 Import a record</h3>
-      <div class="hint">Paste a record code (from another device's card / QR scan) or a full child .json backup, then Import. Matching name + DOB merges missing doses; otherwise a new child is created.</div>
-      <textarea id="impText" rows="3" style="width:100%;font-family:monospace;font-size:12px" placeholder="KG1|Name|dob|..." oninput="CARD.imp=this.value">${esc(CARD.imp)}</textarea>
+      <div class="hint">From another NeoKid clinic: <b>Scan</b> the card QR, or paste the record code / child .json. You'll preview + verify first — only <b>immunization + growth</b> can arrive. Matching name + DOB merges; otherwise a new child is created.</div>
+      <textarea id="impText" rows="3" style="width:100%;font-family:monospace;font-size:12px" placeholder="KG2|Name|dob|... (KG1 works too)" oninput="CARD.imp=this.value">${esc(CARD.imp)}</textarea>
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn btn-p btn-sm" onclick="importRecordText()">📥 Import pasted record</button>
+        <button class="btn btn-p btn-sm" onclick="openScanModal()">📷 Scan card QR</button>
+        <button class="btn btn-o btn-sm" onclick="importRecordText()">📥 Import pasted record</button>
         <button class="btn btn-o btn-sm" onclick="document.getElementById('impFile').click()">⬆ Choose .json file</button>
         <input type="file" id="impFile" accept=".json,.txt" style="display:none" onchange="importRecordFile(event)">
       </div><div id="impMsg" style="margin-top:8px;font-size:13px"></div>
@@ -267,31 +289,128 @@ function downloadRecord() {
   a.download = `${c.name.replace(/[^\w]+/g, "_")}_vaccine_record.json`;
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
+/* v10.29 privilege enforcement: a transfer carries ONLY immunization +
+   growth (+identity). Everything else (visits, rx, bills, notes...) never
+   leaves the source clinic, even from a full .json backup. */
+function scopeTransfer(j) {
+  j = j || {};
+  const pick = (o, ks) => { const r = {}; ks.forEach((k) => { if (o[k] !== undefined) r[k] = o[k]; }); return r; };
+  const vx = {};
+  Object.keys(j.vaccines || {}).forEach((k) => { vx[k] = pick(j.vaccines[k] || {}, ["date", "brand", "mfr", "batch", "site", "by", "note"]); });
+  return {
+    name: j.name || "", dob: j.dob || "", sex: j.sex || "", phone: j.phone || "",
+    mother: j.mother || "", father: j.father || "",
+    vaccines: vx,
+    extraVac: (j.extraVac || []).map((e) => pick(e || {}, ["name", "date", "brand", "mfr", "batch"])),
+    measures: (j.measures || []).map((g) => pick(g || {}, ["date", "wt", "ht", "hc", "muac", "pos"])),
+    _sealOk: ("_sealOk" in j) ? j._sealOk : null, _legacy: j._legacy === true
+  };
+}
+/* Receive preview: view + verify BEFORE anything is imported. All import
+   paths (scan / paste / file) funnel through here. */
+let XFER = null;
+function previewTransfer(str) {
+  const msg = (h) => { const e = $("impMsg"); if (e) e.innerHTML = h; };
+  let inc = null, via = "record code";
+  try { inc = decodeRecord(str); } catch (e) { inc = null; }
+  if (!inc) { try { const j = JSON.parse(str); if (j && j.vaccines) { inc = scopeTransfer(j); inc._sealOk = null; inc._legacy = true; via = "backup file"; } } catch (e) { inc = null; } }
+  if (!inc || !inc.name) { msg(`<span style="color:var(--red)">❌ Could not read that ${via}.</span>`); return; }
+  inc = scopeTransfer(inc);
+  const doses = Object.keys(inc.vaccines || {});
+  const dated = doses.filter((k) => (inc.vaccines[k] || {}).date);
+  const ms = (inc.measures || []).slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+  const last = ms[ms.length - 1];
+  const same = ((typeof DB !== "undefined" && DB.children) || []).find((c) => (c.name || "").trim().toLowerCase() === String(inc.name).trim().toLowerCase() && (c.dob || "") === (inc.dob || ""));
+  const seal = inc._sealOk === true ? `<span style="color:var(--green);font-weight:700">✅ Seal verified</span>`
+    : inc._sealOk === false ? `<span style="color:var(--red);font-weight:700">⚠️ Seal FAILED — confirm with the source clinic before importing</span>`
+    : `<span style="color:var(--amber,#b45309);font-weight:700">Legacy code — verify name &amp; DOB manually</span>`;
+  XFER = inc;
+  let box = document.getElementById("mXfer");
+  if (box) box.remove();
+  box = document.createElement("div");
+  box.id = "mXfer"; box.className = "modal-bg open";
+  box.innerHTML = `<div class="modal" style="max-width:560px"><h3>📥 Receive from another clinic</h3>
+    <div class="hint">Preview only — nothing is imported until you confirm. Only <b>immunization + growth</b> can arrive; visits, prescriptions and bills never transfer.</div>
+    <dl class="kv"><dt>Child</dt><dd>${esc(inc.name)} · ${inc.sex === "girl" ? "Girl" : "Boy"} · DOB ${esc(fmtDate(inc.dob))}</dd>
+    <dt>Seal</dt><dd>${seal}</dd>
+    <dt>Doses</dt><dd>${dated.length} given${doses.length > dated.length ? ` · ${doses.length - dated.length} dateless` : ""}${(inc.extraVac || []).length ? ` · +${inc.extraVac.length} additional` : ""}</dd>
+    <dt>Growth</dt><dd>${ms.length ? `${ms.length} record(s)${last ? ` · latest ${esc(fmtDate(last.date))}: ${last.wt ?? "—"} kg · ${last.ht ?? "—"} cm` : ""}` : "none in this transfer"}</dd>
+    <dt>Target</dt><dd>${same ? `Merge into existing <b>${esc(same.name)}</b> — only missing doses/dates are added` : `New child <b>${esc(inc.name)}</b> will be created here`}</dd></dl>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+    <button class="btn btn-p" onclick="xferDoImport()">✅ Import immunization + growth</button>
+    <button class="btn btn-o" onclick="xferCancel()">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+}
+function xferDoImport() { const inc = XFER; XFER = null; const m = document.getElementById("mXfer"); if (m) m.remove(); if (inc) mergeImported(inc); }
+function xferCancel() { XFER = null; const m = document.getElementById("mXfer"); if (m) m.remove(); }
+/* Live QR scanner (Chrome/Edge desktop + Android). iPhone Safari has no
+   BarcodeDetector — those users paste the WhatsApp'd code instead. */
+let SCAN = { stream: null, timer: null };
+async function openScanModal() {
+  let box = document.getElementById("mScan");
+  if (box) box.remove();
+  const supported = (typeof window !== "undefined" && "BarcodeDetector" in window);
+  box = document.createElement("div");
+  box.id = "mScan"; box.className = "modal-bg open";
+  box.innerHTML = `<div class="modal" style="max-width:480px;text-align:center"><h3>📷 Scan card QR</h3>
+    <div class="hint">Point at the QR on the printed card / parent file${supported ? "" : " — live scanning needs Chrome/Edge on Android or desktop"}.</div>
+    ${supported ? `<video id="scanVideo" playsinline muted style="width:100%;border-radius:14px;background:#000;max-height:320px"></video><div class="hint" id="scanMsg">Starting camera…</div>`
+    : `<div class="alert a-amber" style="text-align:left">📵 This browser can't scan live (iPhone Safari). Ask clinic A to <b>Copy</b> the record code or WhatsApp it, then paste it on this page.</div>`}
+    <div style="margin-top:10px"><button class="btn btn-o" onclick="closeScanModal()">Close</button></div></div>`;
+  document.body.appendChild(box);
+  if (!supported) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    SCAN.stream = stream;
+    const v = document.getElementById("scanVideo");
+    v.srcObject = stream; await v.play();
+    const det = new BarcodeDetector({ formats: ["qr_code"] });
+    const m = document.getElementById("scanMsg"); if (m) m.textContent = "Scanning… hold steady";
+    SCAN.timer = setInterval(async () => {
+      try {
+        const vv = document.getElementById("scanVideo"); if (!vv) return;
+        const codes = await det.detect(vv);
+        if (codes && codes.length && codes[0].rawValue) { const val = codes[0].rawValue; closeScanModal(); previewTransfer(val); }
+      } catch (e) {}
+    }, 400);
+  } catch (e) {
+    const m = document.getElementById("scanMsg");
+    if (m) m.textContent = "❌ Camera unavailable (" + (e.name || "denied") + ") — paste the code instead.";
+  }
+}
+function closeScanModal() {
+  try { if (SCAN.timer) clearInterval(SCAN.timer); } catch (e) {}
+  try { if (SCAN.stream) SCAN.stream.getTracks().forEach((t) => t.stop()); } catch (e) {}
+  SCAN = { stream: null, timer: null };
+  const m = document.getElementById("mScan"); if (m) m.remove();
+}
 function mergeImported(inc) {
-  if (!inc || !inc.name) { $("impMsg").innerHTML = `<span style="color:var(--red)">❌ Could not read that record.</span>`; return; }
+  const impSay = (h) => { try { const e = $("impMsg"); if (e) e.innerHTML = h; } catch (_) {} };
+  if (!inc || !inc.name) { impSay(`<span style="color:var(--red)">❌ Could not read that record.</span>`); return; }
   const same = DB.children.find((c) => c.name.trim().toLowerCase() === String(inc.name).trim().toLowerCase() && (c.dob || "") === (inc.dob || ""));
   if (same) {
     let added = 0;
     Object.keys(inc.vaccines || {}).forEach((k) => { if (!same.vaccines[k] && (inc.vaccines[k].date || inc.vaccines[k].brand)) { same.vaccines[k] = inc.vaccines[k]; added++; } });
     (inc.extraVac || []).forEach((x) => { same.extraVac = same.extraVac || []; if (!same.extraVac.some((e) => e.name === x.name && e.date === x.date)) { x.id = uid(); same.extraVac.push(x); added++; } });
+    let mAdded = 0;
+    (inc.measures || []).forEach((g) => { same.measures = same.measures || []; if (g && g.date && !same.measures.some((e) => e.date === g.date)) { same.measures.push(Object.assign({ id: uid(), note: "Imported" }, g)); mAdded++; } });
     if (inc.phone && !same.phone) same.phone = inc.phone;
     DB.activeId = same.id; save(); renderAll();
-    $("impMsg").innerHTML = `<span style="color:var(--green)">✅ Merged into <b>${esc(same.name)}</b> — ${added} dose(s) added.</span>`;
+    impSay(`<span style="color:var(--green)">✅ Merged into <b>${esc(same.name)}</b> — ${added} dose(s) + ${mAdded} growth record(s) added.</span>`);
   } else {
     inc.id = uid();
-    inc.measures = inc.measures || []; inc.visits = inc.visits || []; inc.milestones = inc.milestones || {};
+    delete inc._sealOk; delete inc._legacy;
+    inc.measures = (inc.measures || []).map((g) => Object.assign({ id: uid(), note: "Imported" }, g)); inc.visits = inc.visits || []; inc.milestones = inc.milestones || {};
     inc.extraVac = inc.extraVac || [];
     DB.children.push(inc); DB.activeId = inc.id; save(); renderAll();
-    $("impMsg").innerHTML = `<span style="color:var(--green)">✅ New child <b>${esc(inc.name)}</b> created with ${Object.keys(inc.vaccines || {}).length} dose(s).</span>`;
+    impSay(`<span style="color:var(--green)">✅ New child <b>${esc(inc.name)}</b> created with ${Object.keys(inc.vaccines || {}).length} dose(s) + ${(inc.measures || []).length} growth record(s).</span>`);
   }
   CARD.imp = ""; const t = $("impText"); if (t) t.value = "";
 }
 function importRecordText() {
   const raw = ($("impText").value || "").trim();
   if (!raw) return;
-  let inc = decodeRecord(raw);
-  if (!inc) { try { const j = JSON.parse(raw); inc = j && j.vaccines ? j : null; } catch (e) { inc = null; } }
-  mergeImported(inc);
+  previewTransfer(raw);
 }
 function importRecordFile(ev) {
   const f = ev.target.files[0]; if (!f) return;
@@ -299,7 +418,7 @@ function importRecordFile(ev) {
   r.onload = () => {
     try {
       const txt = String(r.result || "").trim();
-      mergeImported(decodeRecord(txt) || (JSON.parse(txt).vaccines ? JSON.parse(txt) : null));
+      previewTransfer(txt);
     } catch (e) { $("impMsg").innerHTML = `<span style="color:var(--red)">❌ Could not read that file.</span>`; }
     ev.target.value = "";
   };

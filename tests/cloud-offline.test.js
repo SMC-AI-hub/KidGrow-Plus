@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v23/.test(sw), "SW cache bumped to v23 (quick-wins)");
+  ok(/neokid-v24/.test(sw), "SW cache bumped to v24 (transfer)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -1013,6 +1013,31 @@ async function main() {
   ok(vm.runInContext("DB.settings.fold['nb-apgar']", sb) === true, "fold state persists");
   sb.toggleFold("nb-apgar");
   ok(sb.foldOpen("nb-apgar") === true, "unfold restores");
+  // ---- v10.29.0: clinic-to-clinic transfer (KG2 + seal + scoped import) ----
+  const aidsSrc = fs.readFileSync(path.join(R, "js", "aids.js"), "utf8");
+  ok(aidsSrc.includes("function xferSeal") && aidsSrc.includes("KG2") && aidsSrc.includes("function scopeTransfer"), "KG2 codec + seal + scope gate exist");
+  ok(aidsSrc.includes("BarcodeDetector") && aidsSrc.includes("getUserMedia") && aidsSrc.includes("function openScanModal") && aidsSrc.includes("function previewTransfer"), "QR scanner + receive preview exist (with no-camera fallback)");
+  ok(aidsSrc.includes('onclick="openScanModal()"'), "import box offers Scan");
+  const xChild = { name: "Xfer Kid", sex: "girl", dob: "2024-06-01", phone: "999", mother: "M", father: "F",
+    vaccines: { BCG: { date: "2024-06-02", brand: "BCGv", mfr: "Serum", batch: "LOT1" } }, extraVac: [],
+    measures: [{ date: "2024-06-02", wt: 3.1, ht: 49, hc: 34 }] };
+  const kg2 = sb.encodeRecord(xChild);
+  ok(kg2.indexOf("KG2|") === 0 && kg2.split("|").length === 10, "KG2 envelope: identity + doses + growth + seal");
+  const dec2 = sb.decodeRecord(kg2);
+  ok(dec2 && dec2.vaccines.BCG.batch === "LOT1" && dec2.vaccines.BCG.mfr === "Serum", "KG2 preserves batch + maker");
+  ok(dec2.measures.length === 1 && dec2.measures[0].wt === 3.1 && dec2._sealOk === true, "KG2 carries growth, seal verifies");
+  ok(sb.decodeRecord(kg2.replace("LOT1", "LOTX"))._sealOk === false, "tampered code fails the seal");
+  const dec1 = sb.decodeRecord("KG1|Old Kid|2023-01-01|boy|111|M|BCG~2023-01-02~BCGv|");
+  ok(dec1 && dec1.vaccines.BCG && dec1._sealOk === null && dec1.measures.length === 0, "legacy KG1 still decodes (unverified, no growth)");
+  const scp = sb.scopeTransfer({ name: "S", dob: "2024-01-01", vaccines: { BCG: { date: "2024-01-02" } }, measures: [], visits: [{ x: 1 }], rx: [{ y: 1 }], bills: [] });
+  ok(scp && scp.vaccines.BCG && !("visits" in scp) && !("rx" in scp) && !("bills" in scp), "scope gate strips everything but immunization + growth");
+  const nBefore = vm.runInContext("DB.children.length", sb);
+  sb.mergeImported(sb.decodeRecord(kg2));
+  ok(vm.runInContext("DB.children.length", sb) === nBefore + 1, "import creates the child once");
+  ok(vm.runInContext("DB.children[DB.children.length-1].measures.length", sb) === 1, "imported growth lands on the child");
+  sb.mergeImported(sb.decodeRecord(kg2));
+  ok(vm.runInContext("DB.children.length", sb) === nBefore + 1 && vm.runInContext("DB.children[DB.children.length-1].measures.length", sb) === 1, "re-import merges, never duplicates");
+  vm.runInContext("DB.children.pop();", sb);
   const idxSrc = fs.readFileSync(path.join(R, "index.html"), "utf8");
   const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
   ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");

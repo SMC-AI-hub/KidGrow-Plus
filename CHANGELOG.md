@@ -1,5 +1,16 @@
 # Changelog
 
+## v10.29.0 — 2026-10-18 — Clinic-to-clinic transfer (immunization + growth)
+- NEW: KG2 record code — immunization (with maker + batch) + growth chart +
+  tamper seal, in the card QR + Copy. Legacy KG1 codes still decode.
+- NEW: live QR scanner (Chrome/Edge desktop + Android) + guided fallback
+  (paste the WhatsApp'd code) where cameras can't scan.
+- NEW: Receive preview — view + verify (seal ✓/✗, doses, growth, merge
+  target) BEFORE anything imports. One-way copy: nothing writes back.
+- PRIVILEGE: only immunization + growth (+identity) can ever transfer —
+  enforced structurally by the format + scope gate. Visits, Rx, bills
+  never leave the source clinic.
+
 ## v10.28.4 — 2026-10-18 — Auto-refresh + auto sidebar + foldable cards
 - NEW: cloud auto-refresh — this device silently downloads newer snapshots
   every minute + whenever the app regains focus, but ONLY when it has no
