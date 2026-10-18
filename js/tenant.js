@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — M3 Tenant platform: org onboarding, branding, members &
+   NeoKid Care — M3 Tenant platform: org onboarding, branding, members &
    invites, MFA (TOTP), break-glass emergency access, server audit writer,
    quotas/usage, suspension banners. Extends window.Cloud; inert unless cloud
    is enabled + signed in. Live paths need Supabase; pure helpers in

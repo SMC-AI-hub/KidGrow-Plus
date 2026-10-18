@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Infant Feeding Handbook as handouts (v10.13.0)
+   NeoKid Care — Infant Feeding Handbook as handouts (v10.13.0)
    13 chapters, one handout each, EN / TA / HI throughout.
    Each entry condenses its chapter (about · do-steps ·
    don'ts · what to expect · red flags) and links the full

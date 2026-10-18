@@ -1,8 +1,8 @@
 {
-  "name": "kidgrow-pro",
-  "version": "10.23.0",
+  "name": "neokid-care",
+  "version": "10.24.0",
   "private": true,
-  "description": "KidGrow Pro — offline-first pediatric EMR PWA, evolving to multi-tenant SaaS",
+  "description": "NeoKid Care — offline-first neonatal & pediatric clinic PWA with cloud sync",
   "scripts": {
     "test": "node tests/cloud-offline.test.js && node tests/tenant-isolation.test.js && node tests/hardening.test.js && node tests/api.test.js",
     "test:offline": "node tests/cloud-offline.test.js",

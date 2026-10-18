@@ -1,4 +1,4 @@
-/* KidGrow Pro — growth chart renderer (canvas, offline).
+/* NeoKid Care — growth chart renderer (canvas, offline).
    Curves sampled from EXACT WHO/CDC LMS tables; IAP 5-18 screening curves. */
 const GCHART_META = {
   wfa:  { title: "Weight-for-age", unit: "kg", age: true },

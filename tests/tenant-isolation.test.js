@@ -1,4 +1,4 @@
-// KidGrow Pro M1 — cross-tenant isolation suite. Proves at the DATABASE POLICY
+// NeoKid Care M1 — cross-tenant isolation suite. Proves at the DATABASE POLICY
 // layer that Tenant A cannot reach Tenant B's rows via list/search/IDOR/
 // insert/update/delete, that strangers see nothing, and that audit is append-only.
 // Runs against embedded Postgres (PG17, zero setup) or $DATABASE_URL (scratch DB).

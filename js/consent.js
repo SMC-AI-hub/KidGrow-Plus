@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — E-consent with signature (Round 4)
+   NeoKid Care — E-consent with signature (Round 4)
    Templates · canvas signature pad · print.
    ===================================================== */
 const CONSENT_TYPES = {

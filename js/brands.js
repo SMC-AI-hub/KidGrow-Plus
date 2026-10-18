@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — Vaccine brands commonly available in India (selectable)
+   NeoKid Care — Vaccine brands commonly available in India (selectable)
    Indicative list from manufacturer, CDSCO & retail sources; availability
    varies by region and time. Free-text "Other" is always allowed, so the
    record never blocks a clinic using a different brand.

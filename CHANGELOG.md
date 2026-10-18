@@ -1,5 +1,20 @@
 # Changelog
 
+## v10.24.0 — 2026-10-18 — NeoKid Care rebrand + Subscription About
+- ✨ REBRAND: KidGrow Pro is now **NeoKid Care** — the clinic suite
+  for neonatology & pediatrics. New professional logo (growth-curve
+  "N" + amber dot) as icon.svg + regenerated app icons.
+- 🧾 NEW: "About NeoKid Care" card on the Subscription page in every
+  state (sales pitch, billing, offline) — what it is, who it is for,
+  standards (IAP ACVIP 2025 · WHO MGRS · IAP 2015).
+- 🎨 Software brand stays SUBTLE by design: clinic logo/name keep
+  owning the sidebar header + all printouts; NeoKid Care appears
+  only in the sidebar footer, sign-in card, Subscription page and
+  small print-footer credits.
+- 🔒 COMPAT: data keys, encrypted-backup format (.kgenc) and FHIR/
+  health API identifiers unchanged — existing installs + backups
+  keep working.
+
 ## v10.23.0 — 2026-10-17 — IST date fixes + direct-print hardening
 - 🐛 FIX: every due/catch-up/appointment date showed ONE DAY
   EARLY on India-timezone devices (UTC/local mix-up in

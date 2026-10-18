@@ -2,7 +2,7 @@
 
 > This is a starting template for subscribing hospitals, NOT legal advice.
 > Each hospital (data fiduciary for its patients) must adapt it with qualified
-> counsel before onboarding real patients. KidGrow Pro (the SaaS provider)
+> counsel before onboarding real patients. NeoKid Care (the SaaS provider)
 > typically acts as data **processor** — confirm per contract.
 
 ## 1. Who we are

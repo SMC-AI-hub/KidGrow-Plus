@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — Formulary review workflow (C1, partial): per-drug source +
+   NeoKid Care — Formulary review workflow (C1, partial): per-drug source +
    edition tracking with pharmacist sign-off. Reviews live in
    DB.formularyReviews (local-first; server mirror is M8 scope).
    DrugPure.validateDrug checks STRUCTURAL integrity only — it never

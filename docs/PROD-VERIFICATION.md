@@ -1,4 +1,4 @@
-# Production backend verification — KidGrow Pro
+# Production backend verification — NeoKid Care
 
 Date: 2026-10-15 · Prod DB: `jmlvcrekttbzibqitftj` (Sydney) · Method: live
 PostgREST-equivalent sessions (`BEGIN` + `RESET ROLE` + `SET LOCAL`, two

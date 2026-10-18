@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Parent handouts EN / TA / HI (Round 4)
+   NeoKid Care — Parent handouts EN / TA / HI (Round 4)
    Rich format (v10.12.0): what's happening · golden rule ·
    numbered do-steps · don't-myths · what to expect ·
    red flags · weight-based strips · breath guide ·

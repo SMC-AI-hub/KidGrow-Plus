@@ -1,4 +1,4 @@
-# KidGrow Pro — Operations: environments, backups, monitoring, incidents (M2)
+# NeoKid Care — Operations: environments, backups, monitoring, incidents (M2)
 
 ## 1. Environments
 

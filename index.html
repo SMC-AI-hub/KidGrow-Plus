@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KidGrow Pro · Pediatric Milestone, Immunization & Growth Suite (IAP Standards)</title>
+<title>NeoKid Care · Neonatal & Pediatric Growth, Vaccine & Milestone Suite (IAP Standards)</title>
 <meta name="description" content="Professional pediatric suite: developmental milestone assessment, IAP digital vaccination record, and IAP/WHO growth assessment with charts.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
 <link rel="stylesheet" href="css/style.css">
@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#0e7c7b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="KidGrow Pro">
+<meta name="apple-mobile-web-app-title" content="NeoKid Care">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -22,7 +22,7 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="logo" id="brandLogo">👶</div>
-      <div><h1 id="brandName">KidGrow Pro</h1><small id="brandSub">Pediatric Suite · IAP</small></div>
+      <div><h1 id="brandName">NeoKid Care</h1><small id="brandSub">Neonatal · Pediatric · IAP</small></div>
     </div>
     <nav class="nav" id="sideNav">
       <div class="navfilter"><input id="navFilter" placeholder="🔍 Filter menu…" autocomplete="off" oninput="filterNav(this.value)" onkeydown="if(event.key==='Escape'){this.value='';filterNav('')}"></div>
@@ -100,7 +100,7 @@
       </div>
     </nav>
     <div id="userChip"></div>
-    <div class="side-foot"><b>KidGrow Pro v10</b> · Oct 2026<br><span data-vaxver>IAP ACVIP 2025</span> · WHO MGRS 2006 (0–5y) · IAP 2015 (5–18y)<br>Screening aid — clinical judgement prevails.</div>
+    <div class="side-foot"><span class="sw-mini"><img src="icon.svg" alt="">NeoKid Care v10</span> · Oct 2026<br><span data-vaxver>IAP ACVIP 2025</span> · WHO MGRS 2006 (0–5y) · IAP 2015 (5–18y)<br>Screening aid — clinical judgement prevails.</div>
   </aside>
 
   <!-- ============ MAIN ============ -->
@@ -584,7 +584,7 @@
 </div></div>
 
 <div id="lockScreen" class="lock"><div class="lock-card">
-  <div style="font-size:44px">🔐</div><h2 style="margin:6px 0">KidGrow Pro</h2>
+  <img src="icon.svg" alt="NeoKid Care" style="width:52px;height:52px;border-radius:14px"><h2 style="margin:6px 0">NeoKid Care</h2>
   <div class="hint">Select user &amp; enter PIN</div>
   <select id="lockUser"></select>
   <input id="lockPin" type="password" inputmode="numeric" placeholder="PIN" onkeydown="if(event.key==='Enter')doLogin()">
@@ -627,7 +627,7 @@
 <script src="js/metrics.js"></script>
 <script src="js/formulary.js"></script>
 <script src="js/ops.js"></script>
-<div id="updateBar" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#0c2340;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px;text-align:center">A new version of KidGrow Pro is ready. <button onclick="kgUpdate()" style="background:#0e7c7b;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;margin-left:8px">Refresh now</button></div>
+<div id="updateBar" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#0c2340;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px;text-align:center">A new version of NeoKid Care is ready. <button onclick="kgUpdate()" style="background:#0e7c7b;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;margin-left:8px">Refresh now</button></div>
 <script>
 function kgUpdate() { try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage("SKIP_WAITING"); } catch (e) {} location.reload(); }
 function netTick() { var b = document.getElementById("netBadge"); if (!b) return; var on = navigator.onLine !== false; b.textContent = on ? "● Online" : "○ Offline"; b.className = "badge " + (on ? "b-green" : "b-gray"); }

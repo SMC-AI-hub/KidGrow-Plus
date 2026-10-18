@@ -1,4 +1,4 @@
-// KidGrow Pro — offline/local-mode suite (M1). Boots ALL scripts in index.html
+// NeoKid Care — offline/local-mode suite (M1). Boots ALL scripts in index.html
 // order, asserts local-mode parity, subscription-access logic, file resolution,
 // and the PIN-hash migration + lockout. Use: node tests/cloud-offline.test.js
 const fs = require("fs"), vm = require("vm"), path = require("path");
@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/kidgrow-v13/.test(sw), "SW cache bumped to v13");
+  ok(/neokid-v14/.test(sw), "SW cache bumped to v14 (rebrand)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -513,6 +513,13 @@ async function main() {
   ok(billPitch.includes("free trial") && billPitch.includes("per clinic, per month"), "logged-out billing shows the pitch");
   sb.Cloud.enabled = false;
   ok(sb.subscriptionPitchHTML(false).includes("Start") && sb.subscriptionPitchHTML(true).includes("Subscribe now"), "pitch CTA adapts to auth state");
+  var pitchV = sb.subscriptionPitchHTML(false), pitchA = sb.subscriptionPitchHTML(true);
+  ok(pitchV.includes("About NeoKid Care") && pitchA.includes("About NeoKid Care"), "subscription pitch carries software About card");
+  ok(pitchV.includes("neonatology") && pitchV.includes("icon.svg"), "About card names specialty + shows logo");
+  var mani = JSON.parse(fs.readFileSync(path.join(R, "manifest.json"), "utf8"));
+  ok(mani.short_name === "NeoKid Care", "PWA short_name rebranded");
+  var iconSvg = fs.readFileSync(path.join(R, "icon.svg"), "utf8");
+  ok(iconSvg.includes("#ffd166") && iconSvg.includes("linearGradient"), "new NeoKid Care mark installed");
   sb.scrollTo = sb.scrollTo || (() => {});
   sb.go("pricing");
   ok(sb.document.getElementById("pageTitle").textContent === "Subscription & Billing", "old pricing route lands on merged page");
@@ -940,7 +947,7 @@ async function main() {
   sb.renderCard();
   const cardHTML = sb.document.getElementById("cardBox").innerHTML;
   ok(cardHTML.includes("vax-head") && cardHTML.includes("Hospital logo") && cardHTML.includes("vax-verify"), "card prints logo + verify code");
-  ok(cardHTML.includes("Scan at any KidGrow clinic") && cardHTML.includes("<svg"), "card QR scannable + captioned");
+  ok(cardHTML.includes("Scan at any NeoKid Care clinic") && cardHTML.includes("<svg"), "card QR scannable + captioned");
   ok(cardHTML.includes("Recommended Vaccines") && cardHTML.includes("Brand given") && cardHTML.includes("Given on") && cardHTML.includes("Due on") && cardHTML.includes("Batch"), "card uses record-table format");
   ok(cardHTML.includes("16\u201318 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
   ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");

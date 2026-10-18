@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Clinic ops (Round 1)
+   NeoKid Care — Clinic ops (Round 1)
    Appointments · vaccine reminders · defaulter tracking ·
    coverage & nutrition analytics.
    Pure engine (testable) + DOM renderers.

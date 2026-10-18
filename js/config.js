@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — cloud / subscription config (PUBLIC values only — safe to ship).
+   NeoKid Care — cloud / subscription config (PUBLIC values only — safe to ship).
    Multi-env: the app picks keys by hostname, so staging and prod both build
    from main with zero branch juggling and no way to point staging at prod data.
    - kidgrow-staging.* / localhost / unknown hosts  → staging keys (safe default)
@@ -36,7 +36,7 @@
     SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY,
     KIDGROW_ENV: pick, // "staging" | "prod" — surfaced for banners/debugging
     RAZORPAY_KEY_ID: "",     // Razorpay → Settings → API Keys → Key ID (rzp_live_xxx)
-    PLAN_NAME: "KidGrow Pro Monthly",
+    PLAN_NAME: "NeoKid Care Monthly",
     PLAN_PRICE: "₹499/month",
     TRIAL_DAYS: 14,          // must match trial interval in supabase/schema.sql
     OFFLINE_GRACE_DAYS: 7    // paid users stay usable offline this long after last check

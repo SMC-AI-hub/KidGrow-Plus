@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — M5 NICU longitudinal: admissions, daily rounds, discharge.
+   NeoKid Care — M5 NICU longitudinal: admissions, daily rounds, discharge.
    Data lives on the child record (child.nicu.admissions[]) — synced to
    nicu_admissions/nicu_rounds via apply_clinical_op(). Pure helpers in
    window.NicuPure are unit-tested. This module never deletes clinical rows

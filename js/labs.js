@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Anaemia & micronutrient tracker (Round 3)
+   NeoKid Care — Anaemia & micronutrient tracker (Round 3)
    WHO/IAP Hb cutoffs · ferritin · B12 · Vitamin D.
    ===================================================== */
 function hbClass(ageM, hb) {

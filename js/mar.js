@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — M5 eMAR: scheduled meds + administration log with
+   NeoKid Care — M5 eMAR: scheduled meds + administration log with
    two-person rule for controlled drugs (witness required — also enforced
    server-side by 0004). Data on child.mar[]; synced via apply_clinical_op().
    Pures in window.MarPure are unit-tested.

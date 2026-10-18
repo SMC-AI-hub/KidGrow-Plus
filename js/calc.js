@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — M5 validated clinical calculators: maintenance fluids
+   NeoKid Care — M5 validated clinical calculators: maintenance fluids
    (Holliday–Segar + neonatal day-of-life), feed volumes, calorie goals.
    Every result carries {value, capped, warnings[]} or {error} — outputs
    are never bare numbers, and every input is range-checked. Pures in

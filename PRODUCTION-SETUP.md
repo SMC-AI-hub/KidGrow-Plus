@@ -1,4 +1,4 @@
-# KidGrow Pro — production setup (Supabase + Vercel + Razorpay)
+# NeoKid Care — production setup (Supabase + Vercel + Razorpay)
 
 What you get: clinic accounts with login, a **14-day free trial**, **monthly subscription**
 billing in ₹, automatic **cloud backup**, and **multi-device sync** — while the app keeps
@@ -35,7 +35,7 @@ You do 4 things (accounts are yours — nobody can do this part for you):
    (PAN + bank account; approval usually 1–3 days — meanwhile use **Test Mode**).
 2. Stay in **Test Mode** (toggle, top bar) for now.
 3. **Products → Subscriptions → Plans → Create Plan**:
-   - Billing: **Monthly**, amount (e.g. **₹499**), name: `KidGrow Pro Monthly`.
+   - Billing: **Monthly**, amount (e.g. **₹499**), name: `NeoKid Care Monthly`.
    - Copy the **Plan ID** (`plan_xxxx`).
 4. **Settings → API Keys → Generate** (test mode) → copy **Key ID** (`rzp_test_…`)
    and **Key Secret**.
