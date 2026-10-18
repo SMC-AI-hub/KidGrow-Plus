@@ -1,4 +1,4 @@
-# KidGrow Pro 👶 — Paediatric Clinic Suite → Multi-tenant EMR SaaS
+# NeoKid Care 👶 — Paediatric Clinic Suite → Multi-tenant EMR SaaS
 
 Offline-first PWA for child health (birth–18 y) to Indian Academy of Pediatrics
 standards, evolving into a production-grade multi-tenant SaaS. Works fully

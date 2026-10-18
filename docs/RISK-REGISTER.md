@@ -1,4 +1,4 @@
-# KidGrow Pro — Risk registers (Phase 1)
+# NeoKid Care — Risk registers (Phase 1)
 
 Severity: 🔴 critical · 🟠 high · 🟡 medium · 🟢 low. Status is updated as work lands.
 Rule: nothing here is "fixed" until a test proves it.

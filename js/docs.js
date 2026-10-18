@@ -1,4 +1,4 @@
-/* KidGrow Pro — professional document helpers (letterhead footer + full reports).
+/* NeoKid Care — professional document helpers (letterhead footer + full reports).
    Milestone model (matches app.js): c.milestones["bi_ii"] = "A"|"E"|"N"|"" ;
    MILESTONES[bi] = { band, min, max, items:[{d,t}], red:[] }. */
 
@@ -10,7 +10,7 @@ function docFooter(name) {
     <div class="sigrow"><div>Parent / guardian signature: ______________</div>
     <div style="margin-left:auto;text-align:center">Doctor signature &amp; seal<br><br>______________<br>
     <span style="font-size:11px;color:var(--muted)">${esc(ld.name)}${ld.reg ? " · Reg: " + esc(ld.reg) : ""}</span></div></div>
-    <div class="gen">${esc(name || "Document")} · Generated ${fmtDate(todayISO())} · ${esc(s.clinic || "KidGrow Pro")}${(typeof Tenant !== "undefined" && Tenant._brand && Tenant._brand().name) ? " · " + esc(Tenant._brand().name) : ""} · Computer-assisted record — confirm clinical labels before filing.</div>
+    <div class="gen">${esc(name || "Document")} · Generated ${fmtDate(todayISO())} · ${esc(s.clinic || "NeoKid Care")}${(typeof Tenant !== "undefined" && Tenant._brand && Tenant._brand().name) ? " · " + esc(Tenant._brand().name) : ""} · Computer-assisted record — confirm clinical labels before filing.</div>
   </div>`;
 }
 

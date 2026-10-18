@@ -1,4 +1,4 @@
-// KidGrow Pro — API function tests (M2). Health endpoint shape + proof that no
+// NeoKid Care — API function tests (M2). Health endpoint shape + proof that no
 // secret/key material ever appears in responses (marker-env technique).
 const health = require("../api/health");
 let pass = 0, fail = 0;

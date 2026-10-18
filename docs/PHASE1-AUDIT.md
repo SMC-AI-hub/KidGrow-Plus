@@ -1,4 +1,4 @@
-# KidGrow Pro — Phase 1 Audit: architecture, features, data & API
+# NeoKid Care — Phase 1 Audit: architecture, features, data & API
 
 Date: 2026-10-13 · Codebase: v10 (`3c96ac5`, unpushed) · Method: source inspection +
 baseline test run (`cloudtest`: **30/30 pass**) + OSV vulnerability lookup.

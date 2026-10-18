@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — M4 relational sync: dual-write outbox + LWW conflict safety.
+   NeoKid Care — M4 relational sync: dual-write outbox + LWW conflict safety.
    Local storage stays the source of truth for rich detail; identity +
    encounter/consent skeletons sync to Postgres via idempotent apply_*_op()
    RPCs (see 0003_sync.sql). Offline queues in localStorage; replays are safe.

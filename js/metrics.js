@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — M6 defined-denominator metrics. Every rate is {n, d, pct}
+   NeoKid Care — M6 defined-denominator metrics. Every rate is {n, d, pct}
    so the UI always shows numerator + denominator + period — never a bare
    percent. MetricsPure is unit-tested. Growth rules here mirror growth.js
    thresholds (10% drop, 6/12 mo review) without needing WHO tables.

@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Screening suite (Round 3)
+   NeoKid Care — Screening suite (Round 3)
    Asthma action plan + PEF diary · dental eruption chart ·
    RBSK 4Ds checklist.
    ===================================================== */

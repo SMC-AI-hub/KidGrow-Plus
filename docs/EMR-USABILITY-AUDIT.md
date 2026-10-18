@@ -1,4 +1,4 @@
-# EMR Usability Audit — KidGrow Pro vs 20-point checklist
+# EMR Usability Audit — NeoKid Care vs 20-point checklist
 
 Date: 2026-10-15 · Commit audited: `c1a7aee` (staging/main) · Auditor: Arena agent (code-level)
 Principle: the doctor should spend more time treating than typing.

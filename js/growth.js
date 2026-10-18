@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — Growth engine (birth to 18 years)
+   NeoKid Care — Growth engine (birth to 18 years)
    EXACT references : WHO MGRS 2006 daily LMS (0-5 y) · CDC 2000 LMS (2-20 y,
                       severe obesity by % of P95) · IAP adult-equiv BMI lines
    SCREENING curves : IAP 2015-aligned (5-18 y, calibrated to published

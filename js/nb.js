@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Newborn module (Round 3)
+   NeoKid Care — Newborn module (Round 3)
    Delivery record · APGAR · New Ballard Score ·
    screening checklist · birth register.
    ===================================================== */

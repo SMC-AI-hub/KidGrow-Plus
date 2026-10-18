@@ -1,4 +1,4 @@
-# KidGrow Pro — Missing-feature matrix & prioritized roadmap (Phase 1 →)
+# NeoKid Care — Missing-feature matrix & prioritized roadmap (Phase 1 →)
 
 ## Stack decision (why no rewrite)
 

@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — AEFI register (Round 3)
+   NeoKid Care — AEFI register (Round 3)
    Adverse Events Following Immunisation with severity
    grading + India reporting cues.
    ===================================================== */

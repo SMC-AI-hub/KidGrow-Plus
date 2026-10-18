@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Frontdesk (Round 2)
+   NeoKid Care — Frontdesk (Round 2)
    PIN login + roles · audit trail · token queue ·
    billing & receipts · users management.
    ===================================================== */

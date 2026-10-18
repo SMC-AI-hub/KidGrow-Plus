@@ -1,4 +1,4 @@
-// KidGrow Pro — M6 FHIR R4 read facade (GET-only) over Supabase PostgREST.
+// NeoKid Care — M6 FHIR R4 read facade (GET-only) over Supabase PostgREST.
 // Auth: caller's Supabase user JWT in Authorization (RLS enforced by Postgres).
 // Tenant scoping: ?tenant=<uuid> is REQUIRED and always applied upstream.
 // No service keys, no writes, no PHI in error messages. Mappers exported for tests.
@@ -95,7 +95,7 @@ function metadata() {
     resourceType: "CapabilityStatement", status: "active", kind: "instance",
     date: new Date().toISOString().slice(0, 10), fhirVersion: "4.0.1", format: ["json"],
     rest: [{
-      mode: "server", documentation: "KidGrow Pro read facade. ?tenant=<uuid> required; user JWT via Authorization; RLS enforced upstream.",
+      mode: "server", documentation: "NeoKid Care read facade. ?tenant=<uuid> required; user JWT via Authorization; RLS enforced upstream.",
       resource: Object.keys(TABLES).map((t) => ({ type: t, interaction: [{ code: "read" }, { code: "search-type" }] }))
     }]
   };

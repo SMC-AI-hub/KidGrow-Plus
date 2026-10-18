@@ -1,4 +1,4 @@
-/* KidGrow Pro — booklet generator (v10.15.0).
+/* NeoKid Care — booklet generator (v10.15.0; v10.25.0 rebrand).
  * Emits handbook/booklet-<id>-<lang>.html for every HANDOUTS topic in
  * en/ta/hi: warm mother-booklet design, hospital logo (centered cover,
  * pulled live from app settings), copyright footer on screen + every
@@ -22,7 +22,7 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const pick = (o, L) => (o && (o[L] || o.en)) || "";
 
 const T = {
-  brand: { en: "KIDGROW • PARENT HANDOUT", ta: "கிட்குரோ • பெற்றோர் குறிப்பு", hi: "किडग्रो • अभिभावक पर्ची" },
+  brand: { en: "NEOKID CARE • PARENT HANDOUT", ta: "நியோகிட் கேர் • பெற்றோர் குறிப்பு", hi: "नियोकिड केयर • अभिभावक पर्ची" },
   care: { en: "Everyday care", ta: "அன்றாட பராமரிப்பு", hi: "रोज़मर्रा देखभाल" },
   hb: { en: "Infant Feeding Handbook", ta: "குழந்தை உணவு கையேடு", hi: "शिशु आहार हैंडबुक" },
   do: { en: "WHAT TO DO AT HOME", ta: "வீட்டில் செய்யுங்கள்", hi: "घर पर करें" },
@@ -91,7 +91,7 @@ table.bt tr:nth-child(even) td{background:#F4F9F7}
 `;
 
 const LOGO_SCRIPT = `<script>
-(function(){try{var raw=localStorage.getItem("kidgrow_pro_v1");if(!raw)return;var db=JSON.parse(raw);var s=(db&&db.settings)||{};if(s.logo){var im=document.getElementById("hospLogo");if(im){im.src=s.logo;im.style.display="block";}var b=document.getElementById("iconBadge");if(b)b.style.display="none";}var nm=s.clinic||"KidGrow Pro";var y=new Date().getFullYear();var els=document.querySelectorAll(".copyline");for(var i=0;i<els.length;i++){els[i].textContent="\\u00A9 "+y+" "+nm;}}catch(e){}})();
+(function(){try{var raw=localStorage.getItem("kidgrow_pro_v1");if(!raw)return;var db=JSON.parse(raw);var s=(db&&db.settings)||{};if(s.logo){var im=document.getElementById("hospLogo");if(im){im.src=s.logo;im.style.display="block";}var b=document.getElementById("iconBadge");if(b)b.style.display="none";}var nm=s.clinic||"NeoKid Care";var y=new Date().getFullYear();var els=document.querySelectorAll(".copyline");for(var i=0;i<els.length;i++){els[i].textContent="\\u00A9 "+y+" "+nm;}}catch(e){}})();
 <\/script>`;
 
 function tableHtml(title, head, rows) {
@@ -102,7 +102,7 @@ function tableHtml(title, head, rows) {
 
 function booklet(h, L) {
   const grp = h.grp === "hb" ? T.hb[L] : T.care[L];
-  const copyBase = `\u00A9 2026 KidGrow Pro \u2022 ${T.rights[L]}`;
+  const copyBase = `\u00A9 2026 NeoKid Care \u2022 ${T.rights[L]}`;
   let body = "";
   body += `<div class="cover"><div class="logo-center"><img id="hospLogo" alt="Hospital logo"></div><div class="badge" id="iconBadge">${h.icon}</div><h1>${esc(h.title[L])}</h1><div class="meta">${h.grp === "hb" ? "📖" : "🩺"} ${esc(grp)} • ${esc(LANGN[L])}</div><div class="copyline">${esc(copyBase)}</div><p class="about">${esc(h.about[L])}</p>`;
   if (h.pearl) body += `<div class="gold"><b>${esc(h.pearl[L])}</b></div>`;
@@ -142,8 +142,8 @@ function booklet(h, L) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="copyright" content="KidGrow Pro — all rights reserved">
-<title>${esc(h.title[L])} — KidGrow</title>
+<meta name="copyright" content="NeoKid Care — all rights reserved">
+<title>${esc(h.title[L])} — NeoKid Care</title>
 <style>${CSS}</style>
 </head>
 <body>

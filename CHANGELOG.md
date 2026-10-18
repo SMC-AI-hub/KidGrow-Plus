@@ -1,5 +1,45 @@
 # Changelog
 
+## v10.25.0 — 2026-10-18 — First Foods TA/HI complete + booklet rebrand
+- 🌐 COMPLETE: First Foods enrichment (6 calorie guides, 7 recipes,
+  myths-vs-facts) now fully translated in Tamil + Hindi — zero
+  English fallback left in solids booklets. All 66 booklets
+  regenerated from data (tools/make-booklets.js).
+- 🎨 Booklets rebranded KidGrow → NeoKid Care (topbar, copylines,
+  titles, meta) in all 3 languages; hospital-logo hook + LS key
+  untouched. SW cache bumped to neokid-v15 for new content.
+
+## v10.24.0 — 2026-10-18 — NeoKid Care rebrand + Subscription About
+- ✨ REBRAND: KidGrow Pro is now **NeoKid Care** — the clinic suite
+  for neonatology & pediatrics. New professional logo (growth-curve
+  "N" + amber dot) as icon.svg + regenerated app icons.
+- 🧾 NEW: "About NeoKid Care" card on the Subscription page in every
+  state (sales pitch, billing, offline) — what it is, who it is for,
+  standards (IAP ACVIP 2025 · WHO MGRS · IAP 2015).
+- 🎨 Software brand stays SUBTLE by design: clinic logo/name keep
+  owning the sidebar header + all printouts; NeoKid Care appears
+  only in the sidebar footer, sign-in card, Subscription page and
+  small print-footer credits.
+- 🔒 COMPAT: data keys, encrypted-backup format (.kgenc) and FHIR/
+  health API identifiers unchanged — existing installs + backups
+  keep working.
+
+## v10.23.0 — 2026-10-17 — IST date fixes + direct-print hardening
+- 🐛 FIX: every due/catch-up/appointment date showed ONE DAY
+  EARLY on India-timezone devices (UTC/local mix-up in
+  addDays/todayISO). Dates are now timezone-proof calendar
+  math; analytics month buckets + eMAR dose clocks fixed
+  the same way. Suite now verified under Asia/Kolkata too.
+- 🖨️ FIX: phone/browser Print menu no longer prints raw
+  screen chrome — the visible page is auto-marked for
+  printing (no more blank/stale prints), Record/Edit
+  buttons + inputs + update banner are hidden on paper,
+  and the print mark is always cleared afterwards.
+- 📲 SW cache v13 so devices pick up the fix with the
+  "new version ready" banner.
+- ✅ Verified with headless-Chrome print emulation (IST).
+- Tests: 708/708 (502 offline + 107 isolation + 52 hardening + 47 api).
+
 ## v10.22.0 — 2026-10-17 — IAP ACVIP 2025 immunisation schedule
 - 💉 Schedule rebuilt from the IAP ACVIP 2025 timetable
   (Indian Pediatrics 2026;63:311–324): 18 visits, 45 doses.

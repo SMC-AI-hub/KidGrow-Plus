@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — Clinical Reference Data
+   NeoKid Care — Clinical Reference Data
    Sources (for screening use):
    • Vaccines: IAP ACVIP Immunization Timetable 2025 (routine use)
    • Growth 0–5 y: WHO Multicentre Growth Reference Study 2006

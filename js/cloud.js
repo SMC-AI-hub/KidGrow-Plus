@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — Cloud: Supabase auth + sync + Razorpay subscriptions.
+   NeoKid Care — Cloud: Supabase auth + sync + Razorpay subscriptions.
    - Inactive (zero behaviour change) unless js/config.js has Supabase keys.
    - Offline-first preserved: local data always works; cloud syncs when online.
    - Subscription enforced with trial + offline grace (clinics with bad net).
@@ -12,7 +12,7 @@
 var CFG = (typeof window.KIDGROW_CONFIG === "object" && window.KIDGROW_CONFIG) || {};
 var SB_URL = CFG.SUPABASE_URL || "", SB_ANON = CFG.SUPABASE_ANON_KEY || "";
 var RZP_KEY = CFG.RAZORPAY_KEY_ID || "";
-var PLAN_NAME = CFG.PLAN_NAME || "KidGrow Pro Monthly";
+var PLAN_NAME = CFG.PLAN_NAME || "NeoKid Care Monthly";
 var PLAN_PRICE = CFG.PLAN_PRICE || "";
 var TRIAL_DAYS = CFG.TRIAL_DAYS || 14;
 var GRACE_MS = (CFG.OFFLINE_GRACE_DAYS || 7) * 864e5;
@@ -85,7 +85,7 @@ function showAuth(mode) {
   var r = $("cloudRoot");
   r.innerHTML =
     '<div class="modal-bg open" id="mCloud"><div class="modal" style="max-width:400px;text-align:center">' +
-    '<div style="font-size:44px">👶</div><h2 style="margin:6px 0">KidGrow Pro</h2>' +
+    '<img src="icon.svg" alt="NeoKid Care" style="width:52px;height:52px;border-radius:14px">' + '<h2 style="margin:6px 0">NeoKid Care</h2>' +
     '<div class="hint" id="cloudAuthSub">' + (mode === "signup" ? "Create your clinic account — includes a " + TRIAL_DAYS + "-day free trial." : "Sign in to your clinic account.") + "</div>" +
     '<div id="cloudAuthErr" style="color:var(--red,#dc2626);font-size:13px;min-height:18px;margin-top:6px"></div>' +
     '<input id="cloudEmail" type="email" placeholder="Email address" autocomplete="email" style="margin-bottom:8px">' +
@@ -320,7 +320,7 @@ function subscribe() {
     .then(function (j) {
       var rzp = new window.Razorpay({
         key: j.key_id || RZP_KEY, subscription_id: j.subscription_id,
-        name: "KidGrow Pro", description: PLAN_NAME,
+        name: "NeoKid Care", description: PLAN_NAME,
         prefill: { email: session.user.email },
         theme: { color: "#0e7c7b" },
         modal: { ondismiss: function () { toast("You can subscribe anytime from Settings → Cloud."); } },
@@ -363,7 +363,7 @@ function billInfoHTML(info, a) {
     + "</dl>";
   if (!info || info.error) {
     return head + '<div class="hint">Could not load live billing details (offline or unreachable).</div>'
-      + '<button class="btn btn-o btn-sm" onclick="Cloud.refreshBilling()">↻ Retry</button></div>';
+      + '<button class="btn btn-o btn-sm" onclick="Cloud.refreshBilling()">↻ Retry</button></div>' + nkAboutHTML();
   }
   var body = head;
   if (a && a.ok && a.reason === "past_due") {
@@ -388,11 +388,11 @@ function billInfoHTML(info, a) {
         + "<td>" + (v.short_url ? '<a href="' + esc(v.short_url) + '" target="_blank" rel="noopener">Receipt</a>' : "—") + "</td></tr>";
     }).join("") + "</table>";
   }
-  return body + "</div>";
+  return body + "</div>" + nkAboutHTML();
 }
 function renderBilling() {
   var el = $("billBody"); if (!el) return;
-  if (!Cloud.enabled) { el.innerHTML = '<div class="card"><h3>💳 Billing</h3><div class="hint">Cloud is not configured on this device.</div></div>'; return; }
+  if (!Cloud.enabled) { el.innerHTML = '<div class="card"><h3>💳 Billing</h3><div class="hint">Cloud is not configured on this device.</div></div>' + nkAboutHTML(); return; }
   if (!session) { el.innerHTML = subscriptionPitchHTML(false); return; }
   var a = currentAccess();
   if (!a.ok && a.reason !== "pending") { el.innerHTML = subscriptionPitchHTML(true); return; }
@@ -426,12 +426,26 @@ function cancelSub() {
 }
 // Pure pitch card for visitors + expired accounts. Subscribed/trial/pending users
 // never see this — renderBilling shows them the management view instead.
+/* Software identity: subtle by design — the clinic's own logo owns the
+   header/printouts; NeoKid Care appears only here, the sign-in card and
+   small footer credits. Shown on every Subscription state (pitch, billing,
+   offline) so clinics always know what they pay for. */
+function nkAboutHTML() {
+  return '<div class="card" style="max-width:520px;margin:12px auto"><div class="nk-about">'
+    + '<img src="icon.svg" alt="NeoKid Care logo">'
+    + '<div><h3 style="margin:0 0 2px">About NeoKid Care</h3>'
+    + '<p><b>NeoKid Care</b> is the clinic suite for <b>neonatology &amp; pediatrics</b> — from first breath to full growth. '
+    + 'Newborn &amp; NICU notes, IAP-schedule immunisation, WHO/IAP growth charts, milestones, prescriptions, billing and parent handouts (EN/TA/HI) — '
+    + 'one app that works fully offline and syncs across all your devices.</p>'
+    + '<div class="std">IAP ACVIP 2025 · WHO MGRS 2006 · IAP 2015 · Made for Indian clinics</div>'
+    + '</div></div></div>';
+}
 function subscriptionPitchHTML(authed) {
   var cta = authed
     ? '<button class="btn btn-p" style="width:100%" onclick="Cloud.subscribe()">Subscribe now</button>'
     : '<button class="btn btn-p" style="width:100%" onclick="Cloud.showAuth(\'signup\')">Start ' + TRIAL_DAYS + '-day free trial</button>'
       + '<div style="margin-top:10px;font-size:13px">Have an account? <a href="#" onclick="Cloud.showAuth(\'login\');return false">Sign in</a></div>';
-  return '<div class="card" style="max-width:520px;margin:0 auto"><div style="text-align:center"><div style="font-size:40px">💎</div><h2 style="margin:4px 0">' + esc(PLAN_NAME) + '</h2>'
+  return '<div class="card" style="max-width:520px;margin:0 auto"><div style="text-align:center"><img src="icon.svg" alt="NeoKid Care" style="width:54px;height:54px;border-radius:15px"><h2 style="margin:4px 0">' + esc(PLAN_NAME) + '</h2>'
     + '<div style="font-size:30px;font-weight:800;color:var(--navy)">' + esc(PLAN_PRICE || "—") + '</div><div class="hint">per clinic, per month · cancel anytime</div></div>'
     + '<div style="font-size:14px;margin:14px 0">✓ Unlimited children & records<br>✓ Automatic cloud backup + multi-device sync<br>✓ WhatsApp reminders & vaccine alerts<br>✓ Growth charts (WHO/CDC) & eMAR<br>✓ Works offline — syncs when online</div>'
     + cta + "</div>"
@@ -440,7 +454,7 @@ function subscriptionPitchHTML(authed) {
     + "<dt>Cancel?</dt><dd>Anytime in one tap on this page — access runs till period end.</dd>"
     + "<dt>Payment fails?</dt><dd>We retry automatically; you keep access meanwhile.</dd>"
     + "<dt>My data?</dt><dd>Yours. Export anytime; GST invoices emailed per payment.</dd>"
-    + "</dl></div>";
+    + "</dl></div>" + nkAboutHTML();
 }
 
 /* ---------------- public API ---------------- */

@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Bedside aids (Round 1)
+   NeoKid Care — Bedside aids (Round 1)
    Emergency drug/fluid ready-reckoner · digital vaccine
    card with QR · record-code import/export.
    ===================================================== */
@@ -179,7 +179,7 @@ function renderCard() {
         ${(DB.settings.logo || "") ? `<img src="${DB.settings.logo}" alt="Hospital logo">` : ""}
         <div style="min-width:0">
           <div class="eyebrow">DIGITAL IMMUNISATION CARD</div>
-          <h2>${esc(DB.settings.clinic || "KidGrow Pro Clinic")}</h2>
+          <h2>${esc(DB.settings.clinic || "NeoKid Care Clinic")}</h2>
           <div class="sub">${esc(DB.settings.doctor || "")}${DB.settings.addr ? ` · ${esc(DB.settings.addr)}` : ""}${DB.settings.reg ? ` · Reg: ${esc(DB.settings.reg)}` : ""}</div>
         </div>
         ${(typeof parentVerifyCode === "function") ? `<div class="vax-verify">Verify code<br><b>${esc(parentVerifyCode(c))}</b></div>` : ""}
@@ -191,7 +191,7 @@ function renderCard() {
           <dt>Parent</dt><dd>${esc([c.mother, c.father].filter(Boolean).join(" & ") || "—")}${c.phone ? ` · ☎ ${esc(c.phone)}` : ""}</dd>
           <dt>Blood</dt><dd>${esc(c.blood || "—")}${c.allergy ? ` · ⚠️ ${esc(c.allergy)}` : ""}</dd>
         </dl>
-        <div class="qrbox" style="text-align:center">${qrSVG(code)}<div style="font-size:11px;color:var(--muted);margin-top:4px">Scan at any KidGrow clinic<br>to verify / import this record</div></div>
+        <div class="qrbox" style="text-align:center">${qrSVG(code)}<div style="font-size:11px;color:var(--muted);margin-top:4px">Scan at any NeoKid Care clinic<br>to verify / import this record</div></div>
       </div>
       <table class="tbl vaxtbl" style="margin-top:10px"><tr><th>Age</th><th>Recommended Vaccines</th><th>Due on</th><th>Brand given</th><th>Given on</th><th>Batch</th></tr>${schedRows}${ex}</table>
       <div class="vax-sign"><div>Doctor signature &amp; seal: ______________</div><div style="margin-left:auto">Date: ${fmtDate(todayISO())}</div></div>

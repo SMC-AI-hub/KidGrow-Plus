@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Modern clinical design system
+   NeoKid Care — Modern clinical design system
    Light + dark + sunrise themes · icon rail · print-safe
    NOTE: class names are a public contract with app JS.
    Restyle freely, but do not rename/remove selectors.
@@ -92,6 +92,13 @@ label{font-size:11.5px;font-weight:700;color:var(--muted);display:block;margin-b
 #userChip{padding:10px 16px;border-top:1px solid rgba(255,255,255,.12);font-size:13px;color:#dbe7f3}
 #userChip .btn{margin-left:6px}
 .side-foot{padding:12px 18px 16px;font-size:10.5px;color:#8fb0cc;line-height:1.55}
+/* NeoKid Care software identity — subtle: footer mini-mark + Subscription About card */
+.sw-mini{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+.sw-mini img{width:15px;height:15px;border-radius:4px}
+.nk-about{display:flex;gap:12px;align-items:flex-start}
+.nk-about img{width:46px;height:46px;border-radius:12px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.nk-about p{font-size:13.5px;line-height:1.6;margin:2px 0 6px}
+.nk-about .std{font-size:12px;color:var(--muted)}
 /* collapsed icon rail */
 body.nav-mini .sidebar{width:84px}
 body.nav-mini .brand{justify-content:center;padding:18px 8px 14px}
@@ -286,7 +293,8 @@ label.sib input{width:14px;height:14px;accent-color:var(--teal)}
 /* ---------- Print: always light, always clean ---------- */
 @media print{
   :root{--bg:#fff;--card:#fff;--card2:#f8fafc;--ink:#1e293b;--head:#0f2b4d;--muted:#64748b;--line:#e2e8f0;--input:#fff;--th:#f1f5f9;--rowh:#f8fafc;--track:#e8eef4;--teal-d:#0b7c72;color-scheme:light}
-  .sidebar,.topbar,.toolbar,.mobile-nav,.no-print,.modal-bg,#cloudBanner,#cloudToast{display:none!important}
+  .sidebar,.topbar,.toolbar,.mobile-nav,.no-print,.modal-bg,#cloudBanner,#cloudToast,#updateBar{display:none!important}
+  .page.printing button,.page.printing input,.page.printing select,.page.printing textarea{display:none!important}
   .main{padding:0}.content{padding:0;max-width:none}
   .page{display:none!important}.page.printing{display:block!important}
   .page.printing{animation:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -368,7 +376,7 @@ body:has(#pg-display.active) .content{max-width:none;padding:18px}
 @media print{.display-page{display:none!important}}
 
 /* =====================================================
-   KidGrow Pro — Premium glow-up layer (v6)
+   NeoKid Care — Premium glow-up layer (v6)
    Pure visuals: no selector renames, print-safe.
    ===================================================== */
 /* ambient background mesh */

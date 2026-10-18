@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Clinic ops (Round 1)
+   NeoKid Care — Clinic ops (Round 1)
    Appointments · vaccine reminders · defaulter tracking ·
    coverage & nutrition analytics.
    Pure engine (testable) + DOM renderers.
@@ -154,7 +154,7 @@ function falteringFlags(children) {
 function visitVolume(children, today, months) {
   months = months || 6;
   const keys = [], d = new Date(today + "T00:00:00");
-  for (let i = months - 1; i >= 0; i--) keys.push(new Date(d.getFullYear(), d.getMonth() - i, 1).toISOString().slice(0, 7));
+  for (let i = months - 1; i >= 0; i--) { const t = new Date(d.getFullYear(), d.getMonth() - i, 1); keys.push(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`); }
   const counts = {}; keys.forEach((k) => (counts[k] = 0));
   (children || []).forEach((c) => (c.visits || []).forEach((v) => {
     const k = (v.date || "").slice(0, 7);

@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Clinic ops round 2
+   NeoKid Care — Clinic ops round 2
    Appointment reminders · day-close collections ·
    vaccine stock ledger with auto-deduct.
    Pure engines (testable) + DOM renderers.
@@ -422,7 +422,7 @@ function renderDisplay() {
   const up = d.waiting.slice(0, 6);
   box.innerHTML = `<div class="disp-wrap">
     <div class="disp-top">
-      <div class="disp-brand">${S.logo ? `<img src="${S.logo}" alt="">` : "🧸"}<div><b>${esc(S.clinic || "KidGrow Pro")}</b><small>${esc(S.addr || "")}</small></div></div>
+      <div class="disp-brand">${S.logo ? `<img src="${S.logo}" alt="">` : "🧸"}<div><b>${esc(S.clinic || "NeoKid Care")}</b><small>${esc(S.addr || "")}</small></div></div>
       <div class="disp-clock"><b id="dispClock">--:--</b><small>${fmtDate(todayISO())}</small></div>
     </div>
     <div class="disp-main">
@@ -598,7 +598,7 @@ th{background:#0f2b4d;color:#fff}.due{background:#fefce8;border:1px solid #fde68
 .qr{text-align:center;margin-top:12px;font-size:12px;color:#64748b}
 .foot{font-size:11.5px;color:#64748b;margin-top:10px;text-align:center}</style></head><body><div class="card">
 <div class="head">${S.logo ? `<img src="${S.logo}" alt="logo">` : `<div class="em">👶</div>`}
-<div><h1>${esc(S.clinic || "KidGrow Pro Clinic")}</h1><small>DIGITAL IMMUNISATION CARD · ${esc(S.addr || "")}</small></div></div>
+<div><h1>${esc(S.clinic || "NeoKid Care Clinic")}</h1><small>DIGITAL IMMUNISATION CARD · ${esc(S.addr || "")}</small></div></div>
 <dl class="kv"><dt>Child</dt><dd>${esc(c.name)} · ${c.sex === "boy" ? "Boy" : "Girl"}</dd>
 <dt>Born</dt><dd>${esc(fmtDate(c.dob))} (${esc(ageStr(age))})</dd>
 <dt>Parent</dt><dd>${esc([c.mother, c.father].filter(Boolean).join(" & ") || "—")}${c.phone ? " · " + esc(c.phone) : ""}</dd>
@@ -663,7 +663,7 @@ async function exportEncrypted() {
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const aes = await encKey(p1, salt, "encrypt");
     const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aes, new TextEncoder().encode(JSON.stringify(DB)));
-    downloadFile(`kidgrow-encrypted-${todayISO()}.kgenc`, JSON.stringify({ app: "KidGrowPro", enc: "AES-GCM-256-PBKDF2-100k", salt: b64enc(salt), iv: b64enc(iv), data: b64enc(ct) }), "application/json");
+    downloadFile(`neokid-care-encrypted-${todayISO()}.kgenc`, JSON.stringify({ app: "KidGrowPro", enc: "AES-GCM-256-PBKDF2-100k", salt: b64enc(salt), iv: b64enc(iv), data: b64enc(ct) }), "application/json");
     DB.lastBackup = todayISO(); save();
     auditSafe("Export", "Encrypted backup");
     renderExport();
@@ -674,7 +674,7 @@ async function importEncrypted(file) {
   if (!window.crypto || !crypto.subtle) return alert("This browser cannot decrypt (needs https/localhost).");
   try {
     const env = JSON.parse(await file.text());
-    if (!env || env.app !== "KidGrowPro" || !env.data) throw new Error("not a KidGrow backup file");
+    if (!env || env.app !== "KidGrowPro" || !env.data) throw new Error("not a NeoKid Care backup file");
     const p = window.prompt("Backup password:");
     if (!p) return;
     const aes = await encKey(p, b64dec(env.salt), "decrypt");
@@ -699,7 +699,7 @@ function mgmtStats(today) {
   const mk = today.slice(0, 7);
   const monthBills = (DB.bills || []).filter((b) => (b.date || "").startsWith(mk));
   const dd = new Date(today + "T00:00:00"), regs = [];
-  for (let i = 5; i >= 0; i--) regs.push({ month: new Date(dd.getFullYear(), dd.getMonth() - i, 1).toISOString().slice(0, 7), n: 0 });
+  for (let i = 5; i >= 0; i--) { const t = new Date(dd.getFullYear(), dd.getMonth() - i, 1); regs.push({ month: `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`, n: 0 }); }
   let unstamped = 0;
   (DB.children || []).forEach((c) => {
     const r = regs.find((x) => x.month === (c.created || "").slice(0, 7));
@@ -802,7 +802,7 @@ function voiceClear() { VOICE.data = ""; VOICE.dur = 0; voiceSyncBox(); }
 function voiceData() { return VOICE.data || ""; }
 
 /* All modules parsed — run the first full render (app.js boots before later scripts load). */
-if (typeof renderAll === "function") { try { renderAll(); } catch (e) { if (typeof console !== "undefined" && console.error) console.error("KidGrow boot render:", e); } }
+if (typeof renderAll === "function") { try { renderAll(); } catch (e) { if (typeof console !== "undefined" && console.error) console.error("NeoKid Care boot render:", e); } }
 /* Deep link: open #page from app shortcuts / shared links (after every module is ready). */
 try { let _h = (location.hash || "").replace("#", ""); if (typeof ROUTE_ALIASES !== "undefined" && ROUTE_ALIASES[_h]) _h = ROUTE_ALIASES[_h]; if (_h && typeof TITLES !== "undefined" && TITLES[_h] && typeof go === "function" && !(typeof roleBlock === "function" && roleBlock(_h))) go(_h); } catch (e) {}
 /* Cloud (Supabase auth/sync + subscriptions) — no-op unless js/config.js has keys. */

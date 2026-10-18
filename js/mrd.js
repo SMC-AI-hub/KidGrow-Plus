@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — M6 MRD registers: admissions, discharges, births, deaths.
+   NeoKid Care — M6 MRD registers: admissions, discharges, births, deaths.
    Derived read-only from local records (NICU + registrations) for the
    selected date range. MrdPure.buildRegisters is unit-tested; CSV export
    reuses the csvOf/csvEsc helpers from exports.js.

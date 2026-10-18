@@ -1,5 +1,5 @@
 /* =====================================================================
-   KidGrow Pro — M5 eMAR: scheduled meds + administration log with
+   NeoKid Care — M5 eMAR: scheduled meds + administration log with
    two-person rule for controlled drugs (witness required — also enforced
    server-side by 0004). Data on child.mar[]; synced via apply_clinical_op().
    Pures in window.MarPure are unit-tested.
@@ -54,7 +54,8 @@ function marOf(c) { if (!Array.isArray(c.mar)) c.mar = []; return c.mar; }
 
 /* ---------------- UI ---------------- */
 function marDueHTML() {
-  var now = new Date().toISOString().slice(0, 16);
+  var _nd = new Date(), _pp = function (x) { return String(x).padStart(2, "0"); };
+  var now = _nd.getFullYear() + "-" + _pp(_nd.getMonth() + 1) + "-" + _pp(_nd.getDate()) + "T" + _pp(_nd.getHours()) + ":" + _pp(_nd.getMinutes());
   var due = dosesDue((typeof DB !== "undefined" && DB.children) || [], now);
   if (!due.length) return "";
   var rows = due.slice(0, 8).map(function (d) {

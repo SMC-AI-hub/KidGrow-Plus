@@ -1,4 +1,4 @@
-// KidGrow Pro — static hardening suite (M1). Fast checks, no harness:
+// NeoKid Care — static hardening suite (M1). Fast checks, no harness:
 // SW api-bypass, security headers, PIN-hash presence, backup password minimum,
 // secret scan, dangerous sinks, reproducible deps, RLS-policy boundary markers.
 const fs = require("fs"), path = require("path");

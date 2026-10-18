@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Paediatric formulary + dose calculator
+   NeoKid Care — Paediatric formulary + dose calculator
    Doses per standard references (IAP / Nelson / formularies).
    ALWAYS verify — screening aid, not a substitute for
    clinical judgement or your hospital protocol.

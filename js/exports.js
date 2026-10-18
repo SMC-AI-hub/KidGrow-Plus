@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Data & exports (Round 4)
+   NeoKid Care — Data & exports (Round 4)
    UIP register · due-list · AEFI / birth line-lists ·
    coverage CSV · ABHA/ABDM-ready record JSON.
    ===================================================== */

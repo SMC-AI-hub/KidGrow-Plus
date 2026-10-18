@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Prescription builder + print (Round 2)
+   NeoKid Care — Prescription builder + print (Round 2)
    Uses DRUGS formulary (drugs.js) for mg/kg math.
    ===================================================== */
 const RXB = { drugId: "para", stIdx: 0, freq: "Q6H", days: 3, wt: "", instr: "" };

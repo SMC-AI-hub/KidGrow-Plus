@@ -1,5 +1,5 @@
 /* =====================================================
-   KidGrow Pro — Diet planner + thali chart (Round 4)
+   NeoKid Care — Diet planner + thali chart (Round 4)
    Needs rounded from ICMR-NIN 2020 for counselling.
    Screening aid — individualise for illness/recovery.
    ===================================================== */
