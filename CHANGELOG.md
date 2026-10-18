@@ -1,5 +1,15 @@
 # Changelog
 
+## v10.32.0 — 2026-10-18 — Sync hardening: no silent overwrites
+- FIX: uploads now check for unseen cloud data first — if the other
+  device got there first, you get the "which to keep?" choice instead
+  of your changes being silently buried. (Same protection both ways.)
+- FIX: honest sync status — stamped times ("Synced 22:41 ✓"), a real
+  "waiting for network" line instead of a stale ✓, and a diagnostics
+  line showing the latest cloud snapshot + whether this device is clean.
+- FIX: downloaded logo/clinic name now repaint the sidebar at once
+  (previously needed an app reload to appear).
+- SAFE: applying a download never echoes itself back as an "edit".
 ## v10.31.0 — 2026-10-18 — Permanent motion+glass, 7 reel themes + picker
 - REMOVED: the ✨ glass and 🎬 motion toggles from the topbar — both are
   now a permanent part of the app (motion still stills for users whose
