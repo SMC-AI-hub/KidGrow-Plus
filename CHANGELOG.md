@@ -1,5 +1,13 @@
 # Changelog
 
+## v10.27.0 — 2026-10-18 — Clustered vaccination record rows
+- POLISH: record-table rows now cluster each sitting into ONE
+  line — antigen names joined, each brand/date/batch shown once
+  (no more Hexaxim x4 / same-date x6 repeats). Pending antigens
+  form one muted "Upcoming" line. Shared helper (vaxVisitClusters)
+  keeps card print, vaccines print and parent-file export identical.
+  SW cache bumped to neokid-v17.
+
 ## v10.26.0 — 2026-10-18 — Universal vaccination print record
 - 🖨️ FIX: Vaccination Digital Record print no longer dumps the
   interactive timeline (6 bulky pages). Print now renders the SAME

@@ -576,9 +576,14 @@ function parentCardHTML(c) {
     const st = done === total ? `<span style="color:#16a34a">✅ Complete</span>`
       : vi === nextIdx ? `⏰ Due ${esc(fmtDate(dueDateFor(c, v)))}${done ? ` · ${done}/${total} given` : ""}`
       : `<span style="color:#64748b">○ Upcoming</span>`;
-    const vxCell = v.vaccines.map((vx) => `<b>${esc(vx.name)}</b> ${esc(vx.dose || "")}`).join("<br>");
-    const line = (fn) => v.vaccines.map((vx) => { const r = cVx[vx.code]; const s = r ? fn(r) : ""; return s || "&nbsp;"; }).join("<br>");
-    return `<tr${vi === nextIdx ? ` style="background:#fefce8"` : ""}><td><b>${esc(v.label)}</b><br><small style="color:#64748b">${esc(v.sub || "")}</small><br><small>${st}</small></td><td>${vxCell}</td><td>${esc(fmtDate(dueDateFor(c, v)))}</td><td>${line((r) => r.brand ? `<b>${esc(r.brand)}</b>${r.mfr ? ` (${esc(r.mfr)})` : ""}` : "")}</td><td>${line((r) => r.date ? `<b>${esc(fmtDate(r.date))}</b>` : "")}</td><td>${line((r) => r.batch ? esc(r.batch) : "")}</td></tr>`;
+    const cl = vaxVisitClusters(v, cVx);
+    const vxCell = cl.clusters.map((k) => k.names.map((n) => `<b>${esc(n.name)}</b> ${esc(n.dose)}`).join(" + "))
+      .concat(cl.pending.length ? [`<span style="color:#64748b">○ Upcoming: ${cl.pending.map((n) => `${esc(n.name)} ${esc(n.dose)}`).join("; ")}</span>`] : []).join("<br>") || "&nbsp;";
+    const pad = (arr) => arr.concat(cl.pending.length && cl.clusters.length ? ["&nbsp;"] : []).join("<br>") || "&nbsp;";
+    const brandCell = pad(cl.clusters.map((k) => k.brands.map((b) => `<b>${esc(b.b)}</b>${b.m ? ` (${esc(b.m)})` : ""}`).join(" · ") || "&nbsp;"));
+    const givenCell = pad(cl.clusters.map((k) => k.date ? `<b>${esc(fmtDate(k.date))}</b>` : "&nbsp;"));
+    const batchCell = pad(cl.clusters.map((k) => k.batches.map(esc).join(" · ") || "&nbsp;"));
+    return `<tr${vi === nextIdx ? ` style="background:#fefce8"` : ""}><td><b>${esc(v.label)}</b><br><small style="color:#64748b">${esc(v.sub || "")}</small><br><small>${st}</small></td><td>${vxCell}</td><td>${esc(fmtDate(dueDateFor(c, v)))}</td><td>${brandCell}</td><td>${givenCell}</td><td>${batchCell}</td></tr>`;
   }).join("");
   const ex = (c.extraVac || []).map((x) => `<tr><td><b>Additional</b></td><td><b>${esc(x.name)}</b></td><td>—</td><td>${x.brand ? `<b>${esc(x.brand)}</b>${x.mfr ? ` (${esc(x.mfr)})` : ""}` : "&nbsp;"}</td><td>${x.date ? `<b>${esc(fmtDate(x.date))}</b>` : "&nbsp;"}</td><td>${x.batch ? esc(x.batch) : "&nbsp;"}</td></tr>`).join("");
   const lm = (typeof latestMeasure === "function") ? latestMeasure(c) : null;

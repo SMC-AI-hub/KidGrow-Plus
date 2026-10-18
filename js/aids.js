@@ -139,6 +139,25 @@ function qrSVG(text) {
   }
   return `<div class="alert a-red" style="margin:0">Record too long for QR — use Copy / Download instead.</div>`;
 }
+/* Visit clustering (shared by print record + parent export): given doses from
+   one sitting (same date + batch) collapse to ONE line — names joined, each
+   brand/date/batch shown once. Pending antigens form one muted line. */
+function vaxVisitClusters(v, cVx) {
+  cVx = cVx || {};
+  const clusters = [], pending = [];
+  (v.vaccines || []).forEach((vx) => {
+    const r = cVx[vx.code];
+    if (!r) { pending.push({ name: vx.name || "", dose: vx.dose || "" }); return; }
+    const key = (r.date || "") + "~" + (r.batch || "");
+    let k = null;
+    for (const c of clusters) if (c.key === key) { k = c; break; }
+    if (!k) { k = { key, date: r.date || "", names: [], brands: [], batches: [] }; clusters.push(k); }
+    k.names.push({ name: vx.name || "", dose: vx.dose || "" });
+    if (r.brand) { const b = { b: r.brand, m: r.mfr || "" }; if (!k.brands.some((x) => x.b === b.b && x.m === b.m)) k.brands.push(b); }
+    if (r.batch && k.batches.indexOf(r.batch) < 0) k.batches.push(r.batch);
+  });
+  return { clusters, pending };
+}
 /* Universal vaccination record — ONE format for every print/export.
    Vaccines-page print, card print and parent-file export all render this:
    clinic letterhead + patient strip + QR + record table + catch-up plan.
@@ -158,11 +177,13 @@ function vaxRecordHTML(c) {
       const st = done === total ? `<span style="color:var(--green)">✅ Complete</span>`
         : vi === nextIdx ? `⏰ Due ${esc(fmtDate(dueDateFor(c, v)))}${done ? ` · ${done}/${total} given` : ""}`
         : `<span style="color:var(--muted)">○ Upcoming</span>`;
-      const vxCell = v.vaccines.map((vx) => `<b>${esc(vx.name)}</b> <span style="color:var(--muted)">${esc(vx.dose || "")}</span>`).join("<br>");
-      const line = (fn) => v.vaccines.map((vx) => { const r = cVx[vx.code]; const s = r ? fn(r) : ""; return s || "&nbsp;"; }).join("<br>");
-      const brandCell = line((r) => r.brand ? `<b>${esc(r.brand)}</b>${r.mfr ? ` <span style="font-size:11px;color:var(--muted)">(${esc(r.mfr)})</span>` : ""}` : "");
-      const givenCell = line((r) => r.date ? `<b>${esc(fmtDate(r.date))}</b>` : "");
-      const batchCell = line((r) => r.batch ? esc(r.batch) : "");
+      const cl = vaxVisitClusters(v, cVx);
+    const vxCell = cl.clusters.map((k) => k.names.map((n) => `<b>${esc(n.name)}</b> <span style="color:var(--muted)">${esc(n.dose)}</span>`).join(" + "))
+      .concat(cl.pending.length ? [`<span style="color:var(--muted)">○ Upcoming: ${cl.pending.map((n) => `${esc(n.name)} ${esc(n.dose)}`).join("; ")}</span>`] : []).join("<br>") || "&nbsp;";
+      const pad = (arr) => arr.concat(cl.pending.length && cl.clusters.length ? ["&nbsp;"] : []).join("<br>") || "&nbsp;";
+      const brandCell = pad(cl.clusters.map((k) => k.brands.map((b) => `<b>${esc(b.b)}</b>${b.m ? ` <span style="font-size:11px;color:var(--muted)">(${esc(b.m)})</span>` : ""}`).join(" · ") || "&nbsp;"));
+      const givenCell = pad(cl.clusters.map((k) => k.date ? `<b>${esc(fmtDate(k.date))}</b>` : "&nbsp;"));
+      const batchCell = pad(cl.clusters.map((k) => k.batches.map(esc).join(" · ") || "&nbsp;"));
       return `<tr${vi === nextIdx ? ` style="background:#fefce8"` : ""}><td><b>${esc(v.label)}</b><br><span style="font-size:11px;color:var(--muted)">${esc(v.sub || "")}</span><br><span style="font-size:11px">${st}</span></td><td>${vxCell}</td><td style="white-space:nowrap">${esc(fmtDate(dueDateFor(c, v)))}</td><td>${brandCell}</td><td style="white-space:nowrap">${givenCell}</td><td>${batchCell}</td></tr>`;
     }).join("");
     const ex = (c.extraVac || []).map((x) => `<tr><td><b>Additional</b></td><td><b>${esc(x.name)}</b></td><td>—</td><td>${x.brand ? `<b>${esc(x.brand)}</b>${x.mfr ? ` (${esc(x.mfr)})` : ""}` : "&nbsp;"}</td><td>${x.date ? `<b>${esc(fmtDate(x.date))}</b>` : "&nbsp;"}</td><td>${x.batch ? esc(x.batch) : "&nbsp;"}</td></tr>`).join("");
@@ -172,7 +193,7 @@ function vaxRecordHTML(c) {
       const plan = (typeof catchupPlan === "function") ? catchupPlan(c, (typeof todayISO === "function") ? todayISO() : "") : [];
       if (plan && plan.length) {
         catchup = `<h3 style="margin:12px 0 6px">\uD83D\uDCCB Catch-up plan — ${plan.length} visit(s)</h3><table class="tbl vaxtbl"><tr><th>Visit</th><th>Earliest</th><th>Vaccines</th></tr>` +
-          plan.map((p, i) => `<tr><td><b>Visit ${i + 1}</b><br><span style="font-size:11px;color:var(--muted)">${esc(p.visit)}</span></td><td style="white-space:nowrap">${esc(fmtDate(p.date))}</td><td>${p.items.map((it) => esc(it.name) + (it.dose ? ` <span style="color:var(--muted)">${esc(it.dose)}</span>` : "")).join("<br>")}${p.rota ? `<br><span style="font-size:11px;color:#b45309">\u26A0\uFE0F Includes rotavirus — confirm age eligibility.</span>` : ""}</td></tr>`).join("") +
+          plan.map((p, i) => `<tr><td><b>Visit ${i + 1}</b><br><span style="font-size:11px;color:var(--muted)">${esc(p.visit)}</span></td><td style="white-space:nowrap">${esc(fmtDate(p.date))}</td><td>${p.items.map((it) => esc(it.name) + (it.dose ? ` <span style="color:var(--muted)">${esc(it.dose)}</span>` : "")).join(" · ")}${p.rota ? `<br><span style="font-size:11px;color:#b45309">\u26A0\uFE0F Includes rotavirus — confirm age eligibility.</span>` : ""}</td></tr>`).join("") +
           `</table><div style="font-size:11px;color:var(--muted);margin-top:4px">Missed doses in schedule order · no need to restart any series · minimum 4-week gaps · verify against the IAP catch-up chart.</div>`;
       }
     } catch (e) {}

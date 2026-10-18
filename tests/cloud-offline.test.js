@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v16/.test(sw), "SW cache bumped to v16 (universal print)");
+  ok(/neokid-v17/.test(sw), "SW cache bumped to v17 (clustered record)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -954,6 +954,16 @@ async function main() {
   ok(recHTML.includes("vaxtbl") && recHTML.includes("Recommended Vaccines") && recHTML.includes("Verify code"), "shared record = letterhead + table + verify");
   const recLate = sb.vaxRecordHTML({ name: "Late Kid", sex: "girl", dob: "2024-01-01", vaccines: {} });
   ok(recLate.includes("Catch-up plan") && recLate.includes("Visit 1"), "record appends catch-up appendix when doses missed");
+  const recCl = sb.vaxRecordHTML({ name: "Cluster Kid", sex: "boy", dob: "2025-01-15", vaccines: {
+    DTP1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" },
+    IPV1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" },
+    HIB1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" },
+    HEPB2: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" } } });
+  const cntCl = (sub) => (recCl.match(new RegExp(sub, "g")) || []).length;
+  ok(cntCl("CLU-9") === 1 && cntCl("Hexaxim") === 1 && cntCl("5 Mar 2025") === 1, "record clusters same-shot doses (each value once)");
+  ok(recCl.includes("Upcoming:") && recCl.includes("Rotavirus"), "pending antigens stay listed, muted");
+  const parCl = sb.parentCardHTML({ name: "Cluster Kid", sex: "boy", dob: "2025-01-15", vaccines: { DTP1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" } } });
+  ok((parCl.match(/CLU-9/g) || []).length === 1 && parCl.includes("Upcoming:"), "parent export clusters identically");
   const idxSrc = fs.readFileSync(path.join(R, "index.html"), "utf8");
   const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
   ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");
