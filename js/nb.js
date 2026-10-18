@@ -76,7 +76,7 @@ function nbSetApgar(tp, idx, v) {
 }
 function nbSetBallard(k, v) {
   const c = child(); if (!c) return;
-  nbOf(c).ballard[k] = v; save(); renderNB();
+  nbOf(c).ballard[k] = v; save(); renderNB(); try { applyFolds(); } catch (e) {}
 }
 function nbSetScreen(k, f, v) {
   const c = child(); if (!c) return;
@@ -130,13 +130,14 @@ function renderNB() {
       ${scrRow("ox", "Pulse-ox (CCHD)", "After 24 h, before discharge")}
       ${scrRow("bili", "Bilirubin", "If jaundiced · plot on hour-specific chart")}</table>
     </div>
-    <div class="card"><h3>📟 APGAR score</h3>
+    <div class="card" data-fold="nb-apgar"><h3 onclick="toggleFold('nb-apgar')" title="Tap to collapse / expand" style="cursor:pointer">📟 APGAR score</h3>
       <div class="hint">Record only — never delay resuscitation to assign scores</div>
       <table class="tbl"><tr><th>Sign</th>${tps.map(([k, l]) => `<th>${l}<br><span id="apgarT${k}" style="font-weight:400"></span></th>`).join("")}</tr>
       ${APGAR_ITEMS.map((it, idx) => `<tr><td><b>${it.name}</b><br><span style="font-size:11px;color:var(--muted)">${it.opts.join(" · ")}</span></td>
         ${tps.map(([k]) => `<td><select onchange="nbSetApgar('${k}',${idx},this.value)" style="max-width:64px">
           <option value="">—</option>${[0, 1, 2].map((v) => `<option value="${v}"${String((nb.apgar[k] || [])[idx]) === String(v) ? " selected" : ""}>${v}</option>`).join("")}</select></td>`).join("")}</tr>`).join("")}</table>
-      <h3 style="margin-top:14px">🧮 New Ballard Score</h3>
+      </div>
+      <div class="card" data-fold="nb-ballard"><h3 onclick="toggleFold('nb-ballard')" title="Tap to collapse / expand" style="cursor:pointer">🧮 New Ballard Score</h3>
       <div class="hint">Score each sign per the NBS chart (−10…50 ≈ 20…44 wk)</div>
       ${BALLARD_ITEMS.map((it) => {
         const btns = [];

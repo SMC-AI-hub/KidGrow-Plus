@@ -504,3 +504,33 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
   @keyframes cardUp{from{opacity:0;transform:translateY(14px) scale(.99)}to{opacity:1;transform:none}}
   @keyframes fadeIn{from{opacity:0}}
 }
+
+/* ============ v10.28.4: auto rail + hover-expand + foldable cards ============ */
+@media screen{
+  /* Foldable cards: any .card[data-fold] collapses via its first header. */
+  .card[data-fold]>h3:first-child{position:relative;padding-right:28px}
+  .card[data-fold]>h3:first-child::after{content:"▾";position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px}
+  .card[data-fold].folded>*:not(h3:first-child){display:none}
+  .card[data-fold].folded>h3:first-child::after{content:"▸"}
+}
+@media(hover:hover){
+  /* Hover-expand the collapsed rail (desktop): peek without a click. */
+  body.nav-mini .sidebar:hover{width:252px}
+  body.nav-mini .sidebar:hover .brand>div:last-child{display:block}
+  body.nav-mini .sidebar:hover .nav-group,body.nav-mini .sidebar:hover .side-foot,body.nav-mini .sidebar:hover #userChip{display:block}
+  body.nav-mini .sidebar:hover .nav button{justify-content:flex-start;padding:10px 13px;font-size:13.8px;gap:12px}
+  body.nav-mini .sidebar:hover .navfilter{display:block}
+}
+@media(max-width:1100px){
+  /* Auto-rail on tablets / small laptops: the menu collapses by itself
+     (☰ pins the full menu via body.nav-full). Mobile ≤700px keeps its
+     bottom nav (sidebar hidden by the earlier rule). */
+  body:not(.nav-full) .sidebar{width:84px}
+  body:not(.nav-full) .sidebar .brand{justify-content:center;padding:18px 8px 14px}
+  body:not(.nav-full) .sidebar .brand>div:last-child{display:none}
+  body:not(.nav-full) .sidebar .nav-group,body:not(.nav-full) .sidebar .side-foot,body:not(.nav-full) .sidebar #userChip{display:none}
+  body:not(.nav-full) .sidebar .nav button{justify-content:center;padding:11px 0;font-size:0;gap:0}
+  body:not(.nav-full) .sidebar .nav button .ic{font-size:20px;width:40px;height:40px}
+  body:not(.nav-full) .sidebar .navfilter{display:none}
+  body:not(.nav-full) .sidebar .navsec-b{display:block!important}
+}

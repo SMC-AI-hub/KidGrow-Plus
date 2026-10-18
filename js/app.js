@@ -290,6 +290,7 @@ function go(page) {
   if (typeof callRender === "function" && RENDER_FOR[page]) callRender(RENDER_FOR[page]);
   if (page === "growth") setTimeout(drawGrowthChart, 60);
   window.scrollTo({ top: 0 });
+  try { applyFolds(); } catch (e) {}
 }
 document.querySelectorAll("#sideNav button, #mobNav button").forEach((b) => b.addEventListener("click", () => go(b.dataset.page)));
 document.addEventListener("keydown", globalSlashKey); // "/" jumps to patient search from anywhere
@@ -369,10 +370,26 @@ function applyNavMini() {
   document.querySelectorAll("#sideNav button").forEach((b) => { b.title = b.textContent.trim(); });
 }
 function toggleNav() {
+  if (typeof window !== "undefined" && window.innerWidth <= 1100) { document.body.classList.toggle("nav-full"); return; } // tablet: pin / unpin full menu
   DB.settings.navMini = !document.body.classList.contains("nav-mini");
   save(); applyNavMini();
   const f = document.getElementById("navFilter"); // mini mode hides the filter — clear it so nothing stays hidden
   if (f) { f.value = ""; filterNav(""); }
+}
+/* ---- v10.28.4: foldable cards. Any .card[data-fold="id"] collapses via its
+   first header (h3 onclick="toggleFold('id')"). State persists in
+   DB.settings.fold (default open); printing always unfolds first. ---- */
+function foldOpen(id) { return !(((DB.settings || {}).fold || {})[id]); }
+function toggleFold(id) {
+  const f = Object.assign({}, (DB.settings || {}).fold);
+  if (foldOpen(id)) f[id] = true; else delete f[id];
+  DB.settings = Object.assign({}, DB.settings, { fold: f });
+  save(); applyFolds();
+}
+function applyFolds() {
+  document.querySelectorAll(".card[data-fold]").forEach((el) => {
+    el.classList.toggle("folded", !foldOpen(el.getAttribute("data-fold")));
+  });
 }
 
 /* ---------------- Collapsible nav sections + filter ---------------- */
@@ -1578,6 +1595,7 @@ document.querySelectorAll(".modal-bg").forEach((m) => m.addEventListener("click"
    so a print never comes out blank and never repeats a stale page. */
 let _autoPrint = false;
 function autoPrintPrep() {
+  try { document.querySelectorAll(".card[data-fold].folded").forEach((el) => el.classList.remove("folded")); } catch (e) {}
   try {
     if (document.querySelector(".page.printing")) return "kept";
     const act = document.querySelector(".page.active") || document.querySelector(".page");
@@ -1587,6 +1605,7 @@ function autoPrintPrep() {
 }
 function autoPrintCleanup() {
   try { document.querySelectorAll(".page.printing").forEach((p) => { if (p && p.classList) p.classList.remove("printing"); }); } catch (e) {}
+  try { if (typeof applyFolds === "function") applyFolds(); } catch (e) {}
   _autoPrint = false;
 }
 try { if (typeof window !== "undefined" && window.addEventListener) { window.addEventListener("beforeprint", autoPrintPrep); window.addEventListener("afterprint", autoPrintCleanup); } } catch (e) {}
@@ -1618,6 +1637,7 @@ function renderAll() {
   DB.appts = DB.appts || []; DB.tokens = DB.tokens || []; DB.bills = DB.bills || []; DB.users = DB.users || []; DB.audit = DB.audit || []; DB.session = DB.session || {};
   try { syncChildPicker(); } catch (e) {}
   ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
+  try { applyFolds(); } catch (e) {}
 }
 window.addEventListener("resize", () => drawGrowthChart());
 

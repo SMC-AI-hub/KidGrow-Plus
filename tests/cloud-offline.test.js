@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v22/.test(sw), "SW cache bumped to v22 (card-table)");
+  ok(/neokid-v23/.test(sw), "SW cache bumped to v23 (quick-wins)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -1000,6 +1000,19 @@ async function main() {
   ok(!recCt.includes("(Sanofi)") && !recCt.includes("(GSK)"), "card drops noisy maker brackets (brand + batch suffice)");
   const parCt = sb.parentCardHTML({ name: "CT Kid", sex: "boy", dob: "2025-01-15", vaccines: vxCt });
   ok(parCt.includes("5 Mar 2025 \u2014 </span><b>Hexaxim</b>") && !parCt.includes("(Sanofi)"), "parent export matches the calm brand format");
+  // ---- v10.28.4: auto-refresh + auto rail + foldable cards ----
+  const cloudSrc = fs.readFileSync(path.join(R, "js", "cloud.js"), "utf8");
+  ok(cloudSrc.includes("function autoPullTick") && cloudSrc.includes("pullNow(true)") && cloudSrc.includes("kidgrow_cloud_seen"), "auto-refresh downlinks newer snapshots silently");
+  ok(cloudSrc.includes("visibilitychange") && cloudSrc.includes("setInterval(autoPullTick") && cloudSrc.includes("autoSyncOn"), "auto-refresh ticks minutely + on return, with opt-out");
+  ok(cloudSrc.includes("function pullNow(silent)") && cloudSrc.includes("Cloud.setAuto"), "pull supports silent mode + settings toggle");
+  ok(cssM.includes("card[data-fold].folded") && cssM.includes('h3:first-child::after{content:"▸"}'), "foldable cards collapse via header");
+  ok(cssM.includes("body.nav-mini .sidebar:hover{width:252px}") && cssM.includes("@media(max-width:1100px)"), "sidebar auto-rails on small screens + hover-expands");
+  ok(appM.includes("function toggleFold") && appM.includes("function applyFolds") && appM.includes("innerWidth <= 1100"), "fold helpers + tablet sidebar pin");
+  ok(sb.foldOpen("nb-apgar") === true, "cards default open");
+  sb.toggleFold("nb-apgar");
+  ok(vm.runInContext("DB.settings.fold['nb-apgar']", sb) === true, "fold state persists");
+  sb.toggleFold("nb-apgar");
+  ok(sb.foldOpen("nb-apgar") === true, "unfold restores");
   const idxSrc = fs.readFileSync(path.join(R, "index.html"), "utf8");
   const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
   ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");

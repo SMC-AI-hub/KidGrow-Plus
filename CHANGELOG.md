@@ -1,5 +1,15 @@
 # Changelog
 
+## v10.28.4 — 2026-10-18 — Auto-refresh + auto sidebar + foldable cards
+- NEW: cloud auto-refresh — this device silently downloads newer snapshots
+  every minute + whenever the app regains focus, but ONLY when it has no
+  unsent edits (genuine conflicts still ask). Toggle in Cloud card.
+- NEW: sidebar auto-collapses to an icon rail on tablets/small laptops
+  (<=1100px, ☰ pins it open); collapsed rail expands on hover (desktop).
+- NEW: foldable cards — APGAR + New Ballard Score collapse via header tap
+  (state remembered); printing always unfolds first. Any card can adopt
+  this with one data-fold attribute.
+
 ## v10.28.3 — 2026-10-18 — Readable card table + calm brand cells
 - FIX: hovering a vaccine-card row in dark mode turned it dark-navy with dark
   ink (unreadable). The paper card now keeps a light hover in every theme.
