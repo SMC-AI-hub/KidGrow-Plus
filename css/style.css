@@ -129,7 +129,7 @@ body.nav-mini .navsec-b{display:block!important}
 .child-picker select:focus{box-shadow:none}
 .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--blue));color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 4px 10px rgba(13,148,136,.35);flex-shrink:0}
 .content{padding:24px 26px 60px;max-width:1300px;width:100%;margin:0 auto}
-.page{display:none;animation:fadeUp .3s cubic-bezier(.2,.7,.3,1)}
+.page{display:none}
 .page.active{display:block}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
@@ -199,7 +199,7 @@ table.tbl tr:hover td{background:var(--rowh)}
 [data-theme="dark"] .tabs button.active{background:var(--teal);border-color:var(--teal)}
 .modal-bg{position:fixed;inset:0;background:rgba(8,18,32,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:100;display:none;align-items:center;justify-content:center;padding:18px}
 .modal-bg.open{display:flex}
-.modal{background:var(--card);border:1px solid var(--line);border-radius:22px;max-width:660px;width:100%;max-height:92vh;overflow:auto;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.35);animation:pop .25s cubic-bezier(.2,.9,.3,1.15)}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:22px;max-width:660px;width:100%;max-height:92vh;overflow:auto;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
 @keyframes pop{from{transform:scale(.94) translateY(10px);opacity:0}}
 .modal h3{font-size:17px;color:var(--head);margin-bottom:2px;letter-spacing:-.2px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
@@ -259,11 +259,14 @@ canvas.chart{width:100%;height:340px;background:#fff;border:1px solid var(--line
 .vaxcard .alert{margin-bottom:0}
 .vaxcard table.vaxtbl th{background:#0f2b4d;color:#fff;border-bottom-color:#0f2b4d;text-transform:none;letter-spacing:0;font-size:12.5px}
 .vaxcard table.vaxtbl td{vertical-align:top}
+.vaxcard table.vaxtbl tr:hover td{background:#f1f5f9}
 .vax-head{display:flex;gap:14px;align-items:center;border-bottom:3px solid #0e7c7b;padding-bottom:12px;margin-bottom:12px}
 .vax-head img{width:64px;height:64px;object-fit:contain;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:4px;flex-shrink:0}
 .vax-head h2{margin:2px 0 3px;font-size:21px;color:#0f2b4d}
 .vax-head .eyebrow{font-size:11px;letter-spacing:1.5px;color:#0e7c7b;font-weight:800}
 .vax-head .sub{font-size:12.5px;color:#64748b}
+.vax-head .docline{font-size:13px;font-weight:700;color:#334155}
+.vax-head .addrline{font-size:12px;color:#64748b}
 .vax-verify{margin-left:auto;text-align:center;border:1.5px dashed #94a3b8;border-radius:10px;padding:6px 12px;font-size:11px;color:#64748b;flex-shrink:0}
 .vax-verify b{font-size:15px;color:#0f2b4d;letter-spacing:1px}
 .vax-body{display:flex;gap:16px;align-items:flex-start}
@@ -457,3 +460,47 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
 /* role dashboard stat rows */
 .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}
 @media(max-width:700px){.statrow{grid-template-columns:1fr}}
+
+/* ---------- Glass trial (v10.28.0, screen only) ----------
+   Frosted surfaces over the SAME teal/navy palette. Toggle: topbar button
+   (DB.settings.glass; default ON for the trial, one tap back to classic).
+   Scoped to @media screen — print keeps solid report styling. */
+@media screen{
+  body.glass{background:radial-gradient(720px 460px at 86% 10%,rgba(13,148,136,.30),transparent 65%),radial-gradient(700px 500px at 10% 30%,rgba(14,165,233,.26),transparent 65%),radial-gradient(640px 420px at 16% 86%,rgba(245,158,11,.16),transparent 62%),radial-gradient(900px 560px at 68% 102%,rgba(27,74,115,.55),transparent 65%),var(--bg);background-attachment:fixed}
+  body.glass .sidebar{background:linear-gradient(180deg,color-mix(in srgb,var(--navy) 84%,transparent),color-mix(in srgb,var(--navy2) 84%,transparent) 62%,color-mix(in srgb,var(--navy3) 84%,transparent));backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3)}
+  body.glass .card,body.glass .stat{background:color-mix(in srgb,var(--card) 74%,transparent);backdrop-filter:blur(16px) saturate(1.25);-webkit-backdrop-filter:blur(16px) saturate(1.25);border:1px solid color-mix(in srgb,var(--line) 55%,rgba(255,255,255,.4));box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.35)}
+  body.glass .topbar{backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
+  body.glass .modal,body.glass .lock-card{background:color-mix(in srgb,var(--card) 82%,transparent);backdrop-filter:blur(22px) saturate(1.35);-webkit-backdrop-filter:blur(22px) saturate(1.35);border:1px solid rgba(255,255,255,.4);box-shadow:0 30px 80px rgba(2,12,24,.45),inset 0 1px 0 rgba(255,255,255,.4)}
+  body.glass .lock-card{background:rgba(255,255,255,.86)}
+  body.glass .modal-bg{background:rgba(8,18,32,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  body.glass input,body.glass select,body.glass textarea{background:color-mix(in srgb,var(--input) 68%,transparent)}
+  body.glass .btn-p{box-shadow:0 10px 26px -6px rgba(13,148,136,.65),inset 0 1px 0 rgba(255,255,255,.4)}
+  body.glass .icon-btn{background:color-mix(in srgb,var(--card) 70%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  body.glass .search-res{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  body.glass table.tbl th{background:color-mix(in srgb,var(--th) 82%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+}
+
+/* ============ Motion trial (v10.28.2) ============
+   Reel-style screen motion: pages glide, cards rise in staggered,
+   buttons press, nav slides, modals pop, login glides in.
+   Transform/opacity only (GPU-fast, low-end safe).
+   Scoped to @media screen - print output pixel-identical.
+   Toggle: topbar button (DB.settings.motion, default ON). */
+@media screen{
+  body.motion .page{animation:fadeUp .3s cubic-bezier(.2,.7,.3,1)}
+  body.motion .page.active .card,body.motion .page.active .stat{animation:cardUp .45s cubic-bezier(.2,.7,.25,1) both}
+  body.motion .page.active .card:nth-child(2),body.motion .page.active .stat:nth-child(2){animation-delay:.05s}
+  body.motion .page.active .card:nth-child(3),body.motion .page.active .stat:nth-child(3){animation-delay:.1s}
+  body.motion .page.active .card:nth-child(4),body.motion .page.active .stat:nth-child(4){animation-delay:.15s}
+  body.motion .page.active .card:nth-child(5),body.motion .page.active .stat:nth-child(5){animation-delay:.2s}
+  body.motion .page.active .card:nth-child(n+6),body.motion .page.active .stat:nth-child(n+6){animation-delay:.25s}
+  body.motion .btn{transition:transform .12s ease,box-shadow .2s ease,filter .2s ease}
+  body.motion .btn:active{transform:scale(.96)}
+  body.motion #sideNav button,body.motion #mobNav button{transition:background .22s ease,color .22s ease,transform .15s ease}
+  body.motion .modal{animation:pop .25s cubic-bezier(.2,.9,.3,1.15)}
+  body.motion .modal-bg.open{animation:fadeIn .2s ease}
+  body.motion .lock.show .lock-card{animation:cardUp .45s cubic-bezier(.2,.7,.25,1) both}
+  @media (hover:hover){body.motion .btn:hover{transform:translateY(-1px)}}
+  @keyframes cardUp{from{opacity:0;transform:translateY(14px) scale(.99)}to{opacity:1;transform:none}}
+  @keyframes fadeIn{from{opacity:0}}
+}

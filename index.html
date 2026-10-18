@@ -110,6 +110,8 @@
       <div><h2 id="pageTitle">Dashboard</h2><div class="sub" id="clinicLine">—</div></div>
       <span id="netBadge" class="badge b-green" title="Connection status">● Online</span>
       <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Theme: light (tap to change)">🌙</button>
+      <button class="icon-btn" id="glassToggle" onclick="toggleGlass()" title="Glass interface: on (tap to change)">✨</button>
+      <button class="icon-btn" id="motionToggle" onclick="toggleMotion()" title="Screen animations: on (tap to change)">🎬</button>
       <button class="icon-btn" id="settingsGear" onclick="go('settings')" title="Settings — clinic profile, logo, doctors">⚙️</button>
       <div class="child-picker">
         <div class="avatar" id="childAvatar">–</div>
@@ -393,7 +395,8 @@
               <div class="full"><label>Clinic / Hospital name</label><input id="sClinic" placeholder="e.g. Smile Child Care Clinic"></div>
               <div><label>Doctor name</label><input id="sDoctor" placeholder="e.g. Dr. A. Sharma, MD (Paeds)"></div>
               <div><label>Registration no.</label><input id="sReg" placeholder="MCI / State reg."></div>
-              <div class="full"><label>Address & phone</label><input id="sAddr" placeholder="Address · phone"></div>
+              <div><label>Address</label><input id="sAddr" placeholder="Street, area, city"></div>
+              <div><label>Phone</label><input id="sPhone" placeholder="Clinic phone"></div>
               <div class="full"><label>Clinic / hospital logo (PNG/JPG · shows on sidebar + all letterheads)</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><img id="logoPrev" alt="" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;display:none"><input type="file" id="sLogo" accept="image/*" style="max-width:230px" onchange="handleLogoFile(this)"><button class="btn btn-o btn-xs" onclick="removeLogo()">Remove</button></div></div>
               <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sColorPrint" checked onchange="savePrintPref()"> 🖨️ Print in color (badges · charts · banners) — uncheck to save ink</label></div>
             </div>

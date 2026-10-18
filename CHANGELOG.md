@@ -1,5 +1,35 @@
 # Changelog
 
+## v10.28.3 — 2026-10-18 — Readable card table + calm brand cells
+- FIX: hovering a vaccine-card row in dark mode turned it dark-navy with dark
+  ink (unreadable). The paper card now keeps a light hover in every theme.
+- FIX: "Brand given" chaos — each sitting is now one dated line
+  ("5 Mar 2025 — Hexaxim · Rotavac"), maker brackets dropped from the card
+  (brand + batch keep full traceability; makers stay on detail pages).
+  Identical format in print record + parent export.
+
+## v10.28.2 — 2026-10-18 — Motion trial (reel-style animation)
+- TRIAL: pages glide, cards rise in staggered, buttons press, nav slides,
+  modals pop, login glides in. Transform/opacity only (low-end safe).
+  Topbar toggle (DB.settings.motion, default ON). Screen-only CSS,
+  reduced-motion respected — print output pixel-identical.
+
+## v10.28.1 — 2026-10-18 — Professional letterhead (doctor separate from address)
+- FIX: clinic letterheads no longer join "doctor · address · phone · Reg"
+  on one line. Doctor name + Reg print on their OWN bold line; address + phone
+  on a separate line below - on the immunisation card, parent export, parent
+  handouts, and all reports (new splitClinicContact() helper).
+- NEW: separate Clinic phone field in Settings (was one "Address & phone" box).
+  Old combined addresses heal automatically at print time.
+
+## v10.28.0 — 2026-10-18 — Glass interface trial (same palette)
+- TRIAL: frosted-glass surfaces (cards, sidebar, modals, inputs)
+  over the SAME teal/navy palette + mesh gradient backdrop.
+  Topbar toggle (DB.settings.glass, default ON) reverts to classic
+  in one tap. Screen-only CSS — print output pixel-identical.
+  Checkpoint tag checkpoint-v10.27.1-pre-glass for full rollback.
+  SW cache bumped to neokid-v19.
+
 ## v10.27.1 — 2026-10-18 — Vaccination print: no duplicate patient name
 - FIX: the patient banner chip printed above the record, repeating
   the name already in the record patient strip. Banner is now

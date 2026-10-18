@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v18/.test(sw), "SW cache bumped to v18 (banner dedup)");
+  ok(/neokid-v22/.test(sw), "SW cache bumped to v22 (card-table)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -960,15 +960,53 @@ async function main() {
     HIB1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" },
     HEPB2: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" } } });
   const cntCl = (sub) => (recCl.match(new RegExp(sub, "g")) || []).length;
-  ok(cntCl("CLU-9") === 1 && cntCl("Hexaxim") === 1 && cntCl("5 Mar 2025") === 1, "record clusters same-shot doses (each value once)");
+  ok(cntCl("CLU-9") === 1 && cntCl("Hexaxim") === 1 && cntCl("5 Mar 2025") === 2, "record clusters same-shot doses (brand/batch once; date labels its sitting + given cell)");
   ok(recCl.includes("Upcoming:") && recCl.includes("Rotavirus"), "pending antigens stay listed, muted");
   const parCl = sb.parentCardHTML({ name: "Cluster Kid", sex: "boy", dob: "2025-01-15", vaccines: { DTP1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" } } });
   ok((parCl.match(/CLU-9/g) || []).length === 1 && parCl.includes("Upcoming:"), "parent export clusters identically");
+  // ---- v10.28.1: letterhead - doctor line separate from address line ----
+  const ccLH1 = sb.splitClinicContact({ doctor: "Dr. A. Sharma, MD (Paediatrics)", reg: "TNMC 12345", addr: "12 Anna Nagar, Coimbatore · ☎ 0422-4001234" });
+  ok(ccLH1.doc === "Dr. A. Sharma, MD (Paediatrics) · Reg: TNMC 12345", "letterhead: doctor + reg on their own line");
+  ok(ccLH1.addr === "12 Anna Nagar, Coimbatore · ☎ 0422-4001234" && ccLH1.phone === "0422-4001234", "letterhead: legacy phone-in-address heals into address line");
+  const ccLH2 = sb.splitClinicContact({ doctor: "Dr. B", addr: "X Street", phone: "99999" });
+  ok(ccLH2.doc === "Dr. B" && ccLH2.addr === "X Street · ☎ 99999", "letterhead: separate phone field joins address line");
+  const prevLH = vm.runInContext("JSON.stringify(DB.settings)", sb);
+  vm.runInContext("DB.settings={clinic:'T Clinic',doctor:'Dr. L',reg:'R1',addr:'12 Main St',phone:'080-1'};", sb);
+  const recLH = sb.vaxRecordHTML({ name: "LH Kid", sex: "boy", dob: "2025-01-15", vaccines: {} });
+  ok(recLH.includes('<div class="docline">Dr. L · Reg: R1</div>'), "record letterhead prints doctor on own line");
+  ok(recLH.includes('<div class="addrline">12 Main St · ☎ 080-1</div>'), "record letterhead prints address+phone on own line");
+  const parLH = sb.parentCardHTML({ name: "LH Kid", sex: "boy", dob: "2025-01-15", vaccines: {} });
+  ok(parLH.includes("Dr. L · Reg: R1") && parLH.includes("12 Main St · ☎ 080-1"), "parent export carries separated doctor + address lines");
+  ok(typeof sb.handLetterhead === "function" && sb.handLetterhead(null).includes("12 Main St · ☎ 080-1"), "handout letterhead uses separated address line");
+  vm.runInContext("DB.settings=" + prevLH + ";", sb);
+  // ---- v10.28.2: motion trial — reel-style screen animation ----
+  const cssM = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
+  const appM = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
+  const idxM = fs.readFileSync(path.join(R, "index.html"), "utf8");
+  ok(cssM.includes("@keyframes cardUp") && cssM.includes("body.motion .page.active .card") && cssM.includes("animation-delay:.25s"), "motion trial staggers card entrances");
+  ok(cssM.includes("body.motion .modal") && cssM.includes("body.motion .btn:active") && cssM.includes("body.motion .lock.show .lock-card"), "motion trial pops modals + presses buttons + glides login");
+  ok(appM.includes("function applyMotion") && appM.includes("function toggleMotion") && appM.includes("applyGlass(); applyMotion();") && idxM.includes('id="motionToggle"'), "motion toggle (default ON) in topbar");
+  ok(sb.applyMotion() === true, "motion defaults ON");
+  vm.runInContext("DB.settings.motion=false;", sb);
+  ok(sb.applyMotion() === false, "motion off sticks in settings");
+  vm.runInContext("DB.settings.motion=true;", sb); sb.applyMotion();
+  // ---- v10.28.3: calm card table — readable hover + dated brand lines ----
+  ok(cssM.includes(".vaxcard table.vaxtbl tr:hover td{background:#f1f5f9}"), "card table hover stays light (dark-mode readable)");
+  const vxCt = { DTP1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "B1" },
+    IPV1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "B1" },
+    HEPB2: { date: "2025-04-02", brand: "Engerix-B", mfr: "GSK", batch: "B2" } };
+  const recCt = sb.vaxRecordHTML({ name: "CT Kid", sex: "boy", dob: "2025-01-15", vaccines: vxCt });
+  ok(recCt.includes("5 Mar 2025 \u2014 </span><b>Hexaxim</b>") && recCt.includes("2 Apr 2025 \u2014 </span><b>Engerix-B</b>"), "card brand lines carry their sitting date");
+  ok(!recCt.includes("(Sanofi)") && !recCt.includes("(GSK)"), "card drops noisy maker brackets (brand + batch suffice)");
+  const parCt = sb.parentCardHTML({ name: "CT Kid", sex: "boy", dob: "2025-01-15", vaccines: vxCt });
+  ok(parCt.includes("5 Mar 2025 \u2014 </span><b>Hexaxim</b>") && !parCt.includes("(Sanofi)"), "parent export matches the calm brand format");
   const idxSrc = fs.readFileSync(path.join(R, "index.html"), "utf8");
   const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
   ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");
   ok(idxSrc.includes('id="ph-card"') && appSrc.includes('"card"'), "card page shares the patient banner (uniform print head)");
-  ok(idxSrc.includes('id="ph-vaccines" class="no-print"') && idxSrc.includes('id="ph-card" class="no-print"'), "vaccination prints hide banner (record has its own strip)");
+  ok(cssP.indexOf("@media screen") !== -1 && cssP.indexOf("@media screen") < cssP.indexOf("body.glass"), "glass trial is screen-scoped (print untouched)");
+  ok(cssP.includes("Glass trial") && cssP.includes("backdrop-filter:blur(16px)") && cssP.includes("color-mix(in srgb,var(--card)"), "glass frosts surfaces over theme palette");
+  ok(appSrc.includes("function applyGlass") && appSrc.includes("function toggleGlass") && appSrc.includes("applyTheme(); applyGlass();") && idxSrc.includes('id="glassToggle"') && idxSrc.includes('id="ph-card" class="no-print"'), "vaccination prints hide banner (record has its own strip)");
   ok(cssP.includes(".print-only{display:none!important}") && cssP.includes(".print-only{display:block!important}"), "print-only CSS swaps screen/print views");
   ok(cardHTML.includes("16\u201318 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
   ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");

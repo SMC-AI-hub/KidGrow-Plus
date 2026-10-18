@@ -238,12 +238,16 @@ function handLetterhead(c) {
   const S = (typeof DB !== "undefined" && DB.settings) || {};
   const doc = ((typeof DB !== "undefined" && DB.doctors) || []).find((d) => d.id === S.docId) || ((typeof DB !== "undefined" && DB.doctors) || [])[0];
   const docLine = doc ? [doc.name, doc.qual].filter(Boolean).join(", ") : (S.doctor || "");
+  const docReg = doc ? doc.reg : S.reg;
+  const docFull = [docLine, docReg ? "Reg: " + docReg : ""].filter(Boolean).join(" · ");
+  const ccH = (typeof splitClinicContact === "function") ? splitClinicContact(S) : { addr: S.addr || "" };
   let wt = "";
   try { const lm = c && typeof latestMeasure === "function" ? latestMeasure(c) : null; if (lm && lm.wt) wt = ` · ${lm.wt} kg`; } catch (e) {}
   return `<div style="display:flex;gap:10px;align-items:center;border-bottom:2px solid var(--teal);padding-bottom:8px;margin-bottom:8px">
     <div style="font-size:34px;line-height:1">${S.logo ? `<img src="${S.logo}" alt="" style="width:44px;height:44px;object-fit:contain">` : "👶"}</div>
     <div style="flex:1"><div style="font-size:17px;font-weight:800">${esc(S.clinic || "Clinic")}</div>
-    <div style="font-size:12.5px;color:var(--muted)">${esc(docLine)}${S.addr ? ` · ${esc(S.addr)}` : ""}</div></div>
+    <div style="font-size:13px;font-weight:700;color:#334155">${esc(docFull)}</div>
+    <div style="font-size:12px;color:var(--muted)">${esc(ccH.addr)}</div></div>
     <div style="font-size:12px;color:var(--muted);text-align:right">PARENT HANDOUT<br>${esc(fmtDate(typeof todayISO === "function" ? todayISO() : ""))}</div></div>
   ${c ? `<div style="font-size:13px;margin-bottom:2px"><b>${esc(c.name)}</b> · ${esc(typeof ageStr === "function" ? ageStr(ageBetween(c.dob)) : "")}${wt}</div>` : ""}`;
 }

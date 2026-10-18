@@ -181,7 +181,7 @@ function vaxRecordHTML(c) {
     const vxCell = cl.clusters.map((k) => k.names.map((n) => `<b>${esc(n.name)}</b> <span style="color:var(--muted)">${esc(n.dose)}</span>`).join(" + "))
       .concat(cl.pending.length ? [`<span style="color:var(--muted)">○ Upcoming: ${cl.pending.map((n) => `${esc(n.name)} ${esc(n.dose)}`).join("; ")}</span>`] : []).join("<br>") || "&nbsp;";
       const pad = (arr) => arr.concat(cl.pending.length && cl.clusters.length ? ["&nbsp;"] : []).join("<br>") || "&nbsp;";
-      const brandCell = pad(cl.clusters.map((k) => k.brands.map((b) => `<b>${esc(b.b)}</b>${b.m ? ` <span style="font-size:11px;color:var(--muted)">(${esc(b.m)})</span>` : ""}`).join(" · ") || "&nbsp;"));
+      const brandCell = pad(cl.clusters.map((k) => `${k.date ? `<span style="font-size:11px;color:var(--muted)">${esc(fmtDate(k.date))} \u2014 </span>` : ""}${k.brands.map((b) => `<b>${esc(b.b)}</b>`).join(" · ") || "&nbsp;"}`));
       const givenCell = pad(cl.clusters.map((k) => k.date ? `<b>${esc(fmtDate(k.date))}</b>` : "&nbsp;"));
       const batchCell = pad(cl.clusters.map((k) => k.batches.map(esc).join(" · ") || "&nbsp;"));
       return `<tr${vi === nextIdx ? ` style="background:#fefce8"` : ""}><td><b>${esc(v.label)}</b><br><span style="font-size:11px;color:var(--muted)">${esc(v.sub || "")}</span><br><span style="font-size:11px">${st}</span></td><td>${vxCell}</td><td style="white-space:nowrap">${esc(fmtDate(dueDateFor(c, v)))}</td><td>${brandCell}</td><td style="white-space:nowrap">${givenCell}</td><td>${batchCell}</td></tr>`;
@@ -197,6 +197,7 @@ function vaxRecordHTML(c) {
           `</table><div style="font-size:11px;color:var(--muted);margin-top:4px">Missed doses in schedule order · no need to restart any series · minimum 4-week gaps · verify against the IAP catch-up chart.</div>`;
       }
     } catch (e) {}
+  const ccLH = (typeof splitClinicContact === "function") ? splitClinicContact((typeof DB !== "undefined" && DB.settings) || {}) : { doc: "", addr: "" };
   return `
       <div class="vaxcard">
         <div class="vax-head">
@@ -204,7 +205,7 @@ function vaxRecordHTML(c) {
           <div style="min-width:0">
             <div class="eyebrow">DIGITAL IMMUNISATION CARD</div>
             <h2>${esc(DB.settings.clinic || "NeoKid Care Clinic")}</h2>
-            <div class="sub">${esc(DB.settings.doctor || "")}${DB.settings.addr ? ` · ${esc(DB.settings.addr)}` : ""}${DB.settings.reg ? ` · Reg: ${esc(DB.settings.reg)}` : ""}</div>
+            ${ccLH.doc ? `<div class="docline">${esc(ccLH.doc)}</div>` : ""}${ccLH.addr ? `<div class="addrline">${esc(ccLH.addr)}</div>` : ""}
           </div>
           ${(typeof parentVerifyCode === "function") ? `<div class="vax-verify">Verify code<br><b>${esc(parentVerifyCode(c))}</b></div>` : ""}
         </div>
