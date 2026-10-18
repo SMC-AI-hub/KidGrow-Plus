@@ -581,7 +581,7 @@ function parentCardHTML(c) {
     const vxCell = cl.clusters.map((k) => k.names.map((n) => `<b>${esc(n.name)}</b> ${esc(n.dose)}`).join(" + "))
       .concat(cl.pending.length ? [`<span style="color:#64748b">○ Upcoming: ${cl.pending.map((n) => `${esc(n.name)} ${esc(n.dose)}`).join("; ")}</span>`] : []).join("<br>") || "&nbsp;";
     const pad = (arr) => arr.concat(cl.pending.length && cl.clusters.length ? ["&nbsp;"] : []).join("<br>") || "&nbsp;";
-    const brandCell = pad(cl.clusters.map((k) => k.brands.map((b) => `<b>${esc(b.b)}</b>${b.m ? ` (${esc(b.m)})` : ""}`).join(" · ") || "&nbsp;"));
+    const brandCell = pad(cl.clusters.map((k) => `${k.date ? `<span style="font-size:11px;color:#64748b">${esc(fmtDate(k.date))} \u2014 </span>` : ""}${k.brands.map((b) => `<b>${esc(b.b)}</b>`).join(" · ") || "&nbsp;"}`));
     const givenCell = pad(cl.clusters.map((k) => k.date ? `<b>${esc(fmtDate(k.date))}</b>` : "&nbsp;"));
     const batchCell = pad(cl.clusters.map((k) => k.batches.map(esc).join(" · ") || "&nbsp;"));
     return `<tr${vi === nextIdx ? ` style="background:#fefce8"` : ""}><td><b>${esc(v.label)}</b><br><small style="color:#64748b">${esc(v.sub || "")}</small><br><small>${st}</small></td><td>${vxCell}</td><td>${esc(fmtDate(dueDateFor(c, v)))}</td><td>${brandCell}</td><td>${givenCell}</td><td>${batchCell}</td></tr>`;

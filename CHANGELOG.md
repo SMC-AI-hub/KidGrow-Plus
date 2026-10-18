@@ -1,5 +1,13 @@
 # Changelog
 
+## v10.28.3 — 2026-10-18 — Readable card table + calm brand cells
+- FIX: hovering a vaccine-card row in dark mode turned it dark-navy with dark
+  ink (unreadable). The paper card now keeps a light hover in every theme.
+- FIX: "Brand given" chaos — each sitting is now one dated line
+  ("5 Mar 2025 — Hexaxim · Rotavac"), maker brackets dropped from the card
+  (brand + batch keep full traceability; makers stay on detail pages).
+  Identical format in print record + parent export.
+
 ## v10.28.2 — 2026-10-18 — Motion trial (reel-style animation)
 - TRIAL: pages glide, cards rise in staggered, buttons press, nav slides,
   modals pop, login glides in. Transform/opacity only (low-end safe).

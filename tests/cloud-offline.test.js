@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v21/.test(sw), "SW cache bumped to v21 (motion)");
+  ok(/neokid-v22/.test(sw), "SW cache bumped to v22 (card-table)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -960,7 +960,7 @@ async function main() {
     HIB1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" },
     HEPB2: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" } } });
   const cntCl = (sub) => (recCl.match(new RegExp(sub, "g")) || []).length;
-  ok(cntCl("CLU-9") === 1 && cntCl("Hexaxim") === 1 && cntCl("5 Mar 2025") === 1, "record clusters same-shot doses (each value once)");
+  ok(cntCl("CLU-9") === 1 && cntCl("Hexaxim") === 1 && cntCl("5 Mar 2025") === 2, "record clusters same-shot doses (brand/batch once; date labels its sitting + given cell)");
   ok(recCl.includes("Upcoming:") && recCl.includes("Rotavirus"), "pending antigens stay listed, muted");
   const parCl = sb.parentCardHTML({ name: "Cluster Kid", sex: "boy", dob: "2025-01-15", vaccines: { DTP1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" } } });
   ok((parCl.match(/CLU-9/g) || []).length === 1 && parCl.includes("Upcoming:"), "parent export clusters identically");
@@ -990,6 +990,16 @@ async function main() {
   vm.runInContext("DB.settings.motion=false;", sb);
   ok(sb.applyMotion() === false, "motion off sticks in settings");
   vm.runInContext("DB.settings.motion=true;", sb); sb.applyMotion();
+  // ---- v10.28.3: calm card table — readable hover + dated brand lines ----
+  ok(cssM.includes(".vaxcard table.vaxtbl tr:hover td{background:#f1f5f9}"), "card table hover stays light (dark-mode readable)");
+  const vxCt = { DTP1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "B1" },
+    IPV1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "B1" },
+    HEPB2: { date: "2025-04-02", brand: "Engerix-B", mfr: "GSK", batch: "B2" } };
+  const recCt = sb.vaxRecordHTML({ name: "CT Kid", sex: "boy", dob: "2025-01-15", vaccines: vxCt });
+  ok(recCt.includes("5 Mar 2025 \u2014 </span><b>Hexaxim</b>") && recCt.includes("2 Apr 2025 \u2014 </span><b>Engerix-B</b>"), "card brand lines carry their sitting date");
+  ok(!recCt.includes("(Sanofi)") && !recCt.includes("(GSK)"), "card drops noisy maker brackets (brand + batch suffice)");
+  const parCt = sb.parentCardHTML({ name: "CT Kid", sex: "boy", dob: "2025-01-15", vaccines: vxCt });
+  ok(parCt.includes("5 Mar 2025 \u2014 </span><b>Hexaxim</b>") && !parCt.includes("(Sanofi)"), "parent export matches the calm brand format");
   const idxSrc = fs.readFileSync(path.join(R, "index.html"), "utf8");
   const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
   ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");
