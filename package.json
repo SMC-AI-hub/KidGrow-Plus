@@ -1,6 +1,6 @@
 {
   "name": "neokid-care",
-  "version": "10.25.0",
+  "version": "10.27.0",
   "private": true,
   "description": "NeoKid Care — offline-first neonatal & pediatric clinic PWA with cloud sync",
   "scripts": {
