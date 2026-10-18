@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v17/.test(sw), "SW cache bumped to v17 (clustered record)");
+  ok(/neokid-v18/.test(sw), "SW cache bumped to v18 (banner dedup)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -968,6 +968,7 @@ async function main() {
   const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
   ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");
   ok(idxSrc.includes('id="ph-card"') && appSrc.includes('"card"'), "card page shares the patient banner (uniform print head)");
+  ok(idxSrc.includes('id="ph-vaccines" class="no-print"') && idxSrc.includes('id="ph-card" class="no-print"'), "vaccination prints hide banner (record has its own strip)");
   ok(cssP.includes(".print-only{display:none!important}") && cssP.includes(".print-only{display:block!important}"), "print-only CSS swaps screen/print views");
   ok(cardHTML.includes("16\u201318 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
   ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");
