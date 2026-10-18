@@ -388,7 +388,7 @@ function printGrowthFull() {
       `<div style="font-size:12px;font-weight:700">${esc(GCHART_META[ind].title)}</div>` +
       (cap ? `<div style="font-size:11.5px;color:var(--muted)">${esc(cap)}</div>` : "") + `</div>`;
   }).join("");
-  $("growthFullPrint").innerHTML = `${clinicHeader()}
+  $("growthFullPrint").innerHTML = shareBarHTML("pg-growthprint", "growthFullPrint", "Growth full report", "growth") + `${clinicHeader()}
     <div class="doc-title">📈 COMPREHENSIVE GROWTH REPORT (IAP / WHO)</div>
     ${childHeader(c)}
     <dl class="kv" style="margin-bottom:10px"><dt>Assessment date</dt><dd>${fmtDate(lm.date)} · chrono ${ageStr(ageBetween(c.dob, lm.date))}${ga.useCorr ? " · <b>corrected age used (preterm)</b>" : ""} · PMA ${pmaStr(ga.pmaD)}</dd>
@@ -407,5 +407,5 @@ function printGrowthFull() {
     ${A.triage.map((t) => `<div style="margin-bottom:6px"><b>${esc(t.title)}</b><br>${esc(t.body)}</div>`).join("") || "<div>Growing well — continue routine surveillance.</div>"}
     <div class="footer-note">Exact WHO (0–5 y) / CDC + IAP-aligned (5–18 y) references · Confirm diagnostic labels on official charts.</div>
     ${docFooter("Comprehensive growth report")}`;
-  printPage("pg-growthprint");
+  previewPage("pg-growthprint");
 }

@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v22/.test(sw), "SW cache bumped to v22 (card-table)");
+  ok(/neokid-v26/.test(sw), "SW cache bumped to v26 (themes)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -725,7 +725,9 @@ async function main() {
   ok(gFull.includes("References & methods"), "methods note present");
   ok(gFull.includes("Impression & plan"), "impression present");
   ok(gFull.includes("Latest 14 kg"), "per-chart caption shows latest value");
-  ok(sb.__printed === 1, "print dialog fires once");
+  ok((sb.__printed || 0) === 0, "preview opens without firing the print dialog");
+  sb.doShare("print", "pg-growthprint", "growthFullPrint", "Growth full report", "growth");
+  ok(sb.__printed === 1, "bar Print fires the dialog once");
   const gVel = vm.runInContext("growthVelocityRows(child(), allMeasures(child()))", sb);
   ok(gVel.length === 2 && gVel[0].gpd > 0 && gVel[0].vw && gVel[0].vh, "velocity rows computed per interval");
   ok(vm.runInContext("assessRowFor(assessMeasure(child(), allMeasures(child()).slice(-1)[0]), 'wfa').key", sb) === "WAZ", "caption maps chart to assess row");
@@ -900,7 +902,9 @@ async function main() {
   sb.toggleTheme();
   ok(vm.runInContext("DB.settings.theme", sb) === "sunrise", "toggle advances light → sunrise");
   sb.toggleTheme(); sb.toggleTheme();
-  ok(vm.runInContext("DB.settings.theme", sb) === "light", "toggle cycles dark → light");
+  ok(vm.runInContext("DB.settings.theme", sb) === "ember", "toggle advances dark → ember");
+  for (let ti = 0; ti < 7; ti++) sb.toggleTheme();
+  ok(vm.runInContext("DB.settings.theme", sb) === "light", "toggle cycles through all ten themes");
   vm.runInContext("DB.settings.theme='';", sb);
   sb.applyTheme();
   ok(sb.document.documentElement.dataset.theme === "sunrise", "fresh installs default to sunrise");
@@ -985,10 +989,10 @@ async function main() {
   const idxM = fs.readFileSync(path.join(R, "index.html"), "utf8");
   ok(cssM.includes("@keyframes cardUp") && cssM.includes("body.motion .page.active .card") && cssM.includes("animation-delay:.25s"), "motion trial staggers card entrances");
   ok(cssM.includes("body.motion .modal") && cssM.includes("body.motion .btn:active") && cssM.includes("body.motion .lock.show .lock-card"), "motion trial pops modals + presses buttons + glides login");
-  ok(appM.includes("function applyMotion") && appM.includes("function toggleMotion") && appM.includes("applyGlass(); applyMotion();") && idxM.includes('id="motionToggle"'), "motion toggle (default ON) in topbar");
+  ok(appM.includes("function applyMotion") && !appM.includes("function toggleMotion") && !appM.includes("function toggleGlass") && appM.includes("applyGlass(); applyMotion();") && !idxM.includes('id="motionToggle"') && !idxM.includes('id="glassToggle"') && idxM.includes('id="themeToggle"'), "effect toggles removed (motion + glass permanent); theme switch stays");
   ok(sb.applyMotion() === true, "motion defaults ON");
   vm.runInContext("DB.settings.motion=false;", sb);
-  ok(sb.applyMotion() === false, "motion off sticks in settings");
+  ok(sb.applyMotion() === true, "motion stays on: retired off-prefs are not honored");
   vm.runInContext("DB.settings.motion=true;", sb); sb.applyMotion();
   // ---- v10.28.3: calm card table — readable hover + dated brand lines ----
   ok(cssM.includes(".vaxcard table.vaxtbl tr:hover td{background:#f1f5f9}"), "card table hover stays light (dark-mode readable)");
@@ -1000,13 +1004,51 @@ async function main() {
   ok(!recCt.includes("(Sanofi)") && !recCt.includes("(GSK)"), "card drops noisy maker brackets (brand + batch suffice)");
   const parCt = sb.parentCardHTML({ name: "CT Kid", sex: "boy", dob: "2025-01-15", vaccines: vxCt });
   ok(parCt.includes("5 Mar 2025 \u2014 </span><b>Hexaxim</b>") && !parCt.includes("(Sanofi)"), "parent export matches the calm brand format");
+  // ---- v10.28.4: auto-refresh + auto rail + foldable cards ----
+  const cloudSrc = fs.readFileSync(path.join(R, "js", "cloud.js"), "utf8");
+  ok(cloudSrc.includes("function autoPullTick") && cloudSrc.includes("pullNow(true)") && cloudSrc.includes("kidgrow_cloud_seen"), "auto-refresh downlinks newer snapshots silently");
+  ok(cloudSrc.includes("visibilitychange") && cloudSrc.includes("setInterval(autoPullTick") && cloudSrc.includes("autoSyncOn"), "auto-refresh ticks minutely + on return, with opt-out");
+  ok(cloudSrc.includes("function pullNow(silent)") && cloudSrc.includes("Cloud.setAuto"), "pull supports silent mode + settings toggle");
+  ok(cssM.includes("card[data-fold].folded") && cssM.includes('h3:first-child::after{content:"▸"}'), "foldable cards collapse via header");
+  ok(cssM.includes("body.nav-mini .sidebar:hover{width:252px}") && cssM.includes("@media(max-width:1100px)"), "sidebar auto-rails on small screens + hover-expands");
+  ok(appM.includes("function toggleFold") && appM.includes("function applyFolds") && appM.includes("innerWidth <= 1100"), "fold helpers + tablet sidebar pin");
+  ok(sb.foldOpen("nb-apgar") === true, "cards default open");
+  sb.toggleFold("nb-apgar");
+  ok(vm.runInContext("DB.settings.fold['nb-apgar']", sb) === true, "fold state persists");
+  sb.toggleFold("nb-apgar");
+  ok(sb.foldOpen("nb-apgar") === true, "unfold restores");
+  // ---- v10.29.0: clinic-to-clinic transfer (KG2 + seal + scoped import) ----
+  const aidsSrc = fs.readFileSync(path.join(R, "js", "aids.js"), "utf8");
+  ok(aidsSrc.includes("function xferSeal") && aidsSrc.includes("KG2") && aidsSrc.includes("function scopeTransfer"), "KG2 codec + seal + scope gate exist");
+  ok(aidsSrc.includes("BarcodeDetector") && aidsSrc.includes("getUserMedia") && aidsSrc.includes("function openScanModal") && aidsSrc.includes("function previewTransfer"), "QR scanner + receive preview exist (with no-camera fallback)");
+  ok(aidsSrc.includes('onclick="openScanModal()"'), "import box offers Scan");
+  const xChild = { name: "Xfer Kid", sex: "girl", dob: "2024-06-01", phone: "999", mother: "M", father: "F",
+    vaccines: { BCG: { date: "2024-06-02", brand: "BCGv", mfr: "Serum", batch: "LOT1" } }, extraVac: [],
+    measures: [{ date: "2024-06-02", wt: 3.1, ht: 49, hc: 34 }] };
+  const kg2 = sb.encodeRecord(xChild);
+  ok(kg2.indexOf("KG2|") === 0 && kg2.split("|").length === 10, "KG2 envelope: identity + doses + growth + seal");
+  const dec2 = sb.decodeRecord(kg2);
+  ok(dec2 && dec2.vaccines.BCG.batch === "LOT1" && dec2.vaccines.BCG.mfr === "Serum", "KG2 preserves batch + maker");
+  ok(dec2.measures.length === 1 && dec2.measures[0].wt === 3.1 && dec2._sealOk === true, "KG2 carries growth, seal verifies");
+  ok(sb.decodeRecord(kg2.replace("LOT1", "LOTX"))._sealOk === false, "tampered code fails the seal");
+  const dec1 = sb.decodeRecord("KG1|Old Kid|2023-01-01|boy|111|M|BCG~2023-01-02~BCGv|");
+  ok(dec1 && dec1.vaccines.BCG && dec1._sealOk === null && dec1.measures.length === 0, "legacy KG1 still decodes (unverified, no growth)");
+  const scp = sb.scopeTransfer({ name: "S", dob: "2024-01-01", vaccines: { BCG: { date: "2024-01-02" } }, measures: [], visits: [{ x: 1 }], rx: [{ y: 1 }], bills: [] });
+  ok(scp && scp.vaccines.BCG && !("visits" in scp) && !("rx" in scp) && !("bills" in scp), "scope gate strips everything but immunization + growth");
+  const nBefore = vm.runInContext("DB.children.length", sb);
+  sb.mergeImported(sb.decodeRecord(kg2));
+  ok(vm.runInContext("DB.children.length", sb) === nBefore + 1, "import creates the child once");
+  ok(vm.runInContext("DB.children[DB.children.length-1].measures.length", sb) === 1, "imported growth lands on the child");
+  sb.mergeImported(sb.decodeRecord(kg2));
+  ok(vm.runInContext("DB.children.length", sb) === nBefore + 1 && vm.runInContext("DB.children[DB.children.length-1].measures.length", sb) === 1, "re-import merges, never duplicates");
+  vm.runInContext("DB.children.pop();", sb);
   const idxSrc = fs.readFileSync(path.join(R, "index.html"), "utf8");
   const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
   ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");
   ok(idxSrc.includes('id="ph-card"') && appSrc.includes('"card"'), "card page shares the patient banner (uniform print head)");
   ok(cssP.indexOf("@media screen") !== -1 && cssP.indexOf("@media screen") < cssP.indexOf("body.glass"), "glass trial is screen-scoped (print untouched)");
   ok(cssP.includes("Glass trial") && cssP.includes("backdrop-filter:blur(16px)") && cssP.includes("color-mix(in srgb,var(--card)"), "glass frosts surfaces over theme palette");
-  ok(appSrc.includes("function applyGlass") && appSrc.includes("function toggleGlass") && appSrc.includes("applyTheme(); applyGlass();") && idxSrc.includes('id="glassToggle"') && idxSrc.includes('id="ph-card" class="no-print"'), "vaccination prints hide banner (record has its own strip)");
+  ok(appSrc.includes("function applyGlass") && appSrc.includes("applyTheme(); applyGlass();") && idxSrc.includes('id="ph-card" class="no-print"'), "vaccination prints hide banner (record has its own strip)");
   ok(cssP.includes(".print-only{display:none!important}") && cssP.includes(".print-only{display:block!important}"), "print-only CSS swaps screen/print views");
   ok(cardHTML.includes("16\u201318 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
   ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");
@@ -1153,6 +1195,31 @@ async function main() {
   ok(!bkSolTa.includes("Ragi Porridge") && bkSolTa.includes("ராகி கஞ்சி") && bkSolHi.includes("रागी दलिया"), "solids TA/HI recipes translated");
   ok(bkSol.includes("NeoKid Care") && bkSolTa.includes("நியோகிட் கேர்") && bkSolHi.includes("नियोकिड केयर") && !bkSol.includes("KidGrow") && !bkSolTa.includes("KidGrow"), "booklets carry NeoKid Care branding");
 
+  // ---- v10.30.0: one canonical print + universal share bar ----
+  const psIdx = fs.readFileSync(path.join(R, "index.html"), "utf8");
+  const psDocs = fs.readFileSync(path.join(R, "js", "docs.js"), "utf8");
+  const psGrw = fs.readFileSync(path.join(R, "js", "growth.js"), "utf8");
+  const psGrc = fs.readFileSync(path.join(R, "js", "growth-chart.js"), "utf8");
+  const psCss = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
+  ok(psIdx.includes("Print / Share") && !psIdx.includes("Print assessment") && !psIdx.includes("📋 Full report"), "milestones: single canonical print button");
+  ok(psIdx.includes('id="vxShare"') && psIdx.includes('id="vsShare"'), "record + notes toolbars carry share placeholders");
+  ok(appM.includes("function shareBarHTML") && appM.includes("function doShare") && appM.includes("function shareTextFor") && appM.includes("function downloadDocHTML") && appM.includes("function renderShareBars"), "universal share helpers exist");
+  ok(appM.includes("wa.me") && appM.includes("mailto:") && appM.includes("navigator.share"), "share covers WhatsApp + email + system sheet");
+  ok(appM.includes("function previewPage") && psDocs.includes('previewPage("pg-msprint")') && psGrw.includes('previewPage("pg-gsheet")') && psGrc.includes('previewPage("pg-growthprint")'), "canonical reports open a screen preview first (dialog only from the bar)");
+  ok(psDocs.includes('shareBarHTML("pg-msprint"') && psGrw.includes('shareBarHTML("pg-gsheet"') && psGrc.includes('shareBarHTML("pg-growthprint"'), "all three canonical previews open with a share bar");
+  ok(psCss.includes(".sharebar{"), "share bar styled (screen-only)");
+  ok((sb.shareBarHTML("p", "c", "T").match(/doShare\(/g) || []).length === 6, "share bar offers print + PDF + send + WhatsApp + email + file");
+  ok((sb.shareBarHTML("p", "c", "T", "growth").match(/doShare\(/g) || []).length === 7 && sb.shareBarHTML("p", "c", "T", "growth").includes("Back</button>"), "preview bar adds a Back button to its source page");
+  ok(typeof sb.shareTextFor("vacPrint") === "string" && sb.shareTextFor("nope").length > 0, "share text always builds (clinic header fallback)");
+  // ---- v10.31.0: permanent motion+glass, reel theme picker ----
+  const thCss = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
+  ok(["ember","violet","forest","clay","lagoon","midnight","berry"].every((x) => appM.includes('"' + x + '"')), "all seven reel themes registered");
+  ok(appM.includes("function setTheme") && appM.includes("prefers-reduced-motion") && thCss.includes('[data-theme="ember"]') && thCss.includes('[data-theme="berry"]'), "theme picker engine + theme styles exist");
+  ok(["ember","violet","forest","clay","lagoon","midnight","berry"].every((x) => thCss.includes('[data-theme="' + x + '"] .sidebar') && thCss.includes('[data-theme="' + x + '"] .btn-p')), "every reel theme restyles sidebar + primary buttons");
+  ok(psIdx.includes("Appearance") && psIdx.includes("setTheme(") && psIdx.includes('data-theme="midnight"'), "settings carries the appearance picker");
+  ok(sb.applyMotion() === true, "motion is permanently on");
+  ok(sb.applyGlass() === true, "glass is permanently on");
+  ok(sb.setTheme("ember") === true && sb.setTheme("bogus") === false, "setTheme accepts known themes, rejects the rest");
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

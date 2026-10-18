@@ -1,5 +1,46 @@
 # Changelog
 
+## v10.31.0 — 2026-10-18 — Permanent motion+glass, 7 reel themes + picker
+- REMOVED: the ✨ glass and 🎬 motion toggles from the topbar — both are
+  now a permanent part of the app (motion still stills for users whose
+  phone asks for reduced motion).
+- NEW: 7 color themes from the design reel — Ember, Violet, Forest,
+  Clay, Lagoon, Midnight, Berry — each restyling sidebar, buttons,
+  topbar and ambient glow. Classic/Sunrise/Night untouched.
+- NEW: Appearance picker in Settings with duo swatches; choice saves
+  with the login. Print output stays classic always.
+## v10.30.0 — 2026-10-18 — One canonical print + universal share bar
+- UNIFIED: milestones dual buttons (Print assessment + Full report) merged
+  into one canonical "Print / Share" full report.
+- NEW: universal share bar on every canonical output — Print, PDF
+  (via Save-as-PDF), Send (phone share sheet), WhatsApp, Email, File
+  (standalone .html download). Screen-only; never prints on paper.
+- SHARE: vaccination record + visit notes toolbars carry the same bar;
+  growth sheet + full report previews open with it built in.
+- Every share is audit-logged as an Export event.
+- FLOW: report buttons now open a screen preview first (with Back) —
+  the print dialog opens only from the bar's Print/PDF buttons.
+## v10.29.0 — 2026-10-18 — Clinic-to-clinic transfer (immunization + growth)
+- NEW: KG2 record code — immunization (with maker + batch) + growth chart +
+  tamper seal, in the card QR + Copy. Legacy KG1 codes still decode.
+- NEW: live QR scanner (Chrome/Edge desktop + Android) + guided fallback
+  (paste the WhatsApp'd code) where cameras can't scan.
+- NEW: Receive preview — view + verify (seal ✓/✗, doses, growth, merge
+  target) BEFORE anything imports. One-way copy: nothing writes back.
+- PRIVILEGE: only immunization + growth (+identity) can ever transfer —
+  enforced structurally by the format + scope gate. Visits, Rx, bills
+  never leave the source clinic.
+
+## v10.28.4 — 2026-10-18 — Auto-refresh + auto sidebar + foldable cards
+- NEW: cloud auto-refresh — this device silently downloads newer snapshots
+  every minute + whenever the app regains focus, but ONLY when it has no
+  unsent edits (genuine conflicts still ask). Toggle in Cloud card.
+- NEW: sidebar auto-collapses to an icon rail on tablets/small laptops
+  (<=1100px, ☰ pins it open); collapsed rail expands on hover (desktop).
+- NEW: foldable cards — APGAR + New Ballard Score collapse via header tap
+  (state remembered); printing always unfolds first. Any card can adopt
+  this with one data-fold attribute.
+
 ## v10.28.3 — 2026-10-18 — Readable card table + calm brand cells
 - FIX: hovering a vaccine-card row in dark mode turned it dark-navy with dark
   ink (unreadable). The paper card now keeps a light hover in every theme.

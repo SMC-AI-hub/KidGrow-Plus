@@ -16,7 +16,7 @@ var PLAN_NAME = CFG.PLAN_NAME || "NeoKid Care Monthly";
 var PLAN_PRICE = CFG.PLAN_PRICE || "";
 var TRIAL_DAYS = CFG.TRIAL_DAYS || 14;
 var GRACE_MS = (CFG.OFFLINE_GRACE_DAYS || 7) * 864e5;
-var STATUS_KEY = "kidgrow_cloud_status", HASH_KEY = "kidgrow_last_push_hash";
+var STATUS_KEY = "kidgrow_cloud_status", HASH_KEY = "kidgrow_last_push_hash", SEEN_KEY = "kidgrow_cloud_seen";
 var APP_VER = "v10.16";
 
 var sb = null, session = null, profile = null;
@@ -152,7 +152,7 @@ function renderCloudCard() {
         (a.ok && a.reason !== "active" ? "<button class='btn btn-d btn-sm' onclick='Cloud.subscribe()'>💎 Subscribe</button>" : "") +
         "<button class='btn btn-o btn-sm' onclick='Cloud.logout()'>Logout</button>"
       : "<button class='btn btn-p btn-sm' onclick='Cloud.showAuth(\"login\")'>Sign in / Sign up</button>") +
-    "</div><div class='hint' id='cloudSyncLine' style='margin-top:8px'></div>";
+    "<label style='display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px'><input type='checkbox'" + (autoSyncOn() ? " checked" : "") + " onchange='Cloud.setAuto(this.checked)'> ↻ Auto-refresh from cloud (minutely + on return)</label></div><div class='hint' id='cloudSyncLine' style='margin-top:8px'></div>";
   pg.appendChild(card);
 }
 function syncLine(m) { var e = $("cloudSyncLine"); if (e) e.textContent = m || ""; }
@@ -243,6 +243,7 @@ function pushNow(manual) {
   var payload = { user_id: session.user.id, data: (typeof DB !== "undefined" ? DB : {}), device: String((navigator.userAgent || "").slice(0, 80)), app_version: APP_VER };
   return sb.from("clinic_snapshots").insert(payload).select("id").single().then(function (r) {
     if (r.error) throw r.error;
+    try { if (r && r.data && r.data.id) lsSet(SEEN_KEY, String(r.data.id)); } catch (e) {}
     lsSet(HASH_KEY, localHash());
     syncLine("Synced just now ✓");
     if (manual) toast("Uploaded to cloud ✓");
@@ -255,18 +256,37 @@ function pushNow(manual) {
     });
   }).catch(function (e) { syncLine("Sync failed — will retry."); if (manual) toast("Upload failed: " + (e.message || "network error")); });
 }
-function pullNow() {
-  if (!Cloud.enabled || !session) { toast("Sign in first (Settings → Cloud)."); return; }
+function autoSyncOn() { try { return ((typeof DB !== "undefined" && DB.settings) || {}).autoSync !== false; } catch (e) { return true; } }
+/* v10.28.4 auto-refresh: silent downlink when the cloud holds a newer snapshot
+   AND this device has no unsent edits (local hash == last pushed hash).
+   Never overwrites local work: dirty devices keep uploading, and genuine
+   conflicts still ask via conflictModal. */
+function autoPullTick() {
+  if (!Cloud.enabled || !session || !autoSyncOn()) return;
+  if (pushTimer) return;
+  try {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+    if (localHash() !== (lsGet(HASH_KEY) || "")) return;
+    sb.from("clinic_snapshots").select("id").eq("user_id", session.user.id).order("id", { ascending: false }).limit(1).maybeSingle().then(function (r) {
+      if (r.error || !r.data || !r.data.id) return;
+      if (String(r.data.id) === (lsGet(SEEN_KEY) || "")) return;
+      pullNow(true);
+    }).catch(function () {});
+  } catch (e) {}
+}
+function pullNow(silent) {
+  if (!Cloud.enabled || !session) { if (!silent) toast("Sign in first (Settings → Cloud)."); return; }
   syncLine("Checking cloud…");
   sb.from("clinic_snapshots").select("id,data,created_at").eq("user_id", session.user.id).order("id", { ascending: false }).limit(1).maybeSingle().then(function (r) {
     if (r.error) throw r.error;
-    if (!r.data) { toast("No cloud backup yet — use Upload first."); syncLine(""); return; }
+    if (!r.data) { if (!silent) toast("No cloud backup yet — use Upload first."); syncLine(""); return; }
+    try { lsSet(SEEN_KEY, String(r.data.id)); } catch (e) {}
     var cloudHash = hashStr(JSON.stringify(r.data.data || {}));
     var lh = localHash(), last = lsGet(HASH_KEY) || "";
-    if (cloudHash === lh) { toast("Already up to date ✓"); syncLine("Synced just now ✓"); return; }
+    if (cloudHash === lh) { if (!silent) toast("Already up to date ✓"); syncLine("Synced just now ✓"); return; }
     if (lh !== last && last) { conflictModal(r.data.data); return; } // both sides changed
     applySnapshot(r.data.data);
-  }).catch(function (e) { toast("Download failed: " + (e.message || "network error")); syncLine(""); });
+  }).catch(function (e) { if (!silent) toast("Download failed: " + (e.message || "network error")); syncLine(""); });
 }
 function applySnapshot(data) {
   try {
@@ -468,6 +488,9 @@ var Cloud = {
     fetchStatus();
     window.addEventListener("online", function () { fetchStatus().then(function () { schedulePush(); }); });
     window.addEventListener("offline", function () { renderBanner(currentAccess()); });
+    window.addEventListener("focus", function () { try { autoPullTick(); } catch (e) {} });
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) autoPullTick(); }); } catch (e) {}
+    try { setInterval(autoPullTick, 60000); } catch (e) {}
   },
   showAuth: showAuth,
   authGo: function (mode) {
@@ -493,6 +516,7 @@ var Cloud = {
   syncNow: function () { fetchStatus().then(function () { pullNow(); }); },
   pushNow: pushNow,
   pullNow: pullNow,
+  setAuto: function (on) { try { if (typeof DB !== "undefined") { DB.settings = Object.assign({}, DB.settings, { autoSync: !!on }); if (typeof save === "function") save(); } } catch (e) {} try { renderCloudCard(); } catch (e) {} if (on) { try { autoPullTick(); } catch (e) {} } },
   subscribe: subscribe,
   user: function () { return session ? session.user : null; },
   access: currentAccess,

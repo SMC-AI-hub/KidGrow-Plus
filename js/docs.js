@@ -101,7 +101,7 @@ function printMilestonesFull() {
     const v = msBandVerdict(n, bi, curBi);
     return `<div style="font-size:12.5px;margin-bottom:3px"><b>${esc(b.band)}:</b> ${esc(v.label)} (${n.A}✓/${n.E}◐/${n.N}✗ of ${n.total})</div>`;
   }).join("");
-  $("msFullPrint").innerHTML = `${clinicHeader()}
+  $("msFullPrint").innerHTML = shareBarHTML("pg-msprint", "msFullPrint", "Milestones assessment", "milestones") + `${clinicHeader()}
     <div class="doc-title">🌟 DEVELOPMENTAL MILESTONES — ASSESSMENT</div>
     ${childHeader(c)}
     <dl class="kv" style="margin-bottom:10px"><dt>Assessment date</dt><dd>${fmtDate(todayISO())} · age ${ageStr(age)} · current band: <b>${esc(MILESTONES[curBi].band)}</b></dd>
@@ -121,7 +121,7 @@ function printMilestonesFull() {
     <div class="footer-note">Any red flag, regression, or parental concern → counsel + early referral to developmental paediatrics / early intervention. Red-flag lists for all bands are visible in the app.</div>
     ${docFooter("Milestones assessment")}`;
   auditSafe("Export", "Milestones full report printed");
-  printPage("pg-msprint");
+  previewPage("pg-msprint");
 }
 
 function exportMilestonesCSV() {

@@ -290,19 +290,30 @@ function go(page) {
   if (typeof callRender === "function" && RENDER_FOR[page]) callRender(RENDER_FOR[page]);
   if (page === "growth") setTimeout(drawGrowthChart, 60);
   window.scrollTo({ top: 0 });
+  try { applyFolds(); } catch (e) {}
+  try { if (typeof renderShareBars === "function") renderShareBars(); } catch (e) {}
 }
 document.querySelectorAll("#sideNav button, #mobNav button").forEach((b) => b.addEventListener("click", () => go(b.dataset.page)));
 document.addEventListener("keydown", globalSlashKey); // "/" jumps to patient search from anywhere
 
 /* ---------------- Theme + sidebar ---------------- */
-const THEME_ORDER = ["light", "sunrise", "dark"];
+const THEME_ORDER = ["light", "sunrise", "dark", "ember", "violet", "forest", "clay", "lagoon", "midnight", "berry"];
+const THEME_META = { light: "#0e7c7b", sunrise: "#f6f1e6", dark: "#0a1424", ember: "#431f10", violet: "#2a1650", forest: "#18251d", clay: "#4a2a1e", lagoon: "#17383f", midnight: "#0b132b", berry: "#2b3370" };
+const THEME_LABEL = { light: "Classic", sunrise: "Sunrise", dark: "Night", ember: "Ember", violet: "Violet", forest: "Forest", clay: "Clay", lagoon: "Lagoon", midnight: "Midnight", berry: "Berry" };
 function applyTheme() {
   let t = (DB.settings || {}).theme;
   if (!t || !THEME_ORDER.includes(t)) t = "sunrise"; // fresh installs start on Sunrise; saved prefs untouched
   document.documentElement.dataset.theme = t;
   const b = document.getElementById("themeToggle");
-  if (b) { b.textContent = t === "dark" ? "☀️" : t === "sunrise" ? "🌞" : "🌙"; b.title = `Theme: ${t} (tap to change)`; }
-  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === "dark" ? "#0a1424" : t === "sunrise" ? "#f6f1e6" : "#0e7c7b";
+  if (b) { const classic = (t === "light" || t === "sunrise" || t === "dark"); b.textContent = classic ? (t === "dark" ? "☀️" : t === "sunrise" ? "🌞" : "🌙") : "🎨"; b.title = `Theme: ${THEME_LABEL[t] || t} (tap to change)`; }
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = THEME_META[t] || "#0e7c7b";
+  try { document.querySelectorAll(".theme-sw").forEach((el) => el.classList.toggle("sel", el.dataset.theme === t)); } catch (e) {}
+}
+function setTheme(t) {
+  if (!THEME_ORDER.includes(t)) return false;
+  DB.settings = Object.assign({}, DB.settings, { theme: t });
+  save(); applyTheme();
+  return true;
 }
 function toggleTheme() {
   const cur = document.documentElement.dataset.theme;
@@ -310,27 +321,14 @@ function toggleTheme() {
   save(); applyTheme();
 }
 function applyGlass() {
-  const on = ((DB.settings || {}).glass !== false); // trial default ON; one tap reverts
-  document.body.classList.toggle("glass", on);
-  const b = document.getElementById("glassToggle");
-  if (b) { b.textContent = on ? "\u2728" : "\u25FB\uFE0F"; b.title = `Glass interface: ${on ? "on" : "off"} (tap to change)`; }
-}
-function toggleGlass() {
-  const on = !document.body.classList.contains("glass");
-  DB.settings = Object.assign({}, DB.settings, { glass: on });
-  save(); applyGlass();
+  document.body.classList.toggle("glass", true); // v10.31: glass is a permanent part of the look
+  return true;
 }
 function applyMotion() {
-  const on = ((DB.settings || {}).motion !== false); // trial default ON; one tap reverts
+  let on = true; // v10.31: animations are a permanent part of the app
+  try { if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) on = false; } catch (e) {} // except for users who ask their phone for stillness
   document.body.classList.toggle("motion", on);
-  const b = document.getElementById("motionToggle");
-  if (b) { b.textContent = on ? "🎬" : "⏸️"; b.title = `Screen animations: ${on ? "on" : "off"} (tap to change)`; }
   return on;
-}
-function toggleMotion() {
-  const on = !document.body.classList.contains("motion");
-  DB.settings = Object.assign({}, DB.settings, { motion: on });
-  save(); applyMotion();
 }
 function renderBrand() {
   const s = DB.settings || {};
@@ -369,10 +367,26 @@ function applyNavMini() {
   document.querySelectorAll("#sideNav button").forEach((b) => { b.title = b.textContent.trim(); });
 }
 function toggleNav() {
+  if (typeof window !== "undefined" && window.innerWidth <= 1100) { document.body.classList.toggle("nav-full"); return; } // tablet: pin / unpin full menu
   DB.settings.navMini = !document.body.classList.contains("nav-mini");
   save(); applyNavMini();
   const f = document.getElementById("navFilter"); // mini mode hides the filter — clear it so nothing stays hidden
   if (f) { f.value = ""; filterNav(""); }
+}
+/* ---- v10.28.4: foldable cards. Any .card[data-fold="id"] collapses via its
+   first header (h3 onclick="toggleFold('id')"). State persists in
+   DB.settings.fold (default open); printing always unfolds first. ---- */
+function foldOpen(id) { return !(((DB.settings || {}).fold || {})[id]); }
+function toggleFold(id) {
+  const f = Object.assign({}, (DB.settings || {}).fold);
+  if (foldOpen(id)) f[id] = true; else delete f[id];
+  DB.settings = Object.assign({}, DB.settings, { fold: f });
+  save(); applyFolds();
+}
+function applyFolds() {
+  document.querySelectorAll(".card[data-fold]").forEach((el) => {
+    el.classList.toggle("folded", !foldOpen(el.getAttribute("data-fold")));
+  });
 }
 
 /* ---------------- Collapsible nav sections + filter ---------------- */
@@ -1578,6 +1592,7 @@ document.querySelectorAll(".modal-bg").forEach((m) => m.addEventListener("click"
    so a print never comes out blank and never repeats a stale page. */
 let _autoPrint = false;
 function autoPrintPrep() {
+  try { document.querySelectorAll(".card[data-fold].folded").forEach((el) => el.classList.remove("folded")); } catch (e) {}
   try {
     if (document.querySelector(".page.printing")) return "kept";
     const act = document.querySelector(".page.active") || document.querySelector(".page");
@@ -1587,6 +1602,7 @@ function autoPrintPrep() {
 }
 function autoPrintCleanup() {
   try { document.querySelectorAll(".page.printing").forEach((p) => { if (p && p.classList) p.classList.remove("printing"); }); } catch (e) {}
+  try { if (typeof applyFolds === "function") applyFolds(); } catch (e) {}
   _autoPrint = false;
 }
 try { if (typeof window !== "undefined" && window.addEventListener) { window.addEventListener("beforeprint", autoPrintPrep); window.addEventListener("afterprint", autoPrintCleanup); } } catch (e) {}
@@ -1606,6 +1622,95 @@ function printPage(id) {
     ]).then(go, go);
   } catch (e) { go(); return Promise.resolve(); }
 }
+/* ---- v10.30.0: one canonical print + universal share bar ---- */
+function shareBarHTML(pageId, contentId, label, srcPage) {
+  const L = String(label || "document").replace(/["']/g, "");
+  const S = String(srcPage || "").replace(/[^a-z-]/g, "");
+  const b = (act, icon, txt, cls) => `<button class="btn ${cls} btn-xs" onclick="doShare('${act}','${pageId}','${contentId}','${L}','${S}')">${icon} ${txt}</button>`;
+  return `<div class="sharebar no-print">` + (S ? b("back", "\u2039", "Back", "btn-o") : "") + `<span class="sharebar-t">Share:</span>`
+    + b("print", "🖨️", "Print", "btn-p") + b("pdf", "📄", "PDF", "btn-o")
+    + b("send", "📤", "Send", "btn-o") + b("wa", "🟢", "WhatsApp", "btn-o")
+    + b("mail", "\u2709\uFE0F", "Email", "btn-o") + b("file", "\u2B07\uFE0F", "File", "btn-o") + `</div>`;
+}
+function shareTextFor(contentId, maxLen) {
+  let t = "";
+  try {
+    const el = document.getElementById(contentId);
+    t = el ? (el.innerText || el.textContent || "") : "";
+  } catch (e) {}
+  t = String(t).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  try {
+    const s = (typeof DB !== "undefined" && DB.settings) || {};
+    const c = (typeof child === "function" && child()) || {};
+    const head = `${s.clinic || "NeoKid Care"}${c.name ? " \u00B7 " + c.name : ""}`;
+    if (t.indexOf(head) !== 0) t = head + "\n" + t;
+  } catch (e) {}
+  const m = maxLen || 6000;
+  return t.length > m ? t.slice(0, m - 1) + "\u2026" : t;
+}
+function downloadDocHTML(contentId, label) {
+  try {
+    const el = document.getElementById(contentId);
+    if (!el) return false;
+    const title = String(label || "document").replace(/["'<>]/g, "");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title} \u2014 NeoKid Care</title><style>body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;max-width:720px;margin:16px auto;padding:0 12px;color:#111}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:4px 6px;font-size:13px}img{max-width:100%}.sharebar,.no-print{display:none!important}</style></head><body>${el.innerHTML}</body></html>`;
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = title.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() + ".html";
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch (e) {} }, 800);
+    return true;
+  } catch (e) { return false; }
+}
+function doShare(action, pageId, contentId, label, srcPage) {
+  const L = label || "document";
+  if (action !== "back") try { if (typeof auditSafe === "function") auditSafe("Export", `${L} \u2014 shared (${action})`); } catch (e) {}
+  try {
+    if (action === "back") { try { go(srcPage || "dashboard"); } catch (e) {} return true; }
+    if (action === "print" || action === "pdf") {
+      if (action === "pdf" && typeof toast === "function") toast("In the dialog, choose \u201CSave as PDF\u201D as the printer.");
+      printPage(pageId);
+      return true;
+    }
+    if (action === "send" && typeof navigator !== "undefined" && navigator.share) {
+      navigator.share({ title: `${L} \u2014 NeoKid Care`, text: shareTextFor(contentId) }).catch(() => {});
+      return true;
+    }
+    if (action === "send") { if (typeof toast === "function") toast("System share is not available here \u2014 try WhatsApp or File."); return false; }
+    if (action === "wa") {
+      window.open("https://wa.me/?text=" + encodeURIComponent(shareTextFor(contentId)), "_blank");
+      return true;
+    }
+    if (action === "mail") {
+      window.location.href = `mailto:?subject=${encodeURIComponent(`${L} \u2014 NeoKid Care`)}&body=${encodeURIComponent(shareTextFor(contentId, 1800))}`;
+      return true;
+    }
+    if (action === "file") {
+      if (downloadDocHTML(contentId, L)) { if (typeof toast === "function") toast("File saved \u2014 open it in any browser."); return true; }
+      if (typeof toast === "function") toast("Could not save the file on this device.");
+      return false;
+    }
+  } catch (e) { if (typeof toast === "function") toast("Share did not go through \u2014 please retry."); }
+  return false;
+}
+function renderShareBars() {
+  try {
+    const vx = document.getElementById("vxShare");
+    if (vx) vx.innerHTML = shareBarHTML("pg-vaccines", "vacPrint", "Vaccination record");
+    const vs = document.getElementById("vsShare");
+    if (vs) vs.innerHTML = shareBarHTML("pg-visits", "visitList", "Visit notes");
+  } catch (e) {}
+}
+function previewPage(id) {
+  // Screen-first preview: show the print page in the app WITHOUT opening the
+  // print dialog. The share bar on the preview offers Print/PDF + Back.
+  document.querySelectorAll(".page").forEach((p) => p.classList.remove("printing"));
+  document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+  $(id).classList.add("printing");
+  $(id).classList.add("active");
+  try { window.scrollTo({ top: 0 }); } catch (e) {}
+  try { if (typeof renderShareBars === "function") renderShareBars(); } catch (e) {}
+}
 function callRender(name) {
   try {
     const f = (typeof window !== "undefined" && window[name]) || null;
@@ -1618,6 +1723,7 @@ function renderAll() {
   DB.appts = DB.appts || []; DB.tokens = DB.tokens || []; DB.bills = DB.bills || []; DB.users = DB.users || []; DB.audit = DB.audit || []; DB.session = DB.session || {};
   try { syncChildPicker(); } catch (e) {}
   ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
+  try { applyFolds(); } catch (e) {}
 }
 window.addEventListener("resize", () => drawGrowthChart());
 
