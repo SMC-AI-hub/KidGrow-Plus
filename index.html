@@ -110,8 +110,6 @@
       <div><h2 id="pageTitle">Dashboard</h2><div class="sub" id="clinicLine">—</div></div>
       <span id="netBadge" class="badge b-green" title="Connection status">● Online</span>
       <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Theme: light (tap to change)">🌙</button>
-      <button class="icon-btn" id="glassToggle" onclick="toggleGlass()" title="Glass interface: on (tap to change)">✨</button>
-      <button class="icon-btn" id="motionToggle" onclick="toggleMotion()" title="Screen animations: on (tap to change)">🎬</button>
       <button class="icon-btn" id="settingsGear" onclick="go('settings')" title="Settings — clinic profile, logo, doctors">⚙️</button>
       <div class="child-picker">
         <div class="avatar" id="childAvatar">–</div>
@@ -402,6 +400,20 @@
               <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sColorPrint" checked onchange="savePrintPref()"> 🖨️ Print in color (badges · charts · banners) — uncheck to save ink</label></div>
             </div>
             <button class="btn btn-p" onclick="saveSettings()">💾 Save clinic profile</button>
+          </div>
+          <div class="card"><h3>🎨 Appearance</h3><div class="hint">App colors — applies instantly, saved with your login</div>
+            <div class="theme-grid">
+              <button class="theme-sw" data-theme="light" onclick="setTheme('light')"><span class="sw" style="--a:#0d9488;--b:#0f2b4d"></span>Classic</button>
+              <button class="theme-sw" data-theme="sunrise" onclick="setTheme('sunrise')"><span class="sw" style="--a:#d9a92c;--b:#0a3a36"></span>Sunrise</button>
+              <button class="theme-sw" data-theme="dark" onclick="setTheme('dark')"><span class="sw" style="--a:#2dd4bf;--b:#0a1424"></span>Night</button>
+              <button class="theme-sw" data-theme="ember" onclick="setTheme('ember')"><span class="sw" style="--a:#FF6115;--b:#431F10"></span>Ember</button>
+              <button class="theme-sw" data-theme="violet" onclick="setTheme('violet')"><span class="sw" style="--a:#7A35FF;--b:#2A1650"></span>Violet</button>
+              <button class="theme-sw" data-theme="forest" onclick="setTheme('forest')"><span class="sw" style="--a:#B7FF72;--b:#18251D"></span>Forest</button>
+              <button class="theme-sw" data-theme="clay" onclick="setTheme('clay')"><span class="sw" style="--a:#FFE98A;--b:#4A2A1E"></span>Clay</button>
+              <button class="theme-sw" data-theme="lagoon" onclick="setTheme('lagoon')"><span class="sw" style="--a:#9FE9D0;--b:#17383F"></span>Lagoon</button>
+              <button class="theme-sw" data-theme="midnight" onclick="setTheme('midnight')"><span class="sw" style="--a:#39FF88;--b:#0B132B"></span>Midnight</button>
+              <button class="theme-sw" data-theme="berry" onclick="setTheme('berry')"><span class="sw" style="--a:#4A5BB5;--b:#2B3370"></span>Berry</button>
+            </div>
           </div>
           <div class="card"><h3>🔒 Session lock</h3><div class="hint">Auto-locks the app after inactivity (needs user PINs set up)</div>
             <div class="form-grid">

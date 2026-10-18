@@ -1,5 +1,14 @@
 # Changelog
 
+## v10.31.0 — 2026-10-18 — Permanent motion+glass, 7 reel themes + picker
+- REMOVED: the ✨ glass and 🎬 motion toggles from the topbar — both are
+  now a permanent part of the app (motion still stills for users whose
+  phone asks for reduced motion).
+- NEW: 7 color themes from the design reel — Ember, Violet, Forest,
+  Clay, Lagoon, Midnight, Berry — each restyling sidebar, buttons,
+  topbar and ambient glow. Classic/Sunrise/Night untouched.
+- NEW: Appearance picker in Settings with duo swatches; choice saves
+  with the login. Print output stays classic always.
 ## v10.30.0 — 2026-10-18 — One canonical print + universal share bar
 - UNIFIED: milestones dual buttons (Print assessment + Full report) merged
   into one canonical "Print / Share" full report.

@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v25/.test(sw), "SW cache bumped to v25 (print-share)");
+  ok(/neokid-v26/.test(sw), "SW cache bumped to v26 (themes)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -902,7 +902,9 @@ async function main() {
   sb.toggleTheme();
   ok(vm.runInContext("DB.settings.theme", sb) === "sunrise", "toggle advances light → sunrise");
   sb.toggleTheme(); sb.toggleTheme();
-  ok(vm.runInContext("DB.settings.theme", sb) === "light", "toggle cycles dark → light");
+  ok(vm.runInContext("DB.settings.theme", sb) === "ember", "toggle advances dark → ember");
+  for (let ti = 0; ti < 7; ti++) sb.toggleTheme();
+  ok(vm.runInContext("DB.settings.theme", sb) === "light", "toggle cycles through all ten themes");
   vm.runInContext("DB.settings.theme='';", sb);
   sb.applyTheme();
   ok(sb.document.documentElement.dataset.theme === "sunrise", "fresh installs default to sunrise");
@@ -987,10 +989,10 @@ async function main() {
   const idxM = fs.readFileSync(path.join(R, "index.html"), "utf8");
   ok(cssM.includes("@keyframes cardUp") && cssM.includes("body.motion .page.active .card") && cssM.includes("animation-delay:.25s"), "motion trial staggers card entrances");
   ok(cssM.includes("body.motion .modal") && cssM.includes("body.motion .btn:active") && cssM.includes("body.motion .lock.show .lock-card"), "motion trial pops modals + presses buttons + glides login");
-  ok(appM.includes("function applyMotion") && appM.includes("function toggleMotion") && appM.includes("applyGlass(); applyMotion();") && idxM.includes('id="motionToggle"'), "motion toggle (default ON) in topbar");
+  ok(appM.includes("function applyMotion") && !appM.includes("function toggleMotion") && !appM.includes("function toggleGlass") && appM.includes("applyGlass(); applyMotion();") && !idxM.includes('id="motionToggle"') && !idxM.includes('id="glassToggle"') && idxM.includes('id="themeToggle"'), "effect toggles removed (motion + glass permanent); theme switch stays");
   ok(sb.applyMotion() === true, "motion defaults ON");
   vm.runInContext("DB.settings.motion=false;", sb);
-  ok(sb.applyMotion() === false, "motion off sticks in settings");
+  ok(sb.applyMotion() === true, "motion stays on: retired off-prefs are not honored");
   vm.runInContext("DB.settings.motion=true;", sb); sb.applyMotion();
   // ---- v10.28.3: calm card table — readable hover + dated brand lines ----
   ok(cssM.includes(".vaxcard table.vaxtbl tr:hover td{background:#f1f5f9}"), "card table hover stays light (dark-mode readable)");
@@ -1046,7 +1048,7 @@ async function main() {
   ok(idxSrc.includes('id="ph-card"') && appSrc.includes('"card"'), "card page shares the patient banner (uniform print head)");
   ok(cssP.indexOf("@media screen") !== -1 && cssP.indexOf("@media screen") < cssP.indexOf("body.glass"), "glass trial is screen-scoped (print untouched)");
   ok(cssP.includes("Glass trial") && cssP.includes("backdrop-filter:blur(16px)") && cssP.includes("color-mix(in srgb,var(--card)"), "glass frosts surfaces over theme palette");
-  ok(appSrc.includes("function applyGlass") && appSrc.includes("function toggleGlass") && appSrc.includes("applyTheme(); applyGlass();") && idxSrc.includes('id="glassToggle"') && idxSrc.includes('id="ph-card" class="no-print"'), "vaccination prints hide banner (record has its own strip)");
+  ok(appSrc.includes("function applyGlass") && appSrc.includes("applyTheme(); applyGlass();") && idxSrc.includes('id="ph-card" class="no-print"'), "vaccination prints hide banner (record has its own strip)");
   ok(cssP.includes(".print-only{display:none!important}") && cssP.includes(".print-only{display:block!important}"), "print-only CSS swaps screen/print views");
   ok(cardHTML.includes("16\u201318 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
   ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");
@@ -1209,6 +1211,15 @@ async function main() {
   ok((sb.shareBarHTML("p", "c", "T").match(/doShare\(/g) || []).length === 6, "share bar offers print + PDF + send + WhatsApp + email + file");
   ok((sb.shareBarHTML("p", "c", "T", "growth").match(/doShare\(/g) || []).length === 7 && sb.shareBarHTML("p", "c", "T", "growth").includes("Back</button>"), "preview bar adds a Back button to its source page");
   ok(typeof sb.shareTextFor("vacPrint") === "string" && sb.shareTextFor("nope").length > 0, "share text always builds (clinic header fallback)");
+  // ---- v10.31.0: permanent motion+glass, reel theme picker ----
+  const thCss = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
+  ok(["ember","violet","forest","clay","lagoon","midnight","berry"].every((x) => appM.includes('"' + x + '"')), "all seven reel themes registered");
+  ok(appM.includes("function setTheme") && appM.includes("prefers-reduced-motion") && thCss.includes('[data-theme="ember"]') && thCss.includes('[data-theme="berry"]'), "theme picker engine + theme styles exist");
+  ok(["ember","violet","forest","clay","lagoon","midnight","berry"].every((x) => thCss.includes('[data-theme="' + x + '"] .sidebar') && thCss.includes('[data-theme="' + x + '"] .btn-p')), "every reel theme restyles sidebar + primary buttons");
+  ok(psIdx.includes("Appearance") && psIdx.includes("setTheme(") && psIdx.includes('data-theme="midnight"'), "settings carries the appearance picker");
+  ok(sb.applyMotion() === true, "motion is permanently on");
+  ok(sb.applyGlass() === true, "glass is permanently on");
+  ok(sb.setTheme("ember") === true && sb.setTheme("bogus") === false, "setTheme accepts known themes, rejects the rest");
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

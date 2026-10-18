@@ -297,14 +297,23 @@ document.querySelectorAll("#sideNav button, #mobNav button").forEach((b) => b.ad
 document.addEventListener("keydown", globalSlashKey); // "/" jumps to patient search from anywhere
 
 /* ---------------- Theme + sidebar ---------------- */
-const THEME_ORDER = ["light", "sunrise", "dark"];
+const THEME_ORDER = ["light", "sunrise", "dark", "ember", "violet", "forest", "clay", "lagoon", "midnight", "berry"];
+const THEME_META = { light: "#0e7c7b", sunrise: "#f6f1e6", dark: "#0a1424", ember: "#431f10", violet: "#2a1650", forest: "#18251d", clay: "#4a2a1e", lagoon: "#17383f", midnight: "#0b132b", berry: "#2b3370" };
+const THEME_LABEL = { light: "Classic", sunrise: "Sunrise", dark: "Night", ember: "Ember", violet: "Violet", forest: "Forest", clay: "Clay", lagoon: "Lagoon", midnight: "Midnight", berry: "Berry" };
 function applyTheme() {
   let t = (DB.settings || {}).theme;
   if (!t || !THEME_ORDER.includes(t)) t = "sunrise"; // fresh installs start on Sunrise; saved prefs untouched
   document.documentElement.dataset.theme = t;
   const b = document.getElementById("themeToggle");
-  if (b) { b.textContent = t === "dark" ? "☀️" : t === "sunrise" ? "🌞" : "🌙"; b.title = `Theme: ${t} (tap to change)`; }
-  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === "dark" ? "#0a1424" : t === "sunrise" ? "#f6f1e6" : "#0e7c7b";
+  if (b) { const classic = (t === "light" || t === "sunrise" || t === "dark"); b.textContent = classic ? (t === "dark" ? "☀️" : t === "sunrise" ? "🌞" : "🌙") : "🎨"; b.title = `Theme: ${THEME_LABEL[t] || t} (tap to change)`; }
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = THEME_META[t] || "#0e7c7b";
+  try { document.querySelectorAll(".theme-sw").forEach((el) => el.classList.toggle("sel", el.dataset.theme === t)); } catch (e) {}
+}
+function setTheme(t) {
+  if (!THEME_ORDER.includes(t)) return false;
+  DB.settings = Object.assign({}, DB.settings, { theme: t });
+  save(); applyTheme();
+  return true;
 }
 function toggleTheme() {
   const cur = document.documentElement.dataset.theme;
@@ -312,27 +321,14 @@ function toggleTheme() {
   save(); applyTheme();
 }
 function applyGlass() {
-  const on = ((DB.settings || {}).glass !== false); // trial default ON; one tap reverts
-  document.body.classList.toggle("glass", on);
-  const b = document.getElementById("glassToggle");
-  if (b) { b.textContent = on ? "\u2728" : "\u25FB\uFE0F"; b.title = `Glass interface: ${on ? "on" : "off"} (tap to change)`; }
-}
-function toggleGlass() {
-  const on = !document.body.classList.contains("glass");
-  DB.settings = Object.assign({}, DB.settings, { glass: on });
-  save(); applyGlass();
+  document.body.classList.toggle("glass", true); // v10.31: glass is a permanent part of the look
+  return true;
 }
 function applyMotion() {
-  const on = ((DB.settings || {}).motion !== false); // trial default ON; one tap reverts
+  let on = true; // v10.31: animations are a permanent part of the app
+  try { if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) on = false; } catch (e) {} // except for users who ask their phone for stillness
   document.body.classList.toggle("motion", on);
-  const b = document.getElementById("motionToggle");
-  if (b) { b.textContent = on ? "🎬" : "⏸️"; b.title = `Screen animations: ${on ? "on" : "off"} (tap to change)`; }
   return on;
-}
-function toggleMotion() {
-  const on = !document.body.classList.contains("motion");
-  DB.settings = Object.assign({}, DB.settings, { motion: on });
-  save(); applyMotion();
 }
 function renderBrand() {
   const s = DB.settings || {};
