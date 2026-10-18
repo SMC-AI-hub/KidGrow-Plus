@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v26/.test(sw), "SW cache bumped to v26 (themes)");
+  ok(/neokid-v27/.test(sw), "SW cache bumped to v27 (sync guard)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -1220,6 +1220,13 @@ async function main() {
   ok(sb.applyMotion() === true, "motion is permanently on");
   ok(sb.applyGlass() === true, "glass is permanently on");
   ok(sb.setTheme("ember") === true && sb.setTheme("bogus") === false, "setTheme accepts known themes, rejects the rest");
+  // ---- v10.32.0: sync hardening ----
+  const syCloud = fs.readFileSync(path.join(R, "js", "cloud.js"), "utf8");
+  ok(sb.Cloud._guard(null, null) === "push" && sb.Cloud._guard("5", 5) === "push" && sb.Cloud._guard("5", 6) === "conflict" && sb.Cloud._guard("", 6) === "conflict", "push guard: unseen cloud data asks, never buries");
+  ok(syCloud.includes("function pushInsert(manual)") && syCloud.includes("conflictModal(cloudData)") && syCloud.includes("pushNow(true, true)"), "guarded push wraps the raw insert; explicit choice force-uploads");
+  ok(syCloud.includes("Waiting for network") && syCloud.includes("dayTime()") && syCloud.includes("suspendPush) return Promise.resolve()"), "honest status: waiting line, stamped syncs, no echo of downloads");
+  ok(syCloud.includes("id='cloudDiagLine'") && syCloud.includes("function rememberLatest"), "cloud card shows latest snapshot id + device state");
+  ok(/function applySnapshot[\s\S]*?renderBrand[\s\S]*?\n}/.test(syCloud), "downloaded logo + clinic name repaint the sidebar brand");
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

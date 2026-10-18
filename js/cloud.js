@@ -17,6 +17,7 @@ var PLAN_PRICE = CFG.PLAN_PRICE || "";
 var TRIAL_DAYS = CFG.TRIAL_DAYS || 14;
 var GRACE_MS = (CFG.OFFLINE_GRACE_DAYS || 7) * 864e5;
 var STATUS_KEY = "kidgrow_cloud_status", HASH_KEY = "kidgrow_last_push_hash", SEEN_KEY = "kidgrow_cloud_seen";
+var LATEST_KEY = "kidgrow_cloud_latest"; // "id|created_at" of newest cloud row this device has seen
 var APP_VER = "v10.16";
 
 var sb = null, session = null, profile = null;
@@ -152,8 +153,9 @@ function renderCloudCard() {
         (a.ok && a.reason !== "active" ? "<button class='btn btn-d btn-sm' onclick='Cloud.subscribe()'>💎 Subscribe</button>" : "") +
         "<button class='btn btn-o btn-sm' onclick='Cloud.logout()'>Logout</button>"
       : "<button class='btn btn-p btn-sm' onclick='Cloud.showAuth(\"login\")'>Sign in / Sign up</button>") +
-    "<label style='display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px'><input type='checkbox'" + (autoSyncOn() ? " checked" : "") + " onchange='Cloud.setAuto(this.checked)'> ↻ Auto-refresh from cloud (minutely + on return)</label></div><div class='hint' id='cloudSyncLine' style='margin-top:8px'></div>";
+    "<label style='display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px'><input type='checkbox'" + (autoSyncOn() ? " checked" : "") + " onchange='Cloud.setAuto(this.checked)'> ↻ Auto-refresh from cloud (minutely + on return)</label></div><div class='hint' id='cloudSyncLine' style='margin-top:8px'></div><div class='hint' id='cloudDiagLine' style='margin-top:2px'></div>";
   pg.appendChild(card);
+  try { diagLine(); } catch (e) {}
 }
 function syncLine(m) { var e = $("cloudSyncLine"); if (e) e.textContent = m || ""; }
 
@@ -234,18 +236,59 @@ function schedulePush() {
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(function () { pushTimer = null; pushNow(false); }, 6000);
 }
-function pushNow(manual) {
+function dayTime() { try { return new Date().toTimeString().slice(0, 5); } catch (e) { return "just now"; } }
+function rememberLatest(id, at) {
+  try { if (id) lsSet(LATEST_KEY, String(id) + "|" + String(at || "")); } catch (e) {}
+  try { diagLine(); } catch (e2) {}
+}
+function diagLine() {
+  var e = $("cloudDiagLine"); if (!e) return;
+  var parts = String(lsGet(LATEST_KEY) || "").split("|");
+  var at = parts[1] ? String(parts[1]).slice(11, 16) : "";
+  var dirty = "";
+  try { dirty = (localHash() !== (lsGet(HASH_KEY) || "")) ? " · \u270F\uFE0F this device has unsent edits" : " · \u2713 this device clean"; } catch (e) {}
+  e.textContent = "\u2601 latest #" + (parts[0] || "\u2014") + (at ? " · " + at : "") + dirty;
+}
+/* v10.32 push guard: never silently bury cloud data this device hasn't seen. */
+function pushGuardDecision(seenId, latestId) {
+  if (!latestId) return "push";
+  if (String(latestId) === String(seenId || "")) return "push";
+  return "conflict";
+}
+function pushNow(manual, force) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return pushInsert(manual); // honest waiting line; 'online' listener retries
+  if (force) return pushInsert(manual);
+  if (!Cloud.enabled || !session) return pushInsert(manual); // pushInsert re-checks + toasts
+  return sb.from("clinic_snapshots").select("id,data,created_at").eq("user_id", session.user.id).order("id", { ascending: false }).limit(1).maybeSingle().then(function (r) {
+    if (r.error) throw r.error;
+    var latest = (r.data && r.data.id) || null;
+    rememberLatest(latest, r.data && r.data.created_at);
+    if (pushGuardDecision(lsGet(SEEN_KEY), latest) === "conflict") {
+      var cloudData = (r.data && r.data.data) || {};
+      if (hashStr(JSON.stringify(cloudData)) === localHash()) {
+        try { lsSet(SEEN_KEY, String(latest)); } catch (e) {}
+        return pushInsert(manual); // same bytes, newer row: adopt + proceed
+      }
+      syncLine("\u26A0\uFE0F Cloud has newer data \u2014 choose which to keep.");
+      conflictModal(cloudData);
+      return Promise.resolve();
+    }
+    return pushInsert(manual);
+  }).catch(function (e) { syncLine("Sync failed \u2014 will retry."); if (manual) toast("Upload check failed: " + (e.message || "network error")); });
+}
+function pushInsert(manual) {
   if (!Cloud.enabled) return Promise.resolve();
   if (!session) { if (manual) toast("Sign in first (Settings → Cloud)."); return Promise.resolve(); }
-  if (!navigator.onLine && navigator.onLine === false) { if (manual) toast("You're offline — will sync when online."); return Promise.resolve(); }
+  if (typeof navigator !== "undefined" && navigator.onLine === false) { syncLine("\u23F3 Waiting for network \u2014 will upload when back online."); if (manual) toast("You're offline — will sync when online."); return Promise.resolve(); } // 'online' listener retries
   if (!currentAccess().ok) { if (manual) toast("Subscription required for cloud sync."); return Promise.resolve(); }
+  if (suspendPush) return Promise.resolve(); // applying a download: never echo it back
   syncLine("Uploading…");
   var payload = { user_id: session.user.id, data: (typeof DB !== "undefined" ? DB : {}), device: String((navigator.userAgent || "").slice(0, 80)), app_version: APP_VER };
   return sb.from("clinic_snapshots").insert(payload).select("id").single().then(function (r) {
     if (r.error) throw r.error;
     try { if (r && r.data && r.data.id) lsSet(SEEN_KEY, String(r.data.id)); } catch (e) {}
     lsSet(HASH_KEY, localHash());
-    syncLine("Synced just now ✓");
+    syncLine("Synced " + dayTime() + " ✓");
     if (manual) toast("Uploaded to cloud ✓");
     // prune history to latest 30
     return sb.from("clinic_snapshots").select("id").eq("user_id", session.user.id).order("id", { ascending: false }).limit(100).then(function (l) {
@@ -267,8 +310,9 @@ function autoPullTick() {
   try {
     if (typeof navigator !== "undefined" && navigator.onLine === false) return;
     if (localHash() !== (lsGet(HASH_KEY) || "")) return;
-    sb.from("clinic_snapshots").select("id").eq("user_id", session.user.id).order("id", { ascending: false }).limit(1).maybeSingle().then(function (r) {
+    sb.from("clinic_snapshots").select("id,created_at").eq("user_id", session.user.id).order("id", { ascending: false }).limit(1).maybeSingle().then(function (r) {
       if (r.error || !r.data || !r.data.id) return;
+      rememberLatest(r.data.id, r.data.created_at);
       if (String(r.data.id) === (lsGet(SEEN_KEY) || "")) return;
       pullNow(true);
     }).catch(function () {});
@@ -281,9 +325,10 @@ function pullNow(silent) {
     if (r.error) throw r.error;
     if (!r.data) { if (!silent) toast("No cloud backup yet — use Upload first."); syncLine(""); return; }
     try { lsSet(SEEN_KEY, String(r.data.id)); } catch (e) {}
+    rememberLatest(r.data.id, r.data.created_at);
     var cloudHash = hashStr(JSON.stringify(r.data.data || {}));
     var lh = localHash(), last = lsGet(HASH_KEY) || "";
-    if (cloudHash === lh) { if (!silent) toast("Already up to date ✓"); syncLine("Synced just now ✓"); return; }
+    if (cloudHash === lh) { if (!silent) toast("Already up to date ✓"); syncLine("Synced " + dayTime() + " ✓"); return; }
     if (lh !== last && last) { conflictModal(r.data.data); return; } // both sides changed
     applySnapshot(r.data.data);
   }).catch(function (e) { if (!silent) toast("Download failed: " + (e.message || "network error")); syncLine(""); });
@@ -299,6 +344,7 @@ function applySnapshot(data) {
     suspendPush = false;
     if (typeof syncChildPicker === "function") syncChildPicker();
     if (typeof renderAll === "function") renderAll();
+    if (typeof renderBrand === "function") renderBrand(); // sidebar logo + clinic name repaint
     if (typeof loadSettings === "function") loadSettings();
     toast("Downloaded from cloud ✓ (previous data kept as fallback)");
   } catch (e) { suspendPush = false; toast("Could not apply cloud data."); }
@@ -520,11 +566,12 @@ var Cloud = {
   subscribe: subscribe,
   user: function () { return session ? session.user : null; },
   access: currentAccess,
-  _confUp: function () { var m = $("mConflict"); if (m) m.remove(); pushNow(true); },
+  _confUp: function () { var m = $("mConflict"); if (m) m.remove(); pushNow(true, true); },
   _confDown: function () { var m = $("mConflict"); if (m) m.remove(); if (Cloud._confData) applySnapshot(Cloud._confData); },
   // test hooks (pure logic)
   cancelSub: cancelSub,
   refreshBilling: function () { billCache = null; renderBilling(); },
+  _guard: pushGuardDecision,
   _access: accessFor,
   _trialLeft: trialLeft,
   _hash: hashStr,
