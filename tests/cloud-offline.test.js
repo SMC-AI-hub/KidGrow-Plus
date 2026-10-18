@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v19/.test(sw), "SW cache bumped to v19 (glass trial)");
+  ok(/neokid-v20/.test(sw), "SW cache bumped to v20 (letterhead)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -964,6 +964,21 @@ async function main() {
   ok(recCl.includes("Upcoming:") && recCl.includes("Rotavirus"), "pending antigens stay listed, muted");
   const parCl = sb.parentCardHTML({ name: "Cluster Kid", sex: "boy", dob: "2025-01-15", vaccines: { DTP1: { date: "2025-03-05", brand: "Hexaxim", mfr: "Sanofi", batch: "CLU-9" } } });
   ok((parCl.match(/CLU-9/g) || []).length === 1 && parCl.includes("Upcoming:"), "parent export clusters identically");
+  // ---- v10.28.1: letterhead - doctor line separate from address line ----
+  const ccLH1 = sb.splitClinicContact({ doctor: "Dr. A. Sharma, MD (Paediatrics)", reg: "TNMC 12345", addr: "12 Anna Nagar, Coimbatore · ☎ 0422-4001234" });
+  ok(ccLH1.doc === "Dr. A. Sharma, MD (Paediatrics) · Reg: TNMC 12345", "letterhead: doctor + reg on their own line");
+  ok(ccLH1.addr === "12 Anna Nagar, Coimbatore · ☎ 0422-4001234" && ccLH1.phone === "0422-4001234", "letterhead: legacy phone-in-address heals into address line");
+  const ccLH2 = sb.splitClinicContact({ doctor: "Dr. B", addr: "X Street", phone: "99999" });
+  ok(ccLH2.doc === "Dr. B" && ccLH2.addr === "X Street · ☎ 99999", "letterhead: separate phone field joins address line");
+  const prevLH = vm.runInContext("JSON.stringify(DB.settings)", sb);
+  vm.runInContext("DB.settings={clinic:'T Clinic',doctor:'Dr. L',reg:'R1',addr:'12 Main St',phone:'080-1'};", sb);
+  const recLH = sb.vaxRecordHTML({ name: "LH Kid", sex: "boy", dob: "2025-01-15", vaccines: {} });
+  ok(recLH.includes('<div class="docline">Dr. L · Reg: R1</div>'), "record letterhead prints doctor on own line");
+  ok(recLH.includes('<div class="addrline">12 Main St · ☎ 080-1</div>'), "record letterhead prints address+phone on own line");
+  const parLH = sb.parentCardHTML({ name: "LH Kid", sex: "boy", dob: "2025-01-15", vaccines: {} });
+  ok(parLH.includes("Dr. L · Reg: R1") && parLH.includes("12 Main St · ☎ 080-1"), "parent export carries separated doctor + address lines");
+  ok(typeof sb.handLetterhead === "function" && sb.handLetterhead(null).includes("12 Main St · ☎ 080-1"), "handout letterhead uses separated address line");
+  vm.runInContext("DB.settings=" + prevLH + ";", sb);
   const idxSrc = fs.readFileSync(path.join(R, "index.html"), "utf8");
   const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
   ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");

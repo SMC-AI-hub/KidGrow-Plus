@@ -197,6 +197,7 @@ function vaxRecordHTML(c) {
           `</table><div style="font-size:11px;color:var(--muted);margin-top:4px">Missed doses in schedule order · no need to restart any series · minimum 4-week gaps · verify against the IAP catch-up chart.</div>`;
       }
     } catch (e) {}
+  const ccLH = (typeof splitClinicContact === "function") ? splitClinicContact((typeof DB !== "undefined" && DB.settings) || {}) : { doc: "", addr: "" };
   return `
       <div class="vaxcard">
         <div class="vax-head">
@@ -204,7 +205,7 @@ function vaxRecordHTML(c) {
           <div style="min-width:0">
             <div class="eyebrow">DIGITAL IMMUNISATION CARD</div>
             <h2>${esc(DB.settings.clinic || "NeoKid Care Clinic")}</h2>
-            <div class="sub">${esc(DB.settings.doctor || "")}${DB.settings.addr ? ` · ${esc(DB.settings.addr)}` : ""}${DB.settings.reg ? ` · Reg: ${esc(DB.settings.reg)}` : ""}</div>
+            ${ccLH.doc ? `<div class="docline">${esc(ccLH.doc)}</div>` : ""}${ccLH.addr ? `<div class="addrline">${esc(ccLH.addr)}</div>` : ""}
           </div>
           ${(typeof parentVerifyCode === "function") ? `<div class="vax-verify">Verify code<br><b>${esc(parentVerifyCode(c))}</b></div>` : ""}
         </div>

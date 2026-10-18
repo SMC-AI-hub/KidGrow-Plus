@@ -564,6 +564,7 @@ function parentVerifyCode(c) {
 }
 function parentCardHTML(c) {
   const S = DB.settings || {};
+  const ccP = (typeof splitClinicContact === "function") ? splitClinicContact(S) : { doc: S.doctor || "", addr: S.addr || "" };
   const t = todayISO(), age = ageBetween(c.dob);
   const due = dueItemsForChild(c, t).filter((i) => i.band !== "upcoming").slice(0, 12);
   const cVx = c.vaccines || {};
@@ -601,9 +602,10 @@ table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
 th,td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left;vertical-align:top}
 th{background:#0f2b4d;color:#fff}.due{background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13.5px}
 .qr{text-align:center;margin-top:12px;font-size:12px;color:#64748b}
-.foot{font-size:11.5px;color:#64748b;margin-top:10px;text-align:center}</style></head><body><div class="card">
+.foot{font-size:11.5px;color:#64748b;margin-top:10px;text-align:center}
+.doc{font-size:12.5px;font-weight:700;color:#334155}.eyeb{font-size:10.5px;letter-spacing:1.5px;color:#0e7c7b;font-weight:800}</style></head><body><div class="card">
 <div class="head">${S.logo ? `<img src="${S.logo}" alt="logo">` : `<div class="em">👶</div>`}
-<div><h1>${esc(S.clinic || "NeoKid Care Clinic")}</h1><small>DIGITAL IMMUNISATION CARD · ${esc(S.addr || "")}</small></div></div>
+<div><h1>${esc(S.clinic || "NeoKid Care Clinic")}</h1><div class="eyeb">DIGITAL IMMUNISATION CARD</div>${ccP.doc ? `<div class="doc">${esc(ccP.doc)}</div>` : ""}${ccP.addr ? `<small>${esc(ccP.addr)}</small>` : ""}</div></div>
 <dl class="kv"><dt>Child</dt><dd>${esc(c.name)} · ${c.sex === "boy" ? "Boy" : "Girl"}</dd>
 <dt>Born</dt><dd>${esc(fmtDate(c.dob))} (${esc(ageStr(age))})</dd>
 <dt>Parent</dt><dd>${esc([c.mother, c.father].filter(Boolean).join(" & ") || "—")}${c.phone ? " · " + esc(c.phone) : ""}</dd>

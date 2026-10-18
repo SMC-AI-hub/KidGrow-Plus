@@ -264,7 +264,7 @@ function seedDemo() {
   c2.dental = {}; ["51", "61", "71", "81"].forEach((t, i) => (c2.dental[t] = { st: "e", d: addDays(c2.dob, 210 + i * 20) }));
   c.abha = "91-2345-6789-0123";
   c.diet = { type: "nonveg" }; c2.diet = { type: "veg" };
-  DB.settings = { clinic: "Smile Child Care Clinic", doctor: "Dr. A. Sharma, MD (Paediatrics)", reg: "TNMC 12345", addr: "12 Anna Nagar, Coimbatore · ☎ 0422-4001234" };
+  DB.settings = { clinic: "Smile Child Care Clinic", doctor: "Dr. A. Sharma, MD (Paediatrics)", reg: "TNMC 12345", addr: "12 Anna Nagar, Coimbatore", phone: "0422-4001234" };
 }
 
 /* ---------------- Navigation ---------------- */
@@ -1377,13 +1377,29 @@ function renderDashboard() {
   $("dashVisits").innerHTML = vv.length ? vv.map((v) => `<div style="font-size:13.5px;padding:8px 0;border-bottom:1px solid var(--line)"><b>${fmtDate(v.date)}</b> <span class="badge b-gray">${esc(v.type)}</span><br><span style="color:var(--muted)">${esc((v.subj || v.plan || "").slice(0, 90))}</span></div>`).join("") : `<span style="color:var(--muted);font-size:13px">No visits recorded.</span>`;
 }
 
+/* ---- v10.28.1: professional letterhead contact lines ----
+   Doctor details ride on their OWN line; address + phone on a separate
+   line. Also heals legacy settings where the phone was typed into the
+   address field ("addr \u00b7 \u260e phone"). Pure - safe in every builder. */
+function splitClinicContact(s) {
+  s = s || {};
+  let addr = String(s.addr || "").trim(), phone = String(s.phone || "").trim();
+  if (!phone) {
+    const m = addr.match(/^(.*?)\s*[\u00b7\u2022|\-]\s*\u260e\s*([\d\s()+\/-]+)\s*$/) || addr.match(/^(.+?)\s*\u260e\s*([\d\s()+\/-]+)\s*$/);
+    if (m) { addr = (m[1] || "").trim().replace(/\s*[\u00b7\u2022|\-]\s*$/, ""); phone = (m[2] || "").trim(); }
+  }
+  const doc = [String(s.doctor || "").trim(), String(s.reg || "").trim() ? "Reg: " + String(s.reg).trim() : ""].filter(Boolean).join(" \u00b7 ");
+  return { doc, addr: [addr, phone ? "\u260e " + phone : ""].filter(Boolean).join(" \u00b7 "), phone };
+}
+
 /* ================= REPORTS ================= */
 function clinicHeader() {
   const s = DB.settings || {};
   const ld = (typeof letterDoc === "function") ? letterDoc() : { name: s.doctor || "", qual: "", reg: s.reg || "" };
   const logo = s.logo ? `<img src="${s.logo}" alt="logo" class="report-logo" onerror="this.style.display='none'">` : `<div style="font-size:40px">👶</div>`;
+  const cc = splitClinicContact(s);
   return `<div class="report-head">${logo}<div><div class="clinic">${esc(s.clinic || "NeoKid Care Clinic")}</div>
-  <div style="font-size:13px;color:var(--muted)">${esc(ld.name)}${ld.qual ? ", " + esc(ld.qual) : ""} ${ld.reg ? "· Reg: " + esc(ld.reg) : ""}<br>${esc(s.addr || "")}</div></div>
+  <div style="font-size:13px;color:var(--muted)">${esc(ld.name)}${ld.qual ? ", " + esc(ld.qual) : ""} ${ld.reg ? "· Reg: " + esc(ld.reg) : ""}<br>${esc(cc.addr)}</div></div>
   <div style="margin-left:auto;font-size:12px;color:var(--muted)">Generated ${fmtDate(todayISO())}</div></div>`;
 }
 function childHeader(c) {
@@ -1442,7 +1458,7 @@ function printCertificate() {
 /* ================= SETTINGS / DATA ================= */
 function saveSettings() {
   const lm = document.getElementById("sLockMins"), scp0 = document.getElementById("sColorPrint");
-  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), addr: $("sAddr").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15"), colorPrint: scp0 ? scp0.checked : ((DB.settings || {}).colorPrint !== false) });
+  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), addr: $("sAddr").value.trim(), phone: $("sPhone").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15"), colorPrint: scp0 ? scp0.checked : ((DB.settings || {}).colorPrint !== false) });
   save(); syncChildPicker(); renderBrand(); applyPrintMode(); alert("Clinic profile saved.");
 }
 function savePrintPref() { const scp = $("sColorPrint"); if (!scp) return; DB.settings = Object.assign({}, DB.settings, { colorPrint: scp.checked }); save(); applyPrintMode(); toast(scp.checked ? "Color printing on 🎨" : "Ink-saver B&W printing on"); }
@@ -1451,7 +1467,7 @@ function applyPrintMode() {
   try { document.body.classList.toggle("bw-print", !color); document.body.dataset.printMode = color ? "color" : "bw"; } catch (e) {}
   return color;
 }
-function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; $("sAddr").value = s.addr || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; const scp = document.getElementById("sColorPrint"); if (scp) scp.checked = s.colorPrint !== false; }
+function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; $("sAddr").value = s.addr || ""; $("sPhone").value = s.phone || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; const scp = document.getElementById("sColorPrint"); if (scp) scp.checked = s.colorPrint !== false; }
 function exportData() {
   DB.lastBackup = todayISO(); save();
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: "application/json" });

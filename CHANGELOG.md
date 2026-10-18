@@ -1,5 +1,13 @@
 # Changelog
 
+## v10.28.1 — 2026-10-18 — Professional letterhead (doctor separate from address)
+- FIX: clinic letterheads no longer join "doctor · address · phone · Reg"
+  on one line. Doctor name + Reg print on their OWN bold line; address + phone
+  on a separate line below - on the immunisation card, parent export, parent
+  handouts, and all reports (new splitClinicContact() helper).
+- NEW: separate Clinic phone field in Settings (was one "Address & phone" box).
+  Old combined addresses heal automatically at print time.
+
 ## v10.28.0 — 2026-10-18 — Glass interface trial (same palette)
 - TRIAL: frosted-glass surfaces (cards, sidebar, modals, inputs)
   over the SAME teal/navy palette + mesh gradient backdrop.
