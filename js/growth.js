@@ -691,7 +691,7 @@ function printGrowthSheet() {
     const days = Math.max(1, Math.round((new Date(b.date) - new Date(a.date)) / 86400000));
     velLine = `${(((b.wt - a.wt) * 1000) / days).toFixed(1)} g/day · ${(((b.ht - a.ht) / days) * 365.25).toFixed(1)} cm/year over ${days} days (${fmtDate(a.date)} → ${fmtDate(b.date)}).`;
   }
-  $("gsheetPrint").innerHTML = `${clinicHeader()}
+  $("gsheetPrint").innerHTML = shareBarHTML("pg-gsheet", "gsheetPrint", "Growth sheet", "growth") + `${clinicHeader()}
     <div style="text-align:center;margin:4px 0 10px"><div style="font-size:19px;font-weight:800;color:var(--navy)">GROWTH ASSESSMENT SHEET (IAP / WHO)</div></div>
     ${childHeader(c)}
     <dl class="kv" style="margin-bottom:10px"><dt>Assessment date</dt><dd>${fmtDate(lm.date)} · chrono ${ageStr(ageBetween(c.dob, lm.date))}${ga.useCorr ? ` · <b>corrected ${ageStr(ageBetween(c.dob, addDays(lm.date, -(280 - gestDays(c)))))} (used)</b>` : ""} · PMA ${pmaStr(ga.pmaD)}</dd>
@@ -706,7 +706,7 @@ function printGrowthSheet() {
     <div class="footer-note">Exact WHO (0–5 y) / CDC + IAP-aligned (5–18 y) references · ${mphTarget(c) ? `MPH target ${mphTarget(c).mph.toFixed(1)} cm (${mphTarget(c).lo.toFixed(0)}–${mphTarget(c).hi.toFixed(0)}) · ` : ""}Confirm diagnostic labels on official charts.</div>
     ${typeof docFooter === "function" ? docFooter("Growth assessment sheet") : ""}`;
   DB.gSub = wasSub; save(); renderGrowth();
-  printPage("pg-gsheet");
+  previewPage("pg-gsheet");
 }
 
 /* ---------------- M5 growth alerts ----------------

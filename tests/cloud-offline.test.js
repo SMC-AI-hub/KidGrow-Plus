@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v24/.test(sw), "SW cache bumped to v24 (transfer)");
+  ok(/neokid-v25/.test(sw), "SW cache bumped to v25 (print-share)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -725,7 +725,9 @@ async function main() {
   ok(gFull.includes("References & methods"), "methods note present");
   ok(gFull.includes("Impression & plan"), "impression present");
   ok(gFull.includes("Latest 14 kg"), "per-chart caption shows latest value");
-  ok(sb.__printed === 1, "print dialog fires once");
+  ok((sb.__printed || 0) === 0, "preview opens without firing the print dialog");
+  sb.doShare("print", "pg-growthprint", "growthFullPrint", "Growth full report", "growth");
+  ok(sb.__printed === 1, "bar Print fires the dialog once");
   const gVel = vm.runInContext("growthVelocityRows(child(), allMeasures(child()))", sb);
   ok(gVel.length === 2 && gVel[0].gpd > 0 && gVel[0].vw && gVel[0].vh, "velocity rows computed per interval");
   ok(vm.runInContext("assessRowFor(assessMeasure(child(), allMeasures(child()).slice(-1)[0]), 'wfa').key", sb) === "WAZ", "caption maps chart to assess row");
@@ -1191,6 +1193,22 @@ async function main() {
   ok(!bkSolTa.includes("Ragi Porridge") && bkSolTa.includes("ராகி கஞ்சி") && bkSolHi.includes("रागी दलिया"), "solids TA/HI recipes translated");
   ok(bkSol.includes("NeoKid Care") && bkSolTa.includes("நியோகிட் கேர்") && bkSolHi.includes("नियोकिड केयर") && !bkSol.includes("KidGrow") && !bkSolTa.includes("KidGrow"), "booklets carry NeoKid Care branding");
 
+  // ---- v10.30.0: one canonical print + universal share bar ----
+  const psIdx = fs.readFileSync(path.join(R, "index.html"), "utf8");
+  const psDocs = fs.readFileSync(path.join(R, "js", "docs.js"), "utf8");
+  const psGrw = fs.readFileSync(path.join(R, "js", "growth.js"), "utf8");
+  const psGrc = fs.readFileSync(path.join(R, "js", "growth-chart.js"), "utf8");
+  const psCss = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
+  ok(psIdx.includes("Print / Share") && !psIdx.includes("Print assessment") && !psIdx.includes("📋 Full report"), "milestones: single canonical print button");
+  ok(psIdx.includes('id="vxShare"') && psIdx.includes('id="vsShare"'), "record + notes toolbars carry share placeholders");
+  ok(appM.includes("function shareBarHTML") && appM.includes("function doShare") && appM.includes("function shareTextFor") && appM.includes("function downloadDocHTML") && appM.includes("function renderShareBars"), "universal share helpers exist");
+  ok(appM.includes("wa.me") && appM.includes("mailto:") && appM.includes("navigator.share"), "share covers WhatsApp + email + system sheet");
+  ok(appM.includes("function previewPage") && psDocs.includes('previewPage("pg-msprint")') && psGrw.includes('previewPage("pg-gsheet")') && psGrc.includes('previewPage("pg-growthprint")'), "canonical reports open a screen preview first (dialog only from the bar)");
+  ok(psDocs.includes('shareBarHTML("pg-msprint"') && psGrw.includes('shareBarHTML("pg-gsheet"') && psGrc.includes('shareBarHTML("pg-growthprint"'), "all three canonical previews open with a share bar");
+  ok(psCss.includes(".sharebar{"), "share bar styled (screen-only)");
+  ok((sb.shareBarHTML("p", "c", "T").match(/doShare\(/g) || []).length === 6, "share bar offers print + PDF + send + WhatsApp + email + file");
+  ok((sb.shareBarHTML("p", "c", "T", "growth").match(/doShare\(/g) || []).length === 7 && sb.shareBarHTML("p", "c", "T", "growth").includes("Back</button>"), "preview bar adds a Back button to its source page");
+  ok(typeof sb.shareTextFor("vacPrint") === "string" && sb.shareTextFor("nope").length > 0, "share text always builds (clinic header fallback)");
   console.log(`\ncloud-offline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

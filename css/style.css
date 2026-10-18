@@ -534,3 +534,7 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
   body:not(.nav-full) .sidebar .navfilter{display:none}
   body:not(.nav-full) .sidebar .navsec-b{display:block!important}
 }
+
+/* v10.30.0: universal share bar (screen only — .no-print hides it on paper) */
+.sharebar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;padding:8px 10px;margin:0 0 12px}
+.sharebar-t{font-weight:700;font-size:13px;color:#334155;margin-right:2px}

@@ -1,5 +1,16 @@
 # Changelog
 
+## v10.30.0 — 2026-10-18 — One canonical print + universal share bar
+- UNIFIED: milestones dual buttons (Print assessment + Full report) merged
+  into one canonical "Print / Share" full report.
+- NEW: universal share bar on every canonical output — Print, PDF
+  (via Save-as-PDF), Send (phone share sheet), WhatsApp, Email, File
+  (standalone .html download). Screen-only; never prints on paper.
+- SHARE: vaccination record + visit notes toolbars carry the same bar;
+  growth sheet + full report previews open with it built in.
+- Every share is audit-logged as an Export event.
+- FLOW: report buttons now open a screen preview first (with Back) —
+  the print dialog opens only from the bar's Print/PDF buttons.
 ## v10.29.0 — 2026-10-18 — Clinic-to-clinic transfer (immunization + growth)
 - NEW: KG2 record code — immunization (with maker + batch) + growth chart +
   tamper seal, in the card QR + Copy. Legacy KG1 codes still decode.

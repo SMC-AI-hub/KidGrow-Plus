@@ -273,8 +273,7 @@
         <div class="toolbar">
           <div class="tabs" id="msTabs" style="margin:0"></div>
           <span class="sp"></span>
-          <button class="btn btn-o btn-sm" onclick="printPage('pg-milestones')">🖨️ Print assessment</button>
-          <button class="btn btn-o btn-sm" onclick="printMilestonesFull()">📋 Full report</button>
+          <button class="btn btn-p btn-sm" onclick="printMilestonesFull()">🖨️ Print / Share</button>
           <button class="btn btn-o btn-sm" onclick="exportMilestonesCSV()">⬇ CSV</button>
         </div>
         <div id="msAlert"></div>
@@ -291,6 +290,7 @@
           <b id="vacPct">0%</b>
           <span class="sp"></span>
           <button class="btn btn-o btn-sm" onclick="printPage('pg-vaccines')">🖨️ Print record</button>
+          <span id="vxShare" class="no-print"></span>
           <button class="btn btn-p btn-sm" onclick="printCertificate()">🏅 Certificate</button>
         </div>
         <div id="vacAlerts" class="no-print"></div>
@@ -359,7 +359,8 @@
 <!-- ======== VISITS ======== -->
       <section class="page" id="pg-visits"><div id="ph-visits"></div>
         <div class="toolbar"><button class="btn btn-p" onclick="openVisitModal()">+ New visit note</button><span class="sp"></span>
-        <button class="btn btn-o btn-sm" onclick="printPage('pg-visits')">🖨️ Print notes</button></div>
+        <button class="btn btn-o btn-sm" onclick="printPage('pg-visits')">🖨️ Print notes</button>
+          <span id="vsShare" class="no-print"></span></div>
         <div id="visitList"></div>
       </section>
       <section class="page" id="pg-timeline"><div id="ph-timeline"></div>

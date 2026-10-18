@@ -291,6 +291,7 @@ function go(page) {
   if (page === "growth") setTimeout(drawGrowthChart, 60);
   window.scrollTo({ top: 0 });
   try { applyFolds(); } catch (e) {}
+  try { if (typeof renderShareBars === "function") renderShareBars(); } catch (e) {}
 }
 document.querySelectorAll("#sideNav button, #mobNav button").forEach((b) => b.addEventListener("click", () => go(b.dataset.page)));
 document.addEventListener("keydown", globalSlashKey); // "/" jumps to patient search from anywhere
@@ -1624,6 +1625,95 @@ function printPage(id) {
       new Promise((res) => setTimeout(res, 1500)),
     ]).then(go, go);
   } catch (e) { go(); return Promise.resolve(); }
+}
+/* ---- v10.30.0: one canonical print + universal share bar ---- */
+function shareBarHTML(pageId, contentId, label, srcPage) {
+  const L = String(label || "document").replace(/["']/g, "");
+  const S = String(srcPage || "").replace(/[^a-z-]/g, "");
+  const b = (act, icon, txt, cls) => `<button class="btn ${cls} btn-xs" onclick="doShare('${act}','${pageId}','${contentId}','${L}','${S}')">${icon} ${txt}</button>`;
+  return `<div class="sharebar no-print">` + (S ? b("back", "\u2039", "Back", "btn-o") : "") + `<span class="sharebar-t">Share:</span>`
+    + b("print", "🖨️", "Print", "btn-p") + b("pdf", "📄", "PDF", "btn-o")
+    + b("send", "📤", "Send", "btn-o") + b("wa", "🟢", "WhatsApp", "btn-o")
+    + b("mail", "\u2709\uFE0F", "Email", "btn-o") + b("file", "\u2B07\uFE0F", "File", "btn-o") + `</div>`;
+}
+function shareTextFor(contentId, maxLen) {
+  let t = "";
+  try {
+    const el = document.getElementById(contentId);
+    t = el ? (el.innerText || el.textContent || "") : "";
+  } catch (e) {}
+  t = String(t).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  try {
+    const s = (typeof DB !== "undefined" && DB.settings) || {};
+    const c = (typeof child === "function" && child()) || {};
+    const head = `${s.clinic || "NeoKid Care"}${c.name ? " \u00B7 " + c.name : ""}`;
+    if (t.indexOf(head) !== 0) t = head + "\n" + t;
+  } catch (e) {}
+  const m = maxLen || 6000;
+  return t.length > m ? t.slice(0, m - 1) + "\u2026" : t;
+}
+function downloadDocHTML(contentId, label) {
+  try {
+    const el = document.getElementById(contentId);
+    if (!el) return false;
+    const title = String(label || "document").replace(/["'<>]/g, "");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title} \u2014 NeoKid Care</title><style>body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;max-width:720px;margin:16px auto;padding:0 12px;color:#111}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:4px 6px;font-size:13px}img{max-width:100%}.sharebar,.no-print{display:none!important}</style></head><body>${el.innerHTML}</body></html>`;
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = title.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() + ".html";
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch (e) {} }, 800);
+    return true;
+  } catch (e) { return false; }
+}
+function doShare(action, pageId, contentId, label, srcPage) {
+  const L = label || "document";
+  if (action !== "back") try { if (typeof auditSafe === "function") auditSafe("Export", `${L} \u2014 shared (${action})`); } catch (e) {}
+  try {
+    if (action === "back") { try { go(srcPage || "dashboard"); } catch (e) {} return true; }
+    if (action === "print" || action === "pdf") {
+      if (action === "pdf" && typeof toast === "function") toast("In the dialog, choose \u201CSave as PDF\u201D as the printer.");
+      printPage(pageId);
+      return true;
+    }
+    if (action === "send" && typeof navigator !== "undefined" && navigator.share) {
+      navigator.share({ title: `${L} \u2014 NeoKid Care`, text: shareTextFor(contentId) }).catch(() => {});
+      return true;
+    }
+    if (action === "send") { if (typeof toast === "function") toast("System share is not available here \u2014 try WhatsApp or File."); return false; }
+    if (action === "wa") {
+      window.open("https://wa.me/?text=" + encodeURIComponent(shareTextFor(contentId)), "_blank");
+      return true;
+    }
+    if (action === "mail") {
+      window.location.href = `mailto:?subject=${encodeURIComponent(`${L} \u2014 NeoKid Care`)}&body=${encodeURIComponent(shareTextFor(contentId, 1800))}`;
+      return true;
+    }
+    if (action === "file") {
+      if (downloadDocHTML(contentId, L)) { if (typeof toast === "function") toast("File saved \u2014 open it in any browser."); return true; }
+      if (typeof toast === "function") toast("Could not save the file on this device.");
+      return false;
+    }
+  } catch (e) { if (typeof toast === "function") toast("Share did not go through \u2014 please retry."); }
+  return false;
+}
+function renderShareBars() {
+  try {
+    const vx = document.getElementById("vxShare");
+    if (vx) vx.innerHTML = shareBarHTML("pg-vaccines", "vacPrint", "Vaccination record");
+    const vs = document.getElementById("vsShare");
+    if (vs) vs.innerHTML = shareBarHTML("pg-visits", "visitList", "Visit notes");
+  } catch (e) {}
+}
+function previewPage(id) {
+  // Screen-first preview: show the print page in the app WITHOUT opening the
+  // print dialog. The share bar on the preview offers Print/PDF + Back.
+  document.querySelectorAll(".page").forEach((p) => p.classList.remove("printing"));
+  document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+  $(id).classList.add("printing");
+  $(id).classList.add("active");
+  try { window.scrollTo({ top: 0 }); } catch (e) {}
+  try { if (typeof renderShareBars === "function") renderShareBars(); } catch (e) {}
 }
 function callRender(name) {
   try {
