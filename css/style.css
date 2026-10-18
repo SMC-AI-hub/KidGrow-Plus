@@ -457,3 +457,22 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
 /* role dashboard stat rows */
 .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}
 @media(max-width:700px){.statrow{grid-template-columns:1fr}}
+
+/* ---------- Glass trial (v10.28.0, screen only) ----------
+   Frosted surfaces over the SAME teal/navy palette. Toggle: topbar button
+   (DB.settings.glass; default ON for the trial, one tap back to classic).
+   Scoped to @media screen — print keeps solid report styling. */
+@media screen{
+  body.glass{background:radial-gradient(720px 460px at 86% 10%,rgba(13,148,136,.30),transparent 65%),radial-gradient(700px 500px at 10% 30%,rgba(14,165,233,.26),transparent 65%),radial-gradient(640px 420px at 16% 86%,rgba(245,158,11,.16),transparent 62%),radial-gradient(900px 560px at 68% 102%,rgba(27,74,115,.55),transparent 65%),var(--bg);background-attachment:fixed}
+  body.glass .sidebar{background:linear-gradient(180deg,color-mix(in srgb,var(--navy) 84%,transparent),color-mix(in srgb,var(--navy2) 84%,transparent) 62%,color-mix(in srgb,var(--navy3) 84%,transparent));backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3)}
+  body.glass .card,body.glass .stat{background:color-mix(in srgb,var(--card) 74%,transparent);backdrop-filter:blur(16px) saturate(1.25);-webkit-backdrop-filter:blur(16px) saturate(1.25);border:1px solid color-mix(in srgb,var(--line) 55%,rgba(255,255,255,.4));box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.35)}
+  body.glass .topbar{backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
+  body.glass .modal,body.glass .lock-card{background:color-mix(in srgb,var(--card) 82%,transparent);backdrop-filter:blur(22px) saturate(1.35);-webkit-backdrop-filter:blur(22px) saturate(1.35);border:1px solid rgba(255,255,255,.4);box-shadow:0 30px 80px rgba(2,12,24,.45),inset 0 1px 0 rgba(255,255,255,.4)}
+  body.glass .lock-card{background:rgba(255,255,255,.86)}
+  body.glass .modal-bg{background:rgba(8,18,32,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  body.glass input,body.glass select,body.glass textarea{background:color-mix(in srgb,var(--input) 68%,transparent)}
+  body.glass .btn-p{box-shadow:0 10px 26px -6px rgba(13,148,136,.65),inset 0 1px 0 rgba(255,255,255,.4)}
+  body.glass .icon-btn{background:color-mix(in srgb,var(--card) 70%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  body.glass .search-res{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  body.glass table.tbl th{background:color-mix(in srgb,var(--th) 82%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+}

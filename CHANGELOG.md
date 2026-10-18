@@ -1,5 +1,13 @@
 # Changelog
 
+## v10.28.0 — 2026-10-18 — Glass interface trial (same palette)
+- TRIAL: frosted-glass surfaces (cards, sidebar, modals, inputs)
+  over the SAME teal/navy palette + mesh gradient backdrop.
+  Topbar toggle (DB.settings.glass, default ON) reverts to classic
+  in one tap. Screen-only CSS — print output pixel-identical.
+  Checkpoint tag checkpoint-v10.27.1-pre-glass for full rollback.
+  SW cache bumped to neokid-v19.
+
 ## v10.27.1 — 2026-10-18 — Vaccination print: no duplicate patient name
 - FIX: the patient banner chip printed above the record, repeating
   the name already in the record patient strip. Banner is now

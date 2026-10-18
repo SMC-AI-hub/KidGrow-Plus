@@ -309,6 +309,17 @@ function toggleTheme() {
   DB.settings.theme = THEME_ORDER[(THEME_ORDER.indexOf(cur) + 1) % THEME_ORDER.length] || "light";
   save(); applyTheme();
 }
+function applyGlass() {
+  const on = ((DB.settings || {}).glass !== false); // trial default ON; one tap reverts
+  document.body.classList.toggle("glass", on);
+  const b = document.getElementById("glassToggle");
+  if (b) { b.textContent = on ? "\u2728" : "\u25FB\uFE0F"; b.title = `Glass interface: ${on ? "on" : "off"} (tap to change)`; }
+}
+function toggleGlass() {
+  const on = !document.body.classList.contains("glass");
+  DB.settings = Object.assign({}, DB.settings, { glass: on });
+  save(); applyGlass();
+}
 function renderBrand() {
   const s = DB.settings || {};
   const nm = $("brandName"), sb = $("brandSub"), lg = $("brandLogo");
@@ -1594,4 +1605,4 @@ function applyRefVersions() {
   try { document.querySelectorAll("[data-vaxver]").forEach((el) => { el.textContent = VAX_SCHEDULE_VERSION; n++; }); } catch (e) {}
   return n;
 }
-load(); loadSettings(); syncChildPicker(); applyTheme(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();
+load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();
