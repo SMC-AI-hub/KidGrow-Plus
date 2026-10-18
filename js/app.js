@@ -102,7 +102,7 @@ function normalizeChild(c) {
 function child() { return normalizeChild(DB.children.find((c) => c.id === DB.activeId) || DB.children[0] || null); }
 
 /* ================= PATIENT HEADER (unified, every clinical screen) ================= */
-const PH_SLOTS = ["visits", "timeline", "rx", "vaccines", "growth", "labs", "aefi", "nicu", "mar", "nb", "screen", "diet", "consent"];
+const PH_SLOTS = ["visits", "timeline", "rx", "vaccines", "card", "growth", "labs", "aefi", "nicu", "mar", "nb", "screen", "diet", "consent"];
 function patientHeaderData(c) {
   if (!c) return null;
   const ms = [...(c.measures || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
@@ -741,7 +741,9 @@ function catchupHTML(c, plan) {
   return `<div class="card"><h3>📋 Catch-up plan — ${plan.length} visit(s)</h3><div class="hint">Missed doses in schedule order · no need to restart any series · minimum 4-week gap between visits. Planning aid — verify against the IAP catch-up chart; clinical judgement prevails.</div>${rows}</div>`;
 }
 function renderVaccines() {
-  const c = child(); if (!c) return;
+  const c = child();
+  const vp0 = $("vacPrint"); if (vp0) vp0.innerHTML = "";
+  if (!c) return;
   const s = vaccineSummary(c);
   $("vacBar").style.width = s.pct + "%"; $("vacPct").textContent = `${s.done}/${s.total} (${s.pct}%)`;
   let al = "";
@@ -772,6 +774,7 @@ function renderVaccines() {
     tl.appendChild(d);
   });
   renderExtras(c);
+  try { const vp = $("vacPrint"); if (vp && typeof vaxRecordHTML === "function") vp.innerHTML = vaxRecordHTML(c); } catch (e) {}
 }
 function openVacModal(visitId, code) {
   const c = child(); const v = VACCINE_SCHEDULE.find((x) => x.id === visitId);

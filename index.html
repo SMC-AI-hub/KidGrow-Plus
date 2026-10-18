@@ -186,7 +186,7 @@
       </section>
 
       <!-- ======== VACCINE CARD ======== -->
-      <section class="page" id="pg-card">
+      <section class="page" id="pg-card"><div id="ph-card"></div>
         <div id="cardBox"></div>
       </section>
 
@@ -291,9 +291,10 @@
           <button class="btn btn-o btn-sm" onclick="printPage('pg-vaccines')">🖨️ Print record</button>
           <button class="btn btn-p btn-sm" onclick="printCertificate()">🏅 Certificate</button>
         </div>
-        <div id="vacAlerts"></div>
-        <div class="timeline" id="vacTimeline"></div>
-        <div id="vacExtras" style="margin-top:4px"></div>
+        <div id="vacAlerts" class="no-print"></div>
+        <div class="timeline no-print" id="vacTimeline"></div>
+        <div id="vacExtras" class="no-print" style="margin-top:4px"></div>
+        <div id="vacPrint" class="print-only"></div>
       </section>
 
             <!-- ======== GROWTH ======== -->

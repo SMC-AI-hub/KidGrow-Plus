@@ -139,31 +139,76 @@ function qrSVG(text) {
   }
   return `<div class="alert a-red" style="margin:0">Record too long for QR — use Copy / Download instead.</div>`;
 }
+/* Universal vaccination record — ONE format for every print/export.
+   Vaccines-page print, card print and parent-file export all render this:
+   clinic letterhead + patient strip + QR + record table + catch-up plan.
+   (c) may be a live child or a plain {vaccines,dob,...} object. */
+function vaxRecordHTML(c) {
+  c = c || {};
+    const code = encodeRecord(c);
+    const cVx = c.vaccines || {};
+    // Record-table card (clinic paper-schedule format): one row per visit —
+    // Age | Recommended Vaccines | Due on | Brand given | Given on | Batch.
+    // Full schedule prints (a record card needs blank writable rows for future
+    // visits); given cells fill from records, pending cells stay blank.
+    const vDone = VACCINE_SCHEDULE.map((v) => v.vaccines.filter((vx) => cVx[vx.code]).length);
+    const nextIdx = vDone.findIndex((d, i) => d < VACCINE_SCHEDULE[i].vaccines.length);
+    const schedRows = VACCINE_SCHEDULE.map((v, vi) => {
+      const done = vDone[vi], total = v.vaccines.length;
+      const st = done === total ? `<span style="color:var(--green)">✅ Complete</span>`
+        : vi === nextIdx ? `⏰ Due ${esc(fmtDate(dueDateFor(c, v)))}${done ? ` · ${done}/${total} given` : ""}`
+        : `<span style="color:var(--muted)">○ Upcoming</span>`;
+      const vxCell = v.vaccines.map((vx) => `<b>${esc(vx.name)}</b> <span style="color:var(--muted)">${esc(vx.dose || "")}</span>`).join("<br>");
+      const line = (fn) => v.vaccines.map((vx) => { const r = cVx[vx.code]; const s = r ? fn(r) : ""; return s || "&nbsp;"; }).join("<br>");
+      const brandCell = line((r) => r.brand ? `<b>${esc(r.brand)}</b>${r.mfr ? ` <span style="font-size:11px;color:var(--muted)">(${esc(r.mfr)})</span>` : ""}` : "");
+      const givenCell = line((r) => r.date ? `<b>${esc(fmtDate(r.date))}</b>` : "");
+      const batchCell = line((r) => r.batch ? esc(r.batch) : "");
+      return `<tr${vi === nextIdx ? ` style="background:#fefce8"` : ""}><td><b>${esc(v.label)}</b><br><span style="font-size:11px;color:var(--muted)">${esc(v.sub || "")}</span><br><span style="font-size:11px">${st}</span></td><td>${vxCell}</td><td style="white-space:nowrap">${esc(fmtDate(dueDateFor(c, v)))}</td><td>${brandCell}</td><td style="white-space:nowrap">${givenCell}</td><td>${batchCell}</td></tr>`;
+    }).join("");
+    const ex = (c.extraVac || []).map((x) => `<tr><td><b>Additional</b></td><td><b>${esc(x.name)}</b></td><td>—</td><td>${x.brand ? `<b>${esc(x.brand)}</b>${x.mfr ? ` (${esc(x.mfr)})` : ""}` : "&nbsp;"}</td><td>${x.date ? `<b>${esc(fmtDate(x.date))}</b>` : "&nbsp;"}</td><td>${x.batch ? esc(x.batch) : "&nbsp;"}</td></tr>`).join("");
+    // Compact catch-up appendix (clinic + parent print): only when doses are missed.
+    let catchup = "";
+    try {
+      const plan = (typeof catchupPlan === "function") ? catchupPlan(c, (typeof todayISO === "function") ? todayISO() : "") : [];
+      if (plan && plan.length) {
+        catchup = `<h3 style="margin:12px 0 6px">\uD83D\uDCCB Catch-up plan — ${plan.length} visit(s)</h3><table class="tbl vaxtbl"><tr><th>Visit</th><th>Earliest</th><th>Vaccines</th></tr>` +
+          plan.map((p, i) => `<tr><td><b>Visit ${i + 1}</b><br><span style="font-size:11px;color:var(--muted)">${esc(p.visit)}</span></td><td style="white-space:nowrap">${esc(fmtDate(p.date))}</td><td>${p.items.map((it) => esc(it.name) + (it.dose ? ` <span style="color:var(--muted)">${esc(it.dose)}</span>` : "")).join("<br>")}${p.rota ? `<br><span style="font-size:11px;color:#b45309">\u26A0\uFE0F Includes rotavirus — confirm age eligibility.</span>` : ""}</td></tr>`).join("") +
+          `</table><div style="font-size:11px;color:var(--muted);margin-top:4px">Missed doses in schedule order · no need to restart any series · minimum 4-week gaps · verify against the IAP catch-up chart.</div>`;
+      }
+    } catch (e) {}
+  return `
+      <div class="vaxcard">
+        <div class="vax-head">
+          ${(DB.settings.logo || "") ? `<img src="${DB.settings.logo}" alt="Hospital logo">` : ""}
+          <div style="min-width:0">
+            <div class="eyebrow">DIGITAL IMMUNISATION CARD</div>
+            <h2>${esc(DB.settings.clinic || "NeoKid Care Clinic")}</h2>
+            <div class="sub">${esc(DB.settings.doctor || "")}${DB.settings.addr ? ` · ${esc(DB.settings.addr)}` : ""}${DB.settings.reg ? ` · Reg: ${esc(DB.settings.reg)}` : ""}</div>
+          </div>
+          ${(typeof parentVerifyCode === "function") ? `<div class="vax-verify">Verify code<br><b>${esc(parentVerifyCode(c))}</b></div>` : ""}
+        </div>
+        <div class="vax-body">
+          <dl class="kv">
+            <dt>Child</dt><dd><b>${esc(c.name)}</b> · ${c.sex === "boy" ? "Boy" : "Girl"}</dd>
+            <dt>Born</dt><dd>${fmtDate(c.dob)} (${esc(ageStr(ageBetween(c.dob)))})${c.birthWt ? ` · Birth wt ${c.birthWt} kg` : ""}</dd>
+            <dt>Parent</dt><dd>${esc([c.mother, c.father].filter(Boolean).join(" & ") || "—")}${c.phone ? ` · ☎ ${esc(c.phone)}` : ""}</dd>
+            <dt>Blood</dt><dd>${esc(c.blood || "—")}${c.allergy ? ` · ⚠️ ${esc(c.allergy)}` : ""}</dd>
+          </dl>
+          <div class="qrbox" style="text-align:center">${qrSVG(code)}<div style="font-size:11px;color:var(--muted);margin-top:4px">Scan at any NeoKid Care clinic<br>to verify / import this record</div></div>
+        </div>
+        <table class="tbl vaxtbl" style="margin-top:10px"><tr><th>Age</th><th>Recommended Vaccines</th><th>Due on</th><th>Brand given</th><th>Given on</th><th>Batch</th></tr>${schedRows}${ex}</table>
+      ${catchup}
+        <div class="vax-sign"><div>Doctor signature &amp; seal: ______________</div><div style="margin-left:auto">Date: ${fmtDate(todayISO())}</div></div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center">Seasonal influenza vaccine every year · ${VAX_SCHEDULE_VERSION} schedule · ${esc(DB.settings.doctor || "")} · Generated ${fmtDate(todayISO())} · Computer-assisted record — confirm before filing.</div>
+      </div>
+  `;
+}
+
 function renderCard() {
   if (!$("pg-card")) return;
   const c = child();
   if (!c) { $("cardBox").innerHTML = `<div class="empty">No child selected.</div>`; return; }
-  const code = encodeRecord(c);
-  const cVx = c.vaccines || {};
-  // Record-table card (clinic paper-schedule format): one row per visit —
-  // Age | Recommended Vaccines | Due on | Brand given | Given on | Batch.
-  // Full schedule prints (a record card needs blank writable rows for future
-  // visits); given cells fill from records, pending cells stay blank.
-  const vDone = VACCINE_SCHEDULE.map((v) => v.vaccines.filter((vx) => cVx[vx.code]).length);
-  const nextIdx = vDone.findIndex((d, i) => d < VACCINE_SCHEDULE[i].vaccines.length);
-  const schedRows = VACCINE_SCHEDULE.map((v, vi) => {
-    const done = vDone[vi], total = v.vaccines.length;
-    const st = done === total ? `<span style="color:var(--green)">✅ Complete</span>`
-      : vi === nextIdx ? `⏰ Due ${esc(fmtDate(dueDateFor(c, v)))}${done ? ` · ${done}/${total} given` : ""}`
-      : `<span style="color:var(--muted)">○ Upcoming</span>`;
-    const vxCell = v.vaccines.map((vx) => `<b>${esc(vx.name)}</b> <span style="color:var(--muted)">${esc(vx.dose || "")}</span>`).join("<br>");
-    const line = (fn) => v.vaccines.map((vx) => { const r = cVx[vx.code]; const s = r ? fn(r) : ""; return s || "&nbsp;"; }).join("<br>");
-    const brandCell = line((r) => r.brand ? `<b>${esc(r.brand)}</b>${r.mfr ? ` <span style="font-size:11px;color:var(--muted)">(${esc(r.mfr)})</span>` : ""}` : "");
-    const givenCell = line((r) => r.date ? `<b>${esc(fmtDate(r.date))}</b>` : "");
-    const batchCell = line((r) => r.batch ? esc(r.batch) : "");
-    return `<tr${vi === nextIdx ? ` style="background:#fefce8"` : ""}><td><b>${esc(v.label)}</b><br><span style="font-size:11px;color:var(--muted)">${esc(v.sub || "")}</span><br><span style="font-size:11px">${st}</span></td><td>${vxCell}</td><td style="white-space:nowrap">${esc(fmtDate(dueDateFor(c, v)))}</td><td>${brandCell}</td><td style="white-space:nowrap">${givenCell}</td><td>${batchCell}</td></tr>`;
-  }).join("");
-  const ex = (c.extraVac || []).map((x) => `<tr><td><b>Additional</b></td><td><b>${esc(x.name)}</b></td><td>—</td><td>${x.brand ? `<b>${esc(x.brand)}</b>${x.mfr ? ` (${esc(x.mfr)})` : ""}` : "&nbsp;"}</td><td>${x.date ? `<b>${esc(fmtDate(x.date))}</b>` : "&nbsp;"}</td><td>${x.batch ? esc(x.batch) : "&nbsp;"}</td></tr>`).join("");
+  const code = encodeRecord(c); // toolbar char-count (record itself built by vaxRecordHTML)
   $("cardBox").innerHTML = `
     <div class="toolbar no-print" style="margin-bottom:12px">
       <span style="font-size:13px;color:var(--muted)">Record code: <b>${code.length}</b> chars · QR ${code.length < 1800 ? "fits easily" : "fits (dense)"}</span>
@@ -174,29 +219,7 @@ function renderCard() {
       <button class="btn btn-p btn-sm" onclick="downloadParentCard()">📱 Parent file (.html)</button>
       <button class="btn btn-o btn-sm" onclick="copyParentSummary()">⧉ Parent summary</button>
     </div>
-    <div class="vaxcard">
-      <div class="vax-head">
-        ${(DB.settings.logo || "") ? `<img src="${DB.settings.logo}" alt="Hospital logo">` : ""}
-        <div style="min-width:0">
-          <div class="eyebrow">DIGITAL IMMUNISATION CARD</div>
-          <h2>${esc(DB.settings.clinic || "NeoKid Care Clinic")}</h2>
-          <div class="sub">${esc(DB.settings.doctor || "")}${DB.settings.addr ? ` · ${esc(DB.settings.addr)}` : ""}${DB.settings.reg ? ` · Reg: ${esc(DB.settings.reg)}` : ""}</div>
-        </div>
-        ${(typeof parentVerifyCode === "function") ? `<div class="vax-verify">Verify code<br><b>${esc(parentVerifyCode(c))}</b></div>` : ""}
-      </div>
-      <div class="vax-body">
-        <dl class="kv">
-          <dt>Child</dt><dd><b>${esc(c.name)}</b> · ${c.sex === "boy" ? "Boy" : "Girl"}</dd>
-          <dt>Born</dt><dd>${fmtDate(c.dob)} (${esc(ageStr(ageBetween(c.dob)))})${c.birthWt ? ` · Birth wt ${c.birthWt} kg` : ""}</dd>
-          <dt>Parent</dt><dd>${esc([c.mother, c.father].filter(Boolean).join(" & ") || "—")}${c.phone ? ` · ☎ ${esc(c.phone)}` : ""}</dd>
-          <dt>Blood</dt><dd>${esc(c.blood || "—")}${c.allergy ? ` · ⚠️ ${esc(c.allergy)}` : ""}</dd>
-        </dl>
-        <div class="qrbox" style="text-align:center">${qrSVG(code)}<div style="font-size:11px;color:var(--muted);margin-top:4px">Scan at any NeoKid Care clinic<br>to verify / import this record</div></div>
-      </div>
-      <table class="tbl vaxtbl" style="margin-top:10px"><tr><th>Age</th><th>Recommended Vaccines</th><th>Due on</th><th>Brand given</th><th>Given on</th><th>Batch</th></tr>${schedRows}${ex}</table>
-      <div class="vax-sign"><div>Doctor signature &amp; seal: ______________</div><div style="margin-left:auto">Date: ${fmtDate(todayISO())}</div></div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center">Seasonal influenza vaccine every year · ${VAX_SCHEDULE_VERSION} schedule · ${esc(DB.settings.doctor || "")} · Generated ${fmtDate(todayISO())} · Computer-assisted record — confirm before filing.</div>
-    </div>
+    ${vaxRecordHTML(c)}
     <div style="height:16px"></div>
     <div class="card no-print"><h3>📥 Import a record</h3>
       <div class="hint">Paste a record code (from another device's card / QR scan) or a full child .json backup, then Import. Matching name + DOB merges missing doses; otherwise a new child is created.</div>

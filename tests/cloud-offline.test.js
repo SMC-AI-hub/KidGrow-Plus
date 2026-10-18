@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v15/.test(sw), "SW cache bumped to v15 (booklet content)");
+  ok(/neokid-v16/.test(sw), "SW cache bumped to v16 (universal print)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -949,6 +949,16 @@ async function main() {
   ok(cardHTML.includes("vax-head") && cardHTML.includes("Hospital logo") && cardHTML.includes("vax-verify"), "card prints logo + verify code");
   ok(cardHTML.includes("Scan at any NeoKid Care clinic") && cardHTML.includes("<svg"), "card QR scannable + captioned");
   ok(cardHTML.includes("Recommended Vaccines") && cardHTML.includes("Brand given") && cardHTML.includes("Given on") && cardHTML.includes("Due on") && cardHTML.includes("Batch"), "card uses record-table format");
+  ok(typeof sb.vaxRecordHTML === "function", "shared vaccination record builder exists");
+  const recHTML = sb.vaxRecordHTML({ name: "Print Test", sex: "boy", dob: "2025-01-15", mother: "M", vaccines: { BCG: { date: "2025-01-16", brand: "B" } } });
+  ok(recHTML.includes("vaxtbl") && recHTML.includes("Recommended Vaccines") && recHTML.includes("Verify code"), "shared record = letterhead + table + verify");
+  const recLate = sb.vaxRecordHTML({ name: "Late Kid", sex: "girl", dob: "2024-01-01", vaccines: {} });
+  ok(recLate.includes("Catch-up plan") && recLate.includes("Visit 1"), "record appends catch-up appendix when doses missed");
+  const idxSrc = fs.readFileSync(path.join(R, "index.html"), "utf8");
+  const appSrc = fs.readFileSync(path.join(R, "js", "app.js"), "utf8");
+  ok(idxSrc.includes('id="vacPrint" class="print-only"') && idxSrc.includes('class="timeline no-print" id="vacTimeline"'), "vaccines page has print-only record + screen-only timeline");
+  ok(idxSrc.includes('id="ph-card"') && appSrc.includes('"card"'), "card page shares the patient banner (uniform print head)");
+  ok(cssP.includes(".print-only{display:none!important}") && cssP.includes(".print-only{display:block!important}"), "print-only CSS swaps screen/print views");
   ok(cardHTML.includes("16\u201318 Years") && !cardHTML.includes("Further visits"), "card prints full schedule, no collapse");
   ok(cssP.includes(".vax-head{display:flex") && cssP.includes(".vax-sign{display:flex"), "card letterhead + signature styles");
   vm.runInContext("var __cp=" + cardPrev + "; DB.children=__cp[0]; DB.activeId=__cp[1]; DB.settings=__cp[2];", sb);
