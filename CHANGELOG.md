@@ -1,5 +1,11 @@
 # Changelog
 
+## v10.27.1 — 2026-10-18 — Vaccination print: no duplicate patient name
+- FIX: the patient banner chip printed above the record, repeating
+  the name already in the record patient strip. Banner is now
+  screen-only (no-print) on Vaccines + Card pages — other reports
+  keep their banner (their only patient ID). SW neokid-v18.
+
 ## v10.27.0 — 2026-10-18 — Clustered vaccination record rows
 - POLISH: record-table rows now cluster each sitting into ONE
   line — antigen names joined, each brand/date/batch shown once
