@@ -63,6 +63,13 @@ async function main() {
 
   // ---- schema ----
   await owner.query(SHIM);
+  // Mirror Supabase's built-in roles: vanilla Postgres lacks them and 0006
+  // grants EXECUTE to `authenticated`. Idempotent — safe on real Supabase too.
+  await owner.query(`DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon NOLOGIN; END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN CREATE ROLE service_role NOLOGIN; END IF;
+  END $$;`);
   await owner.query(fs.readFileSync(path.join(ROOT, "supabase/schema.sql"), "utf8"));
   const migDir = path.join(ROOT, "supabase/migrations");
   for (const f of fs.readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort()) {
@@ -75,6 +82,7 @@ async function main() {
   await owner.query("GRANT USAGE ON SCHEMA auth TO app"); // Supabase grants this to `authenticated` by default
   await owner.query("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app");
   await owner.query("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app");
+  await owner.query("GRANT authenticated TO app"); // Supabase parity: app traffic runs as `authenticated` (carries 0006 EXECUTE grant)
   const { Client } = require("pg");
   const appCfg = process.env.DATABASE_URL
     ? { connectionString: process.env.DATABASE_URL.replace(/:\/\/[^@]+@/, "://app:app-test-pw@") }
