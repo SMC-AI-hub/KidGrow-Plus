@@ -114,3 +114,6 @@ var Comply = {
   encrypt: complyEncryptObj, decrypt: complyDecryptObj, graceDays: ERASE_GRACE_D,
 };
 try { if (typeof window !== "undefined" && window) window.Comply = Comply; } catch (e) {}
+/* Self-init: the boot line in app.js runs before this file loads, so the
+   grace purge triggers here instead (DB + log() are ready by now). */
+try { if (typeof DB !== "undefined" && DB && DB._deleted && DB._deleted.length) complyPurge(); } catch (ePI) {}
