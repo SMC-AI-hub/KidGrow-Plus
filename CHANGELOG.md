@@ -1,5 +1,21 @@
 # Changelog
 
+## v10.40.0 — 2026-10-19 — Clinical-depth track (Phases 1–8)
+- NEW: history/perinatal data model + shared clinical infra (migrations,
+  versioned content packs, ICD-10 terms, tiered alerts, score registry,
+  form engine, i18n).
+- NEW: exam templates + vitals widget; prescribing decision support
+  (3 hard-stops, allergy/interaction/duplicate checks).
+- NEW: NICU depth (bed board, daily sheets); HRI follow-up engine with
+  defaulter tracking + ROP/CCHD screening.
+- NEW: chronic flowsheets (asthma/epilepsy/T1DM) + plain-language growth
+  interpretation; lab mini-panels (CBC/urine/TSH) + recheck tracker.
+- NEW: referral letters + medical certificates; consent + analytics
+  top-ups; Tanner/puberty verified; Chart.js evaluated (kept offline canvas).
+- NEW: compliance — FHIR R4 Bundle export, 30-day-grace erasure workflow,
+  per-patient audit strip, opt-in encrypted cloud sync.
+- TESTS: 681 → 1132 asserts, all green.
+
 ## v10.32.0 — 2026-10-18 — Sync hardening: no silent overwrites
 - FIX: uploads now check for unseen cloud data first — if the other
   device got there first, you get the "which to keep?" choice instead
