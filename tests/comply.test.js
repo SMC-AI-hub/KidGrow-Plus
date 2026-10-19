@@ -147,6 +147,9 @@ async function main() {
   ok(fs.readFileSync(path.join(R, "js/app.js"), "utf8").includes("eraseRequest('${c.id}')"), "children page delete -> eraseRequest");
   const sw = fs.readFileSync(path.join(R, "sw.js"), "utf8");
   ok(sw.includes("./js/fhirx.js") && sw.includes("./js/comply.js"), "SW shell caches fhirx + comply");
+  const complySrc = fs.readFileSync(path.join(R, "js/comply.js"), "utf8");
+  ok(complySrc.includes("complyPurge(); } catch (ePI)"), "purge self-inits at comply.js load (boot line runs too early)");
+  ok(!fs.readFileSync(path.join(R, "js/app.js"), "utf8").includes("Comply.purge()"), "dead boot-line purge hook removed");
 
   console.log(`comply: ${pass} pass, ${fail} fail`);
   process.exit(fail ? 1 : 0);
