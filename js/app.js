@@ -49,6 +49,7 @@ function parseDB(raw) {
     const merged = Object.assign({ children: [], activeId: null, settings: {}, msBand: null, gTab: "wt" }, d);
     merged.children.forEach(normalizeChild);
     ensureMrns(merged.children);
+    try { if (typeof migrateDB === "function") migrateDB(merged); } catch (e2) {}
     if (!merged.children.some((c) => c.id === merged.activeId)) merged.activeId = (merged.children[0] || {}).id || null;
     return merged;
   } catch (e) { return null; }
@@ -69,6 +70,7 @@ function load() {
     setTimeout(() => alert("Saved data was damaged and could not be recovered. Starting fresh — if you have an exported backup, please Import it."), 600);
   }
   seedDemo();
+  try { if (typeof migrateDB === "function") migrateDB(DB); } catch (e) {}
   try { save(); } catch (e) {}
 }
 function normalizeChild(c) {
@@ -94,6 +96,12 @@ function normalizeChild(c) {
   if (!Array.isArray(c.mar)) c.mar = [];
   if (!c.dental || typeof c.dental !== "object") c.dental = {};
   if (!c.diet || typeof c.diet !== "object") c.diet = { type: "veg" };
+  if (!c.perinatal || typeof c.perinatal !== "object") c.perinatal = {};
+  if (!c.maternal || typeof c.maternal !== "object") c.maternal = {};
+  if (!c.family || typeof c.family !== "object") c.family = {};
+  if (!Array.isArray(c.allergies)) c.allergies = [];
+  if (!Array.isArray(c.problems)) c.problems = [];
+  if (Array.isArray(c.visits)) c.visits.forEach((v) => { if (v && !Array.isArray(v.icd)) v.icd = []; });
   if (!c.asthma || typeof c.asthma !== "object") c.asthma = { pef: [], triggers: [] };
   if (!Array.isArray(c.asthma.pef)) c.asthma.pef = [];
   if (!Array.isArray(c.asthma.triggers)) c.asthma.triggers = [];
@@ -472,6 +480,7 @@ function openChildModal(id) {
   $("cFather").value = c?.father || ""; $("cMother").value = c?.mother || "";
   $("cFHt").value = c?.fHt || ""; $("cMHt").value = c?.mHt || ""; $("cPhone").value = c?.phone || "";
   $("cPed").value = c?.ped || ""; $("cAllergy").value = c?.allergy || ""; $("cAbha").value = c?.abha || "";
+  try { if (typeof Hx !== "undefined" && Hx.fill) Hx.fill(c); } catch (eHx) {}
   openModal("mChild");
 }
 /* ---------------- MRN (medical record number, auto-assigned) ---------------- */
@@ -493,6 +502,7 @@ function saveChild() {
   const dups = findDupChildren({ name, dob, phone: $("cPhone").value }, DB.children, id || null);
   if (dups.length && !confirm(`⚠️ Possible duplicate record:\n${dups.slice(0, 3).map((d) => `• ${d.c.name} (DOB ${fmtDate(d.c.dob)}) — ${d.why}`).join("\n")}\n\nSave anyway?`)) return;
   const data = { name, sex: $("cSex").value, dob, blood: $("cBlood").value, birthWt: parseFloat($("cBirthWt").value) || "", gest: $("cGest").value, birthLen: parseFloat($("cBirthLen").value) || "", birthHC: parseFloat($("cBirthHC").value) || "", father: $("cFather").value.trim(), mother: $("cMother").value.trim(), fHt: parseFloat($("cFHt").value) || "", mHt: parseFloat($("cMHt").value) || "", phone: $("cPhone").value.trim(), abha: $("cAbha").value.trim(), ped: $("cPed").value.trim(), allergy: $("cAllergy").value.trim() };
+  try { if (typeof Hx !== "undefined" && Hx.collect) Object.assign(data, Hx.collect()); } catch (eHx) {}
   if (id) { const ex = DB.children.find((x) => x.id === id); if (ex) normalizeChild(Object.assign(ex, data)); }
   else DB.children.push(normalizeChild(Object.assign({ id: uid(), created: todayISO(), mrn: nextMrn(DB.children) }, data)));
   if (!DB.activeId) DB.activeId = DB.children[0].id;
@@ -1048,6 +1058,7 @@ function openVisitModal(id) {
   $("vsType").value = v?.type || "Routine / Well-child";
   $("vsSubj").value = v?.subj || ""; $("vsObj").value = v?.obj || ""; $("vsPlan").value = v?.plan || "";
   if (typeof voiceReset === "function") voiceReset(v?.voice || "");
+  try { if (typeof Hx !== "undefined" && Hx.fillVisit) Hx.fillVisit(v, c); } catch (eHx) {}
   openModal("mVisit");
 }
 function saveVisit() {
@@ -1055,6 +1066,7 @@ function saveVisit() {
   if (!$("vsDate").value) return alert("Date required.");
   const v = { id: $("vsId").value || uid(), date: $("vsDate").value, type: $("vsType").value, subj: $("vsSubj").value.trim(), obj: $("vsObj").value.trim(), plan: $("vsPlan").value.trim() };
   if (typeof voiceData === "function" && voiceData()) v.voice = voiceData();
+  try { if (typeof Hx !== "undefined" && Hx.collectVisitIcd) v.icd = Hx.collectVisitIcd(); } catch (eHx) {}
   const i = c.visits.findIndex((x) => x.id === v.id);
   if (i >= 0) c.visits[i] = v; else c.visits.push(v);
   auditSafe("Visit note", v.type + " — " + c.name);
@@ -1078,6 +1090,7 @@ function renderVisits() {
     ${v.subj ? `<div style="font-size:13.5px;margin-bottom:6px"><b>S:</b> ${esc(v.subj)}</div>` : ""}
     ${v.obj ? `<div style="font-size:13.5px;margin-bottom:6px"><b>O:</b> ${esc(v.obj)}</div>` : ""}
     ${v.plan ? `<div style="font-size:13.5px"><b>A/P:</b> ${esc(v.plan)}</div>` : ""}
+    ${(() => { try { return (typeof Hx !== "undefined" && Hx.visitIcdHTML) ? Hx.visitIcdHTML(v) : ""; } catch (eHx) { return ""; } })()}
     ${v.voice ? '<div style="margin-top:6px"><audio controls src="' + v.voice + '" style="height:32px;max-width:260px;vertical-align:middle"></audio></div>' : ""}</div>`).join("") ||
     `<div class="card"><div class="empty"><div class="big">🩺</div>No visit notes yet.</div></div>`;
 }
@@ -1435,7 +1448,7 @@ function childHeader(c) {
     <dt>Parents</dt><dd>${esc(c.father || "—")} · ${esc(c.mother || "—")} ${c.phone ? "· ☎ " + esc(c.phone) : ""}</dd>
     ${c.abha ? "<dt>ABHA</dt><dd>" + esc(c.abha) + "</dd>" : ""}
     <dt>Birth</dt><dd>${c.birthWt ? c.birthWt + " kg" : "—"} ${c.gest ? "· " + c.gest + " wk" : ""} ${c.blood ? "· Blood " + esc(c.blood) : ""}</dd>
-    ${c.allergy ? `<dt>Alerts</dt><dd style="color:var(--red)">⚠ ${esc(c.allergy)}</dd>` : ""}</dl>`;
+    ${c.allergy ? `<dt>Alerts</dt><dd style="color:var(--red)">⚠ ${esc(c.allergy)}</dd>` : ""}${(() => { try { return (typeof Hx !== "undefined" && Hx.headerProblems) ? Hx.headerProblems(c) : ""; } catch (eHx) { return ""; } })()}</dl>`;
 }
 function buildSummary() {
   const c = child(); if (!c) return;
@@ -1521,6 +1534,7 @@ function backupPreviewLine(st) {
 }
 function freshDb() {
   return {
+    _sv: (typeof SCHEMA_V === "number" ? SCHEMA_V : 1), // record schema (see js/migrate.js)
     children: [], activeId: null, settings: { clinic: "", doctor: "", reg: "", addr: "" },
     msBand: null, gTab: "wt", appts: [], tokens: [], bills: [], users: [], audit: [], session: {},
   };
@@ -1532,6 +1546,7 @@ function buildDbFromBackup(d) {
   if (!out.settings || typeof out.settings !== "object") out.settings = freshDb().settings;
   if (!out.session || typeof out.session !== "object") out.session = {};
   ensureMrns(out.children);
+  try { if (typeof migrateDB === "function") migrateDB(out); } catch (e) {}
   return out;
 }
 // Single funnel for every restore path (JSON + encrypted): validate → confirm →

@@ -31,7 +31,8 @@ function renderRx() {
   const cats = [...new Set(DRUGS.map((x) => x.cat))];
   const calc = d.info ? { ok: true, infoOnly: true, take: d.info, warns: [] }
     : calcDose(d.id, RXB.wt, rxAgeM(c), RXB.stIdx, RXB.freq, RXB.days);
-  const al = allergyCheck(d.id, c.allergy);
+  const hxAlg = ((typeof Hx !== "undefined" && Hx.allergyText) ? Hx.allergyText(c) : c.allergy);
+  const al = allergyCheck(d.id, hxAlg);
   const prev = [...c.rx].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   $("rxBox").innerHTML = `
   <div class="grid g2">
@@ -48,7 +49,7 @@ function renderRx() {
         <div><label>Instruction (optional)</label><input value="${esc(RXB.instr)}" placeholder="e.g. After food / SOS fever" oninput="RXB.instr=this.value"></div>
       </div>
       <div id="rxCalc"></div>
-      ${al.hit ? `<div class="alert a-red">⚠️ <div><b>ALLERGY ALERT:</b> ${esc(d.name)} matches recorded allergy “${esc(c.allergy)}” (matched: ${al.matched.map(esc).join(", ")}). Prescribe only if benefit outweighs risk — flag will print on the Rx.</div></div>` : ""}
+      ${al.hit ? `<div class="alert a-red">⚠️ <div><b>ALLERGY ALERT:</b> ${esc(d.name)} matches recorded allergy “${esc(hxAlg)}” (matched: ${al.matched.map(esc).join(", ")}). Prescribe only if benefit outweighs risk — flag will print on the Rx.</div></div>` : ""}
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
         <button class="btn btn-p btn-sm" onclick="rxAddItem(${al.hit})" ${calc.ok ? "" : "disabled"}>＋ Add to prescription</button>
       </div>
@@ -134,7 +135,7 @@ function delRx(id) {
 function printRx(id) {
   const c = child(); if (!c) return;
   const r = (c.rx || []).find((x) => x.id === id); if (!r) return;
-  $("rxPrint").innerHTML = `${clinicHeader()}${childHeader(c)}
+  $("rxPrint").innerHTML = `${clinicHeader()}${childHeader(c)}${(() => { try { return (typeof Hx !== "undefined" && Hx.rxStripHTML) ? Hx.rxStripHTML(c) : ""; } catch (eHx) { return ""; } })()}
     <div class="alert ${r.allergyFlag ? "a-red" : "a-gray"}" style="margin:0 0 12px">⚠️ <div><b>R<sub>x</sub> — ${fmtDate(r.date)}</b>${r.wt ? ` · Wt ${esc(String(r.wt))} kg` : ""} · Dx: <b>${esc(r.dx || "—")}</b>${r.allergyFlag ? `<br><b>ALLERGY FLAG:</b> ${esc(r.allergyFlag)}` : ""}</div></div>
     <table class="tbl"><tr><th>#</th><th>Medicine</th><th>Dose</th><th>Freq × Days</th><th>Qty</th><th>Instructions</th></tr>
     ${(r.items || []).map((it, n) => `<tr><td>${n + 1}</td><td><b>${esc(it.drug)}</b>${it.strength ? `<br><span style="font-size:11.5px;color:var(--muted)">${esc(it.strength)}</span>` : ""}</td><td><b>${esc(it.take || "—")}</b></td><td>${esc(it.freq)} × ${esc(String(it.days))}</td><td style="font-size:12px">${esc(it.qty || "—")}</td><td style="font-size:12px">${esc(it.instr || "—")}</td></tr>`).join("")}</table>

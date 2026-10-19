@@ -471,6 +471,7 @@
     <div><label>Pediatrician</label><input id="cPed" placeholder="Treating doctor"></div>
     <div class="full"><label>Allergies / conditions</label><input id="cAllergy" placeholder="e.g. Egg allergy, asthma"></div>
   </div>
+  <div id="hxCards"></div>
   <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mChild')">Cancel</button><button class="btn btn-p" onclick="saveChild()">💾 Save child</button></div>
 </div></div>
 
@@ -539,7 +540,7 @@
 </div></div>
 
 <div class="modal-bg" id="mVisit"><div class="modal">
-  <h3>Visit note</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">SOAP-style clinical note</div>
+  <h3>Visit note</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">SOAP-style clinical note</div><div id="vsChanges" style="margin-bottom:8px"></div>
   <div class="form-grid">
     <input type="hidden" id="vsId">
     <div><label>Date *</label><input type="date" id="vsDate"></div>
@@ -547,6 +548,7 @@
     <div class="full"><label>Complaints / History</label><textarea id="vsSubj" rows="2" placeholder="e.g. Fever 2 days, cold, appetite ok"></textarea></div>
     <div class="full"><label>Examination</label><textarea id="vsObj" rows="2" placeholder="e.g. Alert, hydrated; throat congested; chest clear"></textarea></div>
     <div class="full"><label>Assessment & Plan</label><textarea id="vsPlan" rows="2" placeholder="e.g. Viral URI — paracetamol SOS, fluids, review 3 days"></textarea></div>
+    <div class="full"><label>Diagnoses (ICD-10)</label><input type="hidden" id="vsIcd" value="[]"><div id="vsIcdChips"></div><input id="vsIcdQ" placeholder="Type to search diagnoses…" autocomplete="off"><div id="vsIcdList"></div></div>
     <div class="full"><label>🎙️ Voice note (speak any language · max 60 s)</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn btn-o btn-sm" id="voiceRecBtn" onclick="voiceToggle()">⏺ Record</button><span id="voiceStatus" style="font-size:12.5px;color:var(--muted)">No recording</span><audio id="voicePlay" controls style="display:none;max-width:220px;height:32px"></audio><button class="btn btn-o btn-xs" id="voiceDelBtn" onclick="voiceClear()" style="display:none">✕</button></div></div>
   </div>
   <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mVisit')">Cancel</button><button class="btn btn-p" onclick="saveVisit()">💾 Save note</button></div>
@@ -623,6 +625,15 @@
 <script src="js/rx.js"></script>
 <script src="js/front.js"></script>
 <script src="js/nb.js"></script>
+<script src="js/cdata.gen.js"></script>
+<script src="js/migrate.js"></script>
+<script src="js/content.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/forms.js"></script>
+<script src="js/scores.js"></script>
+<script src="js/alerts.js"></script>
+<script src="js/terms.js"></script>
+<script src="js/hx.js"></script>
 <script src="js/labs.js"></script>
 <script src="js/aefi.js"></script>
 <script src="js/screen.js"></script>

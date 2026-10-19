@@ -76,14 +76,17 @@ function abhaJson(c) {
     record: "KidGrowPro-Child-Health-Record", version: 2, abdmReady: true,
     note: "Links to ABHA ID for ABDM HIP/MHR upload via a registered integrator.",
     profile: { name: c.name, dob: c.dob, sex: c.sex, blood: c.blood || "", phone: c.phone || "", father: c.father || "", mother: c.mother || "", abhaId: c.abha || "", address: (DB.settings || {}).addr || "" },
-    allergies: c.allergy || "",
+    allergies: ((typeof Hx !== "undefined" && Hx.allergyText) ? Hx.allergyText(c) : (c.allergy || "")),
+    structuredAllergies: c.allergies || [],
+    problems: c.problems || [],
+    perinatal: c.perinatal || {}, maternal: c.maternal || {}, familyHistory: c.family || {},
     birth: { weightKg: c.birthWt || "", gestationWk: c.gest || "", lengthCm: c.birthLen || "", hcCm: c.birthHC || "" },
     immunization: codes.map((x) => {
       const r = (c.vaccines || {})[x.code];
       return { code: x.code, vaccine: x.name, due: dueDateFor(c, x.visit), given: r ? { date: r.date || "", brand: r.brand || "", manufacturer: r.mfr || "", batch: r.batch || "" } : null };
     }),
     growth: (c.measures || []).map((m) => ({ date: m.date, wtKg: m.wt, htCm: m.ht, hcCm: m.hc || "", muacCm: m.muac || "", bmi: m.bmi })),
-    visits: (c.visits || []).map((v) => ({ date: v.date, type: v.type || "", complaints: v.subj || "", examination: v.obj || "", plan: v.plan || "", hasVoiceNote: !!v.voice })),
+    visits: (c.visits || []).map((v) => ({ date: v.date, type: v.type || "", complaints: v.subj || "", examination: v.obj || "", plan: v.plan || "", icd: v.icd || [], hasVoiceNote: !!v.voice })),
     prescriptions: (c.rx || []).map((r) => ({ date: r.date, dx: r.dx || "", items: (r.items || []).map((it) => ({ drug: it.drug, strength: it.strength || "", take: it.take || "", freq: it.freq || "", days: it.days || "", qty: it.qty || "", instr: it.instr || "" })), advice: r.advice || "", review: r.review || "" })),
     milestones: { currentBand: MILESTONES[bandForAge(ageBetween(c.dob).months)].band, achieved: Object.keys(c.milestones || {}).filter((k) => c.milestones[k] === "A").length, emerging: Object.keys(c.milestones || {}).filter((k) => c.milestones[k] === "E").length, notYet: Object.keys(c.milestones || {}).filter((k) => c.milestones[k] === "N").length },
     generated: new Date().toISOString(), clinic: DB.settings || {},
