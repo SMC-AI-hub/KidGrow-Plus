@@ -122,8 +122,8 @@ function canSubmitAt(store, key, nowMs, windowMs) {
   n[key] = nowMs;
   return { ok: true, store: n };
 }
-function snapshotAdm(a) { a = a || {}; return { admittedAt: a.admittedAt || "", birthWtG: a.birthWtG || "", ga: a.ga || "", indication: a.indication || "", status: a.status || "", dischargedAt: a.dischargedAt || "", outcome: a.outcome || "" }; }
-function snapshotRound(r) { r = r || {}; return { date: r.date || "", wtG: r.wtG || "", vitals: r.vitals || {}, feeds: r.feeds || {}, events: r.events || [], note: r.note || "" }; }
+function snapshotAdm(a) { a = a || {}; return { admittedAt: a.admittedAt || "", birthWtG: a.birthWtG || "", ga: a.ga || "", indication: a.indication || "", bed: a.bed || "", status: a.status || "", dischargedAt: a.dischargedAt || "", outcome: a.outcome || "", procedures: a.procedures || [], bundles: a.bundles || [] }; }
+function snapshotRound(r) { r = r || {}; return { date: r.date || "", wtG: r.wtG || "", vitals: r.vitals || {}, resp: r.resp || {}, bili: r.bili || {}, sepsis: r.sepsis || {}, feeds: r.feeds || {}, fluids: r.fluids || {}, neuro: r.neuro || {}, events: r.events || [], note: r.note || "" }; }
 function snapshotMar(e) { e = e || {}; return { drug: e.drug || "", dose: e.dose || "", route: e.route || "", freq: e.freq || "", controlled: !!e.controlled, scheduledAt: e.scheduledAt || "", status: e.status || "", givenAt: e.givenAt || "", givenBy: e.givenBy || "", witness: e.witness || "", logs: e.logs || [] }; }
 function snapshotMeasure(m) { m = m || {}; return { date: m.date || "", wt: m.wt || "", ht: m.ht || "", hc: m.hc || "", muac: m.muac || "" }; }
 function numOrNull(x) { var n = parseFloat(x); return isNaN(n) ? null : n; }
@@ -131,13 +131,13 @@ function admToRow(childId, a) {
   a = a || {};
   return { local_id: "n_" + (a.id || "noid"), patient_local_id: "c_" + (childId || "noid"),
     admitted_at: a.admittedAt || null, birth_weight_g: numOrNull(a.birthWtG), ga_weeks: numOrNull(a.ga),
-    status: a.status || "admitted", indication: a.indication || "",
+    status: a.status || "admitted", indication: a.indication || "", bed: a.bed || "",
     discharged_at: a.dischargedAt || null, outcome: a.outcome || "" };
 }
 function roundToRow(admId, r) {
   r = r || {};
   return { local_id: "r_" + (r.id || "noid"), admission_local_id: "n_" + (admId || "noid"),
-    round_date: r.date || null, weight_g: numOrNull(r.wtG), vitals: r.vitals || {}, feeds: r.feeds || {},
+    round_date: r.date || null, weight_g: numOrNull(r.wtG), vitals: r.vitals || {}, resp: r.resp || {}, bili: r.bili || {}, sepsis: r.sepsis || {}, feeds: r.feeds || {}, fluids: r.fluids || {}, neuro: r.neuro || {},
     events: r.events || [], note: r.note || "" };
 }
 function marToRow(childId, e) {

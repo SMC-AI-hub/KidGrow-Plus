@@ -1742,7 +1742,7 @@ function renderAll() {
   if (!child() && DB.children.length) DB.activeId = DB.children[0].id;
   DB.appts = DB.appts || []; DB.tokens = DB.tokens || []; DB.bills = DB.bills || []; DB.users = DB.users || []; DB.audit = DB.audit || []; DB.session = DB.session || {};
   try { syncChildPicker(); } catch (e) {}
-  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
+  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderNicu", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
   try { applyFolds(); } catch (e) {}
 }
 window.addEventListener("resize", () => drawGrowthChart());

@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v30/.test(sw), "SW cache bumped to v30 (Phase 3 shell: +dose engine)");
+  ok(/neokid-v31/.test(sw), "SW cache bumped to v31 (Phase 4a shell: +nicu pack)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
