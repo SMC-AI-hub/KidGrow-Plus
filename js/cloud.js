@@ -18,7 +18,7 @@ var TRIAL_DAYS = CFG.TRIAL_DAYS || 14;
 var GRACE_MS = (CFG.OFFLINE_GRACE_DAYS || 7) * 864e5;
 var STATUS_KEY = "kidgrow_cloud_status", HASH_KEY = "kidgrow_last_push_hash", SEEN_KEY = "kidgrow_cloud_seen";
 var LATEST_KEY = "kidgrow_cloud_latest"; // "id|created_at" of newest cloud row this device has seen
-var APP_VER = "v10.40";
+var APP_VER = "v10.41";
 
 var sb = null, session = null, profile = null;
 var pushTimer = null, suspendPush = false, rzpLoading = null;
@@ -231,7 +231,10 @@ function enforceGate() {
 }
 
 /* ---------------- sync ---------------- */
-function localHash() { try { return hashStr(JSON.stringify(typeof DB !== "undefined" ? DB : {})); } catch (e) { return ""; } }
+function localHash() {
+  try { if (typeof SyncMerge !== "undefined" && SyncMerge.hash) return SyncMerge.hash(typeof DB !== "undefined" ? DB : {}); } catch (e) {}
+  try { return hashStr(JSON.stringify(typeof DB !== "undefined" ? DB : {})); } catch (e2) { return ""; }
+}
 function schedulePush() {
   if (!Cloud.enabled || suspendPush) return;
   if (pushTimer) clearTimeout(pushTimer);
@@ -266,33 +269,35 @@ function pushNow(manual, force) {
     rememberLatest(latest, r.data && r.data.created_at);
     if (pushGuardDecision(lsGet(SEEN_KEY), latest) === "conflict") {
       var cloudData = (r.data && r.data.data) || {};
-      var goCmp = function (cd) {
-        if (hashStr(JSON.stringify(cd)) === localHash()) {
+      var goMerge = function (cd) {
+        var m = null;
+        try { m = (typeof SyncMerge !== "undefined") ? SyncMerge.merge(typeof DB !== "undefined" ? DB : {}, cd || {}) : null; } catch (eM) { m = null; }
+        if (!m || (!m.changedLocal && !m.changedCloud)) {
           try { lsSet(SEEN_KEY, String(latest)); } catch (e) {}
-          return pushInsert(manual); // same bytes, newer row: adopt + proceed
+          return pushInsert(manual); // converged already: adopt + proceed
         }
-        syncLine("\u26A0\uFE0F Cloud has newer data \u2014 choose which to keep.");
-        conflictModal(cd);
-        return Promise.resolve();
+        if (m.changedLocal) applySnapshot(m.db, true); // adopt cloud updates first
+        try { lsSet(SEEN_KEY, String(latest)); } catch (e2) {}
+        return pushInsert(manual, m.db); // upload the union
       };
       if (cloudData && cloudData.enc === "AES-GCM-256-PBKDF2-100k" && typeof Comply !== "undefined" && Comply.decrypt) {
         var pw0 = Comply.pw();
         if (!pw0) { syncLine("🔐 Cloud copy is encrypted — Download once to unlock, then sync."); if (manual) toast("Enter your sync passphrase first (Download once)."); return Promise.resolve(); }
         return Comply.decrypt(cloudData, pw0).then(goCmp, function () { syncLine("🔐 Saved passphrase no longer unlocks the cloud copy."); return Promise.resolve(); });
       }
-      return goCmp(cloudData);
+      return goMerge(cloudData);
     }
     return pushInsert(manual);
   }).catch(function (e) { syncLine("Sync failed \u2014 will retry."); if (manual) toast("Upload check failed: " + (e.message || "network error")); });
 }
-function pushInsert(manual) {
+function pushInsert(manual, dataOverride) {
   if (!Cloud.enabled) return Promise.resolve();
   if (!session) { if (manual) toast("Sign in first (Settings → Cloud)."); return Promise.resolve(); }
   if (typeof navigator !== "undefined" && navigator.onLine === false) { syncLine("\u23F3 Waiting for network \u2014 will upload when back online."); if (manual) toast("You're offline — will sync when online."); return Promise.resolve(); } // 'online' listener retries
   if (!currentAccess().ok) { if (manual) toast("Subscription required for cloud sync."); return Promise.resolve(); }
   if (suspendPush) return Promise.resolve(); // applying a download: never echo it back
   syncLine("Uploading…");
-  var plainDB = (typeof DB !== "undefined" ? DB : {});
+  var plainDB = (dataOverride && dataOverride.children) ? dataOverride : (typeof DB !== "undefined" ? DB : {});
   var encOn = false;
   try { encOn = !!((plainDB.settings || {}).encSync) && typeof Comply !== "undefined" && !!Comply.encrypt; } catch (eEnc) {}
   var dataP = Promise.resolve(plainDB);
@@ -315,6 +320,7 @@ function pushInsert(manual) {
     try { if (r && r.data && r.data.id) lsSet(SEEN_KEY, String(r.data.id)); } catch (e) {}
     lsSet(HASH_KEY, localHash());
     syncLine("Synced " + dayTime() + " ✓");
+    try { diagLine(); } catch (eD) {}
     if (manual) toast("Uploaded to cloud ✓");
     // prune history to latest 30
     return sb.from("clinic_snapshots").select("id").eq("user_id", session.user.id).order("id", { ascending: false }).limit(100).then(function (l) {
@@ -330,7 +336,7 @@ function encSyncOn() { try { return !!(((typeof DB !== "undefined" && DB.setting
 /* v10.28.4 auto-refresh: silent downlink when the cloud holds a newer snapshot
    AND this device has no unsent edits (local hash == last pushed hash).
    Never overwrites local work: dirty devices keep uploading, and genuine
-   conflicts still ask via conflictModal. */
+   divergence auto-merges on push/pull. */
 function autoPullTick() {
   if (!Cloud.enabled || !session || !autoSyncOn()) return;
   if (pushTimer) return;
@@ -367,19 +373,30 @@ function pullNow(silent) {
       });
     }
     return decP.then(function (cloudData) {
-      var cloudHash = hashStr(JSON.stringify(cloudData || {}));
-      var lh = localHash(), last = lsGet(HASH_KEY) || "";
-      if (cloudHash === lh) { if (!silent) toast("Already up to date ✓"); syncLine("Synced " + dayTime() + " ✓"); return; }
-      if (lh !== last && last) { conflictModal(cloudData); return; } // both sides changed
-      applySnapshot(cloudData);
+      var m = null;
+      try { m = (typeof SyncMerge !== "undefined") ? SyncMerge.merge(typeof DB !== "undefined" ? DB : {}, cloudData || {}) : null; } catch (eM) { m = null; }
+      if (!m || (!m.changedLocal && !m.changedCloud)) {
+        if (!silent) toast("Already up to date ✓");
+        syncLine("Synced " + dayTime() + " ✓");
+        try { diagLine(); } catch (eD) {}
+        return;
+      }
+      try { lsSet(SEEN_KEY, String(r.data.id)); } catch (eS) {}
+      if (m.changedLocal) applySnapshot(m.db, true);
+      if (m.changedCloud) return pushInsert(false, m.db); // converge the cloud, quietly
+      if (!silent) toast("Synced ✓" + (m.notes.length ? " · " + m.notes.length + " field(s) differed — kept this device's, see audit" : ""));
+      syncLine("Synced " + dayTime() + " ✓");
+      try { diagLine(); } catch (eD2) {}
     });
   }).catch(function (e) { if (e && e.silent) { syncLine(""); return; } if (!silent) toast("Download failed: " + ((e && e.message) || "network error")); syncLine(""); });
 }
-function applySnapshot(data) {
+function applySnapshot(data, quiet) {
   try {
+    var merged = data;
+    try { if (typeof SyncMerge !== "undefined") merged = SyncMerge.merge(typeof DB !== "undefined" ? DB : {}, data || {}).db; } catch (eM) {}
     try { localStorage.setItem("kidgrow_pro_v1_prev", JSON.stringify(typeof DB !== "undefined" ? DB : {})); } catch (e) {}
     suspendPush = true;
-    DB = data && data.children ? data : DB;
+    DB = merged && merged.children ? merged : DB;
     if (typeof normalizeChild === "function" && DB.children) DB.children.forEach(normalizeChild);
     if (typeof save === "function") save();
     lsSet(HASH_KEY, localHash());
@@ -388,21 +405,10 @@ function applySnapshot(data) {
     if (typeof renderAll === "function") renderAll();
     if (typeof renderBrand === "function") renderBrand(); // sidebar logo + clinic name repaint
     if (typeof loadSettings === "function") loadSettings();
-    toast("Downloaded from cloud ✓ (previous data kept as fallback)");
+    try { diagLine(); } catch (eD) {}
+    if (!quiet) toast("Synced ✓ (previous data kept as fallback)");
   } catch (e) { suspendPush = false; toast("Could not apply cloud data."); }
 }
-function conflictModal(cloudData) {
-  ensureRoot();
-  var r = $("cloudRoot");
-  r.innerHTML =
-    '<div class="modal-bg open" id="mConflict"><div class="modal" style="max-width:420px;text-align:center">' +
-    "<h3>⚠️ Both sides changed</h3><div class='hint'>This device and the cloud both have newer data. Choose one — the other is kept as a local fallback.</div>" +
-    '<button class="btn btn-p" style="width:100%;margin-top:8px" onclick="Cloud._confUp()">⬆ Keep THIS DEVICE (upload)</button>' +
-    '<button class="btn btn-o" style="width:100%;margin-top:8px" onclick="Cloud._confDown()">⬇ Keep CLOUD (download)</button>' +
-    '<button class="btn btn-o" style="width:100%;margin-top:8px" onclick="document.getElementById(\'mConflict\').remove()">Cancel</button></div></div>';
-  Cloud._confData = cloudData;
-}
-
 /* ---------------- subscribe (Razorpay) ---------------- */
 function loadRazorpay() {
   if (window.Razorpay) return Promise.resolve();
@@ -618,8 +624,6 @@ var Cloud = {
   subscribe: subscribe,
   user: function () { return session ? session.user : null; },
   access: currentAccess,
-  _confUp: function () { var m = $("mConflict"); if (m) m.remove(); pushNow(true, true); },
-  _confDown: function () { var m = $("mConflict"); if (m) m.remove(); if (Cloud._confData) applySnapshot(Cloud._confData); },
   // test hooks (pure logic)
   cancelSub: cancelSub,
   refreshBilling: function () { billCache = null; renderBilling(); },
