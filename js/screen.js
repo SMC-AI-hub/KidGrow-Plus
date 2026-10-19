@@ -86,7 +86,7 @@ function toothToggle(t) {
 }
 function dentalHTML(c) {
   c.dental = c.dental || {};
-  const ageM = ageBetween(c.dob).years * 12 + ageBetween(c.dob).months;
+  const ageM = ageMonths(c.dob);
   const isPrim = (t) => !["16", "26", "36", "46"].includes(t);
   const primErupted = Object.keys(c.dental).filter((t) => isPrim(t) && c.dental[t].st === "e").length;
   const flag = dentalFlag(ageM, primErupted);

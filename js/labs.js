@@ -49,7 +49,7 @@ function renderLabs() {
   const c = child();
   if (!c) { $("labsBox").innerHTML = `<div class="empty">No child selected.</div>`; return; }
   c.labs = c.labs || [];
-  const ageM = ageBetween(c.dob).years * 12 + ageBetween(c.dob).months;
+  const ageM = ageMonths(c.dob);
   const rows = [...c.labs].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const latest = rows[rows.length - 1];
   const hb = latest ? hbClass(ageM, +latest.hb) : null;
@@ -87,6 +87,7 @@ function renderLabs() {
           <dt>Hb ${esc(String(latest.hb || "—"))}</dt><dd>${hb ? `${sevBadge(hb.sev)} ${esc(hb.label)}` : "—"}</dd>
           ${latest.mcv ? `<dt>MCV ${esc(String(latest.mcv))}</dt><dd>${+latest.mcv < 70 ? "Microcytic — iron deficiency / thalassemia trait?" : +latest.mcv > 100 ? "Macrocytic — B12/folate?" : "Normocytic"}</dd>` : ""}
           ${latest.ferritin ? `<dt>Ferritin ${esc(String(latest.ferritin))}</dt><dd>${sevBadge(f.sev)} ${esc(f.label)}</dd>` : ""}
+          ${latest.crp ? `<dt>CRP ${esc(String(latest.crp))}</dt><dd>${(() => { try { const _t = (typeof Dose !== "undefined" && Dose.crpLabel) ? Dose.crpLabel(+latest.crp) : ""; return (_t.indexOf("Markedly") === 0 ? "🔴 " : _t.indexOf("Raised") === 0 ? "🟡 " : "🟢 ") + esc(_t); } catch (e) { return ""; } })()}</dd>` : ""}
           ${latest.b12 ? `<dt>B12 ${esc(String(latest.b12))}</dt><dd>${sevBadge(b12.sev)} ${esc(b12.label)}</dd>` : ""}
           ${latest.vitD ? `<dt>Vit D ${esc(String(latest.vitD))}</dt><dd>${sevBadge(vd.sev)} ${esc(vd.label)}</dd>` : ""}
         </dl>
@@ -108,6 +109,7 @@ function saveLab() {
   c.labs = c.labs || [];
   if (!$("lbDate").value) return alert("Date required.");
   c.labs.push({ id: uid(), rev: "", date: $("lbDate").value, hb: $("lbHb").value, mcv: $("lbMcv").value, ferritin: $("lbFer").value, crp: $("lbCrp").value, b12: $("lbB12").value, vitD: $("lbVitD").value, note: $("lbNote").value.trim() });
+  try { if (typeof Dose !== "undefined" && Dose.labFlags && typeof Alerts !== "undefined" && Alerts.raise) { Dose.labFlags({ hb: $("lbHb").value, mcv: $("lbMcv").value, ferritin: $("lbFer").value, crp: $("lbCrp").value, b12: $("lbB12").value, vitD: $("lbVitD").value }).filter((f) => f.tier === "warn").forEach((f) => Alerts.raise("warn", "LAB", `${c.name}: ${f.text}`)); } } catch (eDx) {}
   auditSafe("Lab report", `${c.name} — Hb ${$("lbHb").value || "—"}`);
   save(); renderAll();
 }

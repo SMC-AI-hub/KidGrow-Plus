@@ -13,8 +13,7 @@ function rxChildWt(c) {
   return (lm && lm.wt) || c.birthWt || "";
 }
 function rxAgeM(c) {
-  const a = ageBetween(c.dob);
-  return a.years * 12 + a.months;
+  return ageMonths(c.dob);
 }
 function renderRx() {
   if (!$("pg-rx")) return;
@@ -33,6 +32,7 @@ function renderRx() {
     : calcDose(d.id, RXB.wt, rxAgeM(c), RXB.stIdx, RXB.freq, RXB.days);
   const hxAlg = ((typeof Hx !== "undefined" && Hx.allergyText) ? Hx.allergyText(c) : c.allergy);
   const al = allergyCheck(d.id, hxAlg);
+  const dxChecks = (() => { try { return (typeof Dose !== "undefined" && Dose.checkRx) ? Dose.checkRx({ drugId: d.id, wtKg: RXB.wt, ageM: rxAgeM(c), freq: RXB.freq, child: c, draftItems: dft.items }) : { flags: [], hard: false }; } catch (e) { return { flags: [], hard: false }; } })();
   const prev = [...c.rx].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   $("rxBox").innerHTML = `
   <div class="grid g2">
@@ -49,9 +49,9 @@ function renderRx() {
         <div><label>Instruction (optional)</label><input value="${esc(RXB.instr)}" placeholder="e.g. After food / SOS fever" oninput="RXB.instr=this.value"></div>
       </div>
       <div id="rxCalc"></div>
-      ${al.hit ? `<div class="alert a-red">⚠️ <div><b>ALLERGY ALERT:</b> ${esc(d.name)} matches recorded allergy “${esc(hxAlg)}” (matched: ${al.matched.map(esc).join(", ")}). Prescribe only if benefit outweighs risk — flag will print on the Rx.</div></div>` : ""}
+      ${(() => { try { return (typeof Dose !== "undefined" && Dose.checksHTML) ? Dose.checksHTML(dxChecks) : (al.hit ? `<div class="alert a-red">⚠️ <div><b>ALLERGY ALERT:</b> ${esc(d.name)} matches recorded allergy.</div></div>` : ""); } catch (e) { return ""; } })()}
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn btn-p btn-sm" onclick="rxAddItem(${al.hit})" ${calc.ok ? "" : "disabled"}>＋ Add to prescription</button>
+        <button class="btn btn-p btn-sm" onclick="rxAddItem(${al.hit})" ${calc.ok && !dxChecks.hard ? "" : "disabled"} title="${dxChecks.hard ? "Blocked by safety check" : "Add to prescription"}">＋ Add to prescription</button>
       </div>
       ${d.notes ? `<div class="hint" style="margin-top:8px">ℹ️ ${esc(d.notes)}</div>` : ""}
     </div>
@@ -106,8 +106,10 @@ function rxAddItem(isAllergy) {
   const calc = d.info ? { ok: true, take: d.info, qtyText: "As directed" }
     : calcDose(d.id, RXB.wt, rxAgeM(c), RXB.stIdx, RXB.freq, RXB.days || d.defDays);
   if (!calc.ok) return alert(calc.why || "Cannot compute dose.");
+  const dxAdd = (() => { try { return (typeof Dose !== "undefined" && Dose.checkRx) ? Dose.checkRx({ drugId: d.id, wtKg: RXB.wt, ageM: rxAgeM(c), freq: RXB.freq, child: c, draftItems: rxDraft().items }) : { flags: [], hard: false }; } catch (e) { return { flags: [], hard: false }; } })();
+  if (dxAdd.hard) { try { if (typeof Alerts !== "undefined" && Alerts.raise) Alerts.raise("hard", "RX-BLOCKED", ((dxAdd.flags || []).find((f) => f.tier === "hard") || {}).text || "Blocked by safety check."); } catch (e2) {} return; }
   const dft = rxDraft();
-  dft.items.push({ drug: d.name, strength: (d.strengths[RXB.stIdx] || {}).label || "", freq: RXB.freq, days: RXB.days || d.defDays || "", take: calc.take, qty: calc.qtyText || "", instr: RXB.instr });
+  dft.items.push({ drug: d.name, strength: (d.strengths[RXB.stIdx] || {}).label || "", freq: RXB.freq, days: RXB.days || d.defDays || "", take: calc.take, qty: calc.qtyText || "", instr: RXB.instr, checks: (dxAdd.flags || []).map((f) => ({ tier: f.tier, code: f.code, text: f.text })) });
   if (isAllergy) dft.allergyFlag = `Allergy alert acknowledged for ${d.name}`;
   RXB.instr = "";
   renderRx();
@@ -118,9 +120,10 @@ function saveRx() {
   c.rx = c.rx || [];
   const dft = rxDraft();
   if (!dft.items.length) return alert("Add at least one medicine.");
+  if (dft.items.some((i) => (i.checks || []).some((f) => f.tier === "hard"))) return alert("⛔ A blocked item is in this prescription — remove it before saving.");
   c.rx.push({ id: uid(), date: todayISO(), wt: RXB.wt, dx: dft.dx, items: dft.items, advice: dft.advice, review: dft.review, by: dft.by || DB.settings.doctor || "", allergyFlag: dft.allergyFlag });
   RX_DRAFT = null;
-  auditSafe("Prescription", `${dft.items.length} item(s) for ${c.name}${dft.dx ? " — " + dft.dx : ""}`);
+  auditSafe("Prescription", `${dft.items.length} item(s) for ${c.name}${dft.dx ? " — " + dft.dx : ""}${(() => { const _n = dft.items.reduce((s, i) => s + ((i.checks || []).length), 0); return _n ? ` · ${_n} check flag(s)` : ""; })()}`);
   save(); renderAll();
   alert("Prescription saved. Print it from Previous prescriptions.");
 }

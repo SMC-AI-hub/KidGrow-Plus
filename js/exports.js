@@ -87,7 +87,7 @@ function abhaJson(c) {
     }),
     growth: (c.measures || []).map((m) => ({ date: m.date, wtKg: m.wt, htCm: m.ht, hcCm: m.hc || "", muacCm: m.muac || "", bmi: m.bmi })),
     visits: (c.visits || []).map((v) => ({ date: v.date, type: v.type || "", complaints: v.subj || "", examination: v.obj || "", plan: v.plan || "", icd: v.icd || [], vitals: v.vitals || {}, exam: v.exam || {}, template: v.template || "", hasVoiceNote: !!v.voice })),
-    prescriptions: (c.rx || []).map((r) => ({ date: r.date, dx: r.dx || "", items: (r.items || []).map((it) => ({ drug: it.drug, strength: it.strength || "", take: it.take || "", freq: it.freq || "", days: it.days || "", qty: it.qty || "", instr: it.instr || "" })), advice: r.advice || "", review: r.review || "" })),
+    prescriptions: (c.rx || []).map((r) => ({ date: r.date, dx: r.dx || "", items: (r.items || []).map((it) => ({ drug: it.drug, strength: it.strength || "", take: it.take || "", freq: it.freq || "", days: it.days || "", qty: it.qty || "", instr: it.instr || "", allergyFlag: !!it.allergyFlag, checks: it.checks || [] })), advice: r.advice || "", review: r.review || "" })),
     milestones: { currentBand: MILESTONES[bandForAge(ageBetween(c.dob).months)].band, achieved: Object.keys(c.milestones || {}).filter((k) => c.milestones[k] === "A").length, emerging: Object.keys(c.milestones || {}).filter((k) => c.milestones[k] === "E").length, notYet: Object.keys(c.milestones || {}).filter((k) => c.milestones[k] === "N").length },
     generated: new Date().toISOString(), clinic: DB.settings || {},
   };

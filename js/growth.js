@@ -374,6 +374,7 @@ function saveGrowth() {
     bmi: +(wt / Math.pow(ht / 100, 2)).toFixed(1), note: $("gNote").value.trim(), by: $("gBy").value.trim() };
   const i = c.measures.findIndex((x) => x.id === m.id);
   if (i >= 0) c.measures[i] = m; else c.measures.push(m);
+  try { if (typeof Dose !== "undefined" && Dose.growthFlags && typeof Alerts !== "undefined" && Alerts.raise) { Dose.growthFlags(c, m).forEach((f) => Alerts.raise("warn", "GROWTH", `${c.name}: ${f.text}`)); } } catch (eDx) {}
   auditSafe("Growth recorded", c.name + " — " + m.wt + " kg");
   save(); closeModal("mGrowth"); renderAll();
 }

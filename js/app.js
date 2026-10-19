@@ -15,6 +15,7 @@ function ageBetween(dobISO, onISO) {
   const days = Math.max(0, Math.round((o - b) / 86400000));
   return { y, m, d, days, months: days / 30.4375 };
 }
+function ageMonths(dobISO, onISO) { const a = ageBetween(dobISO, onISO); return a.y * 12 + a.m + a.d / 30.4375; }
 function ageStr(a) {
   if (a.days < 60) return `${a.days} days`;
   if (a.y < 1) { const mo = Math.floor(a.months); return `${mo} mo ${a.d} d`; }

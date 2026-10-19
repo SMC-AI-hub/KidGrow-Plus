@@ -69,7 +69,7 @@ function renderDiet() {
   const c = child();
   if (!c) { $("dietBox").innerHTML = `<div class="empty">No child selected.</div>`; return; }
   const d = dietOf(c);
-  const ageM = ageBetween(c.dob).years * 12 + ageBetween(c.dob).months;
+  const ageM = ageMonths(c.dob);
   const needs = dietNeeds(ageM, c.sex);
   let catchup = false;
   try {

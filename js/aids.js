@@ -86,7 +86,7 @@ function fillEmgFromChild() {
   const lm = latestMeasure(c);
   if (lm && lm.wt) EMG.wt = lm.wt;
   const a = ageBetween(c.dob);
-  EMG.age = +(a.years + a.months % 12 / 12).toFixed(1);
+  EMG.age = +(ageBetween(c.dob).days / 365.25).toFixed(1);
   renderEmergency();
 }
 function renderEmgDoses() {
@@ -95,7 +95,8 @@ function renderEmgDoses() {
   if (!d) { box.innerHTML = `<div class="alert a-amber" style="margin:0">⚖️ <div>Enter a weight to compute doses.</div></div>`; return; }
   box.innerHTML = `<div class="hint">For <b>${d.wt} kg</b>${d.ageY !== null ? ` · age ${d.ageY} y` : ""} — doses capped at adult maximums.</div>
     <table class="tbl"><tr><th>Drug / intervention</th><th>Dose for this child</th><th>Notes</th></tr>
-    ${d.rows.map((r) => `<tr><td><b>${esc(r.rx)}</b></td><td style="white-space:normal"><b>${esc(r.dose)}</b></td><td style="font-size:12.5px;color:var(--muted)">${esc(r.note)}</td></tr>`).join("")}</table>`;
+    ${d.rows.map((r) => `<tr><td><b>${esc(r.rx)}</b></td><td style="white-space:normal"><b>${esc(r.dose)}</b></td><td style="font-size:12.5px;color:var(--muted)">${esc(r.note)}</td></tr>`).join("")}</table>
+    ${(() => { try { return (typeof Dose !== "undefined" && Dose.emgAllergyHTML) ? Dose.emgAllergyHTML((typeof child === "function") ? child() : null) : ""; } catch (e) { return ""; } })()}`;
 }
 
 /* ---------------- vaccine-card record codec (pure) ----------------

@@ -18,7 +18,7 @@ var TRIAL_DAYS = CFG.TRIAL_DAYS || 14;
 var GRACE_MS = (CFG.OFFLINE_GRACE_DAYS || 7) * 864e5;
 var STATUS_KEY = "kidgrow_cloud_status", HASH_KEY = "kidgrow_last_push_hash", SEEN_KEY = "kidgrow_cloud_seen";
 var LATEST_KEY = "kidgrow_cloud_latest"; // "id|created_at" of newest cloud row this device has seen
-var APP_VER = "v10.34";
+var APP_VER = "v10.35";
 
 var sb = null, session = null, profile = null;
 var pushTimer = null, suspendPush = false, rzpLoading = null;

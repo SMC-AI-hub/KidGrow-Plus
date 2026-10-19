@@ -47,7 +47,35 @@ function marAdherence(entries, dateISO) {
   var given = logs.filter(function (l) { return l.status === "given"; }).length;
   return { given: given, total: logs.length, pct: logs.length ? Math.round((given / logs.length) * 100) : null };
 }
-window.MarPure = { entryValid: entryValid, logDose: logDose, dosesDue: dosesDue, marAdherence: marAdherence };
+/* Five-rights cross-check: right drug (matches an Rx item), right dose
+   (numbers agree with the Rx take/strength), right time (not very early/late
+   vs scheduledAt), stale-order re-confirm. Pure — tested via MarPure. */
+function fiveRights(entry, rxItems, nowISO) {
+  entry = entry || {}; var out = [];
+  var nm = String(entry.drug || "").toLowerCase();
+  var rx = null;
+  (rxItems || []).forEach(function (it) {
+    var d = String((it && it.drug) || "").toLowerCase();
+    if (!rx && d && (d === nm || nm.indexOf(d) >= 0 || d.indexOf(nm) >= 0)) rx = it;
+  });
+  if ((rxItems || []).length && !rx) out.push({ tier: "info", code: "MAR-NO-RX", text: "No matching Rx item — verbal order? Confirm with prescriber." });
+  if (rx) {
+    var nums = function (s) { var m = String(s || "").match(/[\d.]+/g); return m || []; };
+    var en = nums(entry.dose), rn = nums([rx.take, rx.strength].filter(Boolean).join(" "));
+    if (entry.dose && rn.length && !en.some(function (x) { return rn.indexOf(x) >= 0; })) {
+      out.push({ tier: "warn", code: "MAR-DOSE-DIFF", text: "Dose differs from Rx (Rx: " + ([rx.take, rx.strength].filter(Boolean).join(" ")) + ") — confirm." });
+    }
+  }
+  if (entry.scheduledAt && nowISO) {
+    var mins = Math.round((new Date(nowISO) - new Date(entry.scheduledAt)) / 60000);
+    if (mins > 120) out.push({ tier: "warn", code: "MAR-LATE", text: (Math.round(mins / 60 * 10) / 10) + " h late — confirm still intended." });
+    else if (mins < -60) out.push({ tier: "warn", code: "MAR-EARLY", text: "Over 1 h early — confirm timing." });
+    if (entry.status === "scheduled" && mins > 1440) out.push({ tier: "warn", code: "MAR-STALE", text: "Order >24 h old and still scheduled — reconfirm before giving." });
+  }
+  if (!entry.scheduledAt) out.push({ tier: "info", code: "MAR-NO-TIME", text: "No scheduled time recorded." });
+  return out;
+}
+window.MarPure = { entryValid: entryValid, logDose: logDose, dosesDue: dosesDue, marAdherence: marAdherence, fiveRights: fiveRights };
 
 /* ---------------- data ---------------- */
 function marOf(c) { if (!Array.isArray(c.mar)) c.mar = []; return c.mar; }
@@ -141,6 +169,8 @@ window.logMarDose = function (id, isCtl) {
     witness: isCtl ? $("mlWt_" + id).value.trim() : ""
   });
   if (!r.ok) { alert(r.error); return; }
+  var frW = fiveRights(list[ix], (function () { var _rx = (c.rx || [])[(c.rx || []).length - 1]; return _rx ? _rx.items : []; })(), at).filter(function (f) { return f.tier === "warn"; });
+  if ($("mlSt_" + id).value === "given" && frW.length && !confirm("Five-rights check for " + c.name + ":\n" + frW.map(function (f) { return "- " + f.text; }).join("\n") + "\n\nLog as given anyway?")) return;
   if (typeof guardSubmit === "function" && !guardSubmit("mar-log-" + id)) return;
   list[ix] = r.entry;
   try { if (typeof auditSafe === "function") auditSafe("MAR log", list[ix].drug + " " + list[ix].status + " — " + c.name); } catch (e) {}
