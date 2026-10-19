@@ -654,7 +654,7 @@ function renderChildren() {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-p btn-sm" onclick="setActive('${c.id}');go('dashboard')">Open</button>
         <button class="btn btn-o btn-sm" onclick="openChildModal('${c.id}')">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteChild('${c.id}')">Delete</button>
+        <button class="btn btn-danger btn-sm" onclick="eraseRequest('${c.id}')">Erase…</button>
       </div>`;
     box.appendChild(div);
   });
@@ -710,7 +710,7 @@ function timelineHTML(c, filter) {
 }
 function renderTimeline() {
   const el = $("timelineList"); if (!el) return;
-  el.innerHTML = timelineHTML(child(), (typeof TIMELINE_FILTER !== "undefined") ? TIMELINE_FILTER : "all");
+  el.innerHTML = timelineHTML(child(), (typeof TIMELINE_FILTER !== "undefined") ? TIMELINE_FILTER : "all") + ((typeof Comply !== "undefined") ? Comply.auditStrip(child()) : "");
 }
 
 /* ================= VACCINES ================= */
@@ -1759,4 +1759,4 @@ function applyRefVersions() {
   try { document.querySelectorAll("[data-vaxver]").forEach((el) => { el.textContent = VAX_SCHEDULE_VERSION; n++; }); } catch (e) {}
   return n;
 }
-load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyMotion(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();
+load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyMotion(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); try { if (typeof Comply !== "undefined") Comply.purge(); } catch (eCP) {} renderAll();
