@@ -18,7 +18,7 @@ var TRIAL_DAYS = CFG.TRIAL_DAYS || 14;
 var GRACE_MS = (CFG.OFFLINE_GRACE_DAYS || 7) * 864e5;
 var STATUS_KEY = "kidgrow_cloud_status", HASH_KEY = "kidgrow_last_push_hash", SEEN_KEY = "kidgrow_cloud_seen";
 var LATEST_KEY = "kidgrow_cloud_latest"; // "id|created_at" of newest cloud row this device has seen
-var APP_VER = "v10.16";
+var APP_VER = "v10.40";
 
 var sb = null, session = null, profile = null;
 var pushTimer = null, suspendPush = false, rzpLoading = null;
@@ -153,7 +153,8 @@ function renderCloudCard() {
         (a.ok && a.reason !== "active" ? "<button class='btn btn-d btn-sm' onclick='Cloud.subscribe()'>💎 Subscribe</button>" : "") +
         "<button class='btn btn-o btn-sm' onclick='Cloud.logout()'>Logout</button>"
       : "<button class='btn btn-p btn-sm' onclick='Cloud.showAuth(\"login\")'>Sign in / Sign up</button>") +
-    "<label style='display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px'><input type='checkbox'" + (autoSyncOn() ? " checked" : "") + " onchange='Cloud.setAuto(this.checked)'> ↻ Auto-refresh from cloud (minutely + on return)</label></div><div class='hint' id='cloudSyncLine' style='margin-top:8px'></div><div class='hint' id='cloudDiagLine' style='margin-top:2px'></div>";
+    "<label style='display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px'><input type='checkbox'" + (autoSyncOn() ? " checked" : "") + " onchange='Cloud.setAuto(this.checked)'> ↻ Auto-refresh from cloud (minutely + on return)</label>" +
+    "<label style='display:flex;gap:8px;align-items:center;margin-top:6px;font-size:13px'><input type='checkbox'" + (encSyncOn() ? " checked" : "") + " onchange='Cloud.setEnc(this.checked)'> 🔐 Encrypt cloud snapshots (passphrase, opt-in)</label></div><div class='hint' id='cloudSyncLine' style='margin-top:8px'></div><div class='hint' id='cloudDiagLine' style='margin-top:2px'></div>";
   pg.appendChild(card);
   try { diagLine(); } catch (e) {}
 }
@@ -265,13 +266,21 @@ function pushNow(manual, force) {
     rememberLatest(latest, r.data && r.data.created_at);
     if (pushGuardDecision(lsGet(SEEN_KEY), latest) === "conflict") {
       var cloudData = (r.data && r.data.data) || {};
-      if (hashStr(JSON.stringify(cloudData)) === localHash()) {
-        try { lsSet(SEEN_KEY, String(latest)); } catch (e) {}
-        return pushInsert(manual); // same bytes, newer row: adopt + proceed
+      var goCmp = function (cd) {
+        if (hashStr(JSON.stringify(cd)) === localHash()) {
+          try { lsSet(SEEN_KEY, String(latest)); } catch (e) {}
+          return pushInsert(manual); // same bytes, newer row: adopt + proceed
+        }
+        syncLine("\u26A0\uFE0F Cloud has newer data \u2014 choose which to keep.");
+        conflictModal(cd);
+        return Promise.resolve();
+      };
+      if (cloudData && cloudData.enc === "AES-GCM-256-PBKDF2-100k" && typeof Comply !== "undefined" && Comply.decrypt) {
+        var pw0 = Comply.pw();
+        if (!pw0) { syncLine("🔐 Cloud copy is encrypted — Download once to unlock, then sync."); if (manual) toast("Enter your sync passphrase first (Download once)."); return Promise.resolve(); }
+        return Comply.decrypt(cloudData, pw0).then(goCmp, function () { syncLine("🔐 Saved passphrase no longer unlocks the cloud copy."); return Promise.resolve(); });
       }
-      syncLine("\u26A0\uFE0F Cloud has newer data \u2014 choose which to keep.");
-      conflictModal(cloudData);
-      return Promise.resolve();
+      return goCmp(cloudData);
     }
     return pushInsert(manual);
   }).catch(function (e) { syncLine("Sync failed \u2014 will retry."); if (manual) toast("Upload check failed: " + (e.message || "network error")); });
@@ -283,8 +292,25 @@ function pushInsert(manual) {
   if (!currentAccess().ok) { if (manual) toast("Subscription required for cloud sync."); return Promise.resolve(); }
   if (suspendPush) return Promise.resolve(); // applying a download: never echo it back
   syncLine("Uploading…");
-  var payload = { user_id: session.user.id, data: (typeof DB !== "undefined" ? DB : {}), device: String((navigator.userAgent || "").slice(0, 80)), app_version: APP_VER };
-  return sb.from("clinic_snapshots").insert(payload).select("id").single().then(function (r) {
+  var plainDB = (typeof DB !== "undefined" ? DB : {});
+  var encOn = false;
+  try { encOn = !!((plainDB.settings || {}).encSync) && typeof Comply !== "undefined" && !!Comply.encrypt; } catch (eEnc) {}
+  var dataP = Promise.resolve(plainDB);
+  if (encOn) {
+    dataP = Promise.resolve().then(function () {
+      var pw = Comply.pw();
+      if (!pw) {
+        pw = (typeof window !== "undefined" && window.prompt) ? window.prompt("Cloud-sync passphrase (min 8 characters):") : null;
+        if (!pw || pw.length < 8) throw new Error("Sync passphrase too short — upload cancelled.");
+        Comply.pw(pw);
+      }
+      return Comply.encrypt(plainDB, pw);
+    });
+  }
+  return dataP.then(function (encData) {
+    var payload = { user_id: session.user.id, data: encData, device: String((navigator.userAgent || "").slice(0, 80)), app_version: APP_VER };
+    return sb.from("clinic_snapshots").insert(payload).select("id").single();
+  }).then(function (r) {
     if (r.error) throw r.error;
     try { if (r && r.data && r.data.id) lsSet(SEEN_KEY, String(r.data.id)); } catch (e) {}
     lsSet(HASH_KEY, localHash());
@@ -300,6 +326,7 @@ function pushInsert(manual) {
   }).catch(function (e) { syncLine("Sync failed — will retry."); if (manual) toast("Upload failed: " + (e.message || "network error")); });
 }
 function autoSyncOn() { try { return ((typeof DB !== "undefined" && DB.settings) || {}).autoSync !== false; } catch (e) { return true; } }
+function encSyncOn() { try { return !!(((typeof DB !== "undefined" && DB.settings) || {}).encSync); } catch (e) { return false; } }
 /* v10.28.4 auto-refresh: silent downlink when the cloud holds a newer snapshot
    AND this device has no unsent edits (local hash == last pushed hash).
    Never overwrites local work: dirty devices keep uploading, and genuine
@@ -326,12 +353,27 @@ function pullNow(silent) {
     if (!r.data) { if (!silent) toast("No cloud backup yet — use Upload first."); syncLine(""); return; }
     try { lsSet(SEEN_KEY, String(r.data.id)); } catch (e) {}
     rememberLatest(r.data.id, r.data.created_at);
-    var cloudHash = hashStr(JSON.stringify(r.data.data || {}));
-    var lh = localHash(), last = lsGet(HASH_KEY) || "";
-    if (cloudHash === lh) { if (!silent) toast("Already up to date ✓"); syncLine("Synced " + dayTime() + " ✓"); return; }
-    if (lh !== last && last) { conflictModal(r.data.data); return; } // both sides changed
-    applySnapshot(r.data.data);
-  }).catch(function (e) { if (!silent) toast("Download failed: " + (e.message || "network error")); syncLine(""); });
+    var rawData = r.data.data || {};
+    var decP = Promise.resolve(rawData);
+    if (rawData && rawData.enc === "AES-GCM-256-PBKDF2-100k" && typeof Comply !== "undefined" && Comply.decrypt) {
+      decP = Promise.resolve().then(function () {
+        var pw = Comply.pw();
+        if (!pw) {
+          pw = (typeof window !== "undefined" && window.prompt) ? window.prompt("Cloud snapshot is encrypted — sync passphrase:") : null;
+          if (!pw) throw { silent: true };
+          Comply.pw(pw);
+        }
+        return Comply.decrypt(rawData, pw);
+      });
+    }
+    return decP.then(function (cloudData) {
+      var cloudHash = hashStr(JSON.stringify(cloudData || {}));
+      var lh = localHash(), last = lsGet(HASH_KEY) || "";
+      if (cloudHash === lh) { if (!silent) toast("Already up to date ✓"); syncLine("Synced " + dayTime() + " ✓"); return; }
+      if (lh !== last && last) { conflictModal(cloudData); return; } // both sides changed
+      applySnapshot(cloudData);
+    });
+  }).catch(function (e) { if (e && e.silent) { syncLine(""); return; } if (!silent) toast("Download failed: " + ((e && e.message) || "network error")); syncLine(""); });
 }
 function applySnapshot(data) {
   try {
@@ -556,6 +598,7 @@ var Cloud = {
   logout: function () {
     if (sb) sb.auth.signOut().catch(function () {});
     session = null; profile = null;
+    try { if (typeof Comply !== "undefined") Comply.pw(null); } catch (e) {}
     try { localStorage.removeItem(STATUS_KEY); } catch (e) {}
     enforceGate(); renderCloudCard();
   },
@@ -563,6 +606,15 @@ var Cloud = {
   pushNow: pushNow,
   pullNow: pullNow,
   setAuto: function (on) { try { if (typeof DB !== "undefined") { DB.settings = Object.assign({}, DB.settings, { autoSync: !!on }); if (typeof save === "function") save(); } } catch (e) {} try { renderCloudCard(); } catch (e) {} if (on) { try { autoPullTick(); } catch (e) {} } },
+  setEnc: function (on) {
+    try {
+      if (typeof DB !== "undefined") { DB.settings = Object.assign({}, DB.settings, { encSync: !!on }); if (typeof save === "function") save(); }
+      if (!on && typeof Comply !== "undefined") Comply.pw(null);
+    } catch (e) {}
+    try { renderCloudCard(); } catch (e2) {}
+    if (on) toast("🔐 Cloud snapshots will be encrypted. Don't lose the passphrase.");
+  },
+  forgetPw: function () { try { if (typeof Comply !== "undefined") Comply.pw(null); } catch (e) {} toast("Sync passphrase forgotten for this session."); },
   subscribe: subscribe,
   user: function () { return session ? session.user : null; },
   access: currentAccess,

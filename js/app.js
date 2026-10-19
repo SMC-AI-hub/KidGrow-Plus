@@ -15,6 +15,7 @@ function ageBetween(dobISO, onISO) {
   const days = Math.max(0, Math.round((o - b) / 86400000));
   return { y, m, d, days, months: days / 30.4375 };
 }
+function ageMonths(dobISO, onISO) { const a = ageBetween(dobISO, onISO); return a.y * 12 + a.m + a.d / 30.4375; }
 function ageStr(a) {
   if (a.days < 60) return `${a.days} days`;
   if (a.y < 1) { const mo = Math.floor(a.months); return `${mo} mo ${a.d} d`; }
@@ -49,6 +50,7 @@ function parseDB(raw) {
     const merged = Object.assign({ children: [], activeId: null, settings: {}, msBand: null, gTab: "wt" }, d);
     merged.children.forEach(normalizeChild);
     ensureMrns(merged.children);
+    try { if (typeof migrateDB === "function") migrateDB(merged); } catch (e2) {}
     if (!merged.children.some((c) => c.id === merged.activeId)) merged.activeId = (merged.children[0] || {}).id || null;
     return merged;
   } catch (e) { return null; }
@@ -69,6 +71,7 @@ function load() {
     setTimeout(() => alert("Saved data was damaged and could not be recovered. Starting fresh — if you have an exported backup, please Import it."), 600);
   }
   seedDemo();
+  try { if (typeof migrateDB === "function") migrateDB(DB); } catch (e) {}
   try { save(); } catch (e) {}
 }
 function normalizeChild(c) {
@@ -94,6 +97,12 @@ function normalizeChild(c) {
   if (!Array.isArray(c.mar)) c.mar = [];
   if (!c.dental || typeof c.dental !== "object") c.dental = {};
   if (!c.diet || typeof c.diet !== "object") c.diet = { type: "veg" };
+  if (!c.perinatal || typeof c.perinatal !== "object") c.perinatal = {};
+  if (!c.maternal || typeof c.maternal !== "object") c.maternal = {};
+  if (!c.family || typeof c.family !== "object") c.family = {};
+  if (!Array.isArray(c.allergies)) c.allergies = [];
+  if (!Array.isArray(c.problems)) c.problems = [];
+  if (Array.isArray(c.visits)) c.visits.forEach((v) => { if (!v) return; if (!Array.isArray(v.icd)) v.icd = []; if (!v.vitals || typeof v.vitals !== "object") v.vitals = {}; if (!v.exam || typeof v.exam !== "object") v.exam = {}; if (typeof v.template !== "string") v.template = ""; });
   if (!c.asthma || typeof c.asthma !== "object") c.asthma = { pef: [], triggers: [] };
   if (!Array.isArray(c.asthma.pef)) c.asthma.pef = [];
   if (!Array.isArray(c.asthma.triggers)) c.asthma.triggers = [];
@@ -268,9 +277,9 @@ function seedDemo() {
 }
 
 /* ---------------- Navigation ---------------- */
-const TITLES = { dashboard: "Dashboard", billing: "Subscription & Billing", children: "Children", nb: "Newborn Care", schedule: "Schedule & Reminders", milestones: "Milestone Assessment", vaccines: "Vaccination Digital Record", card: "Digital Vaccine Card", aefi: "AEFI Register", growth: "Growth Assessment (IAP / WHO)", labs: "Labs & Anaemia", screen: "Screening Suite", diet: "Diet Planner", hand: "Parent Handouts", visits: "Visits & Clinical Notes", timeline: "Patient Timeline", rx: "Prescription", consent: "E-Consent", nicu: "NICU", mar: "eMAR", calc: "Calculators", mrd: "MRD Registers", formulary: "Formulary Review", front: "Frontdesk — Tokens & Billing", analytics: "Clinic Analytics", emg: "Emergency Ready-Reckoner", reports: "Reports & Certificates", export: "Data & Exports", users: "Users & Audit", settings: "Settings", stock: "Vaccine Stock & Ledger", display: "Token Display" };
+const TITLES = { dashboard: "Dashboard", billing: "Subscription & Billing", children: "Children", nb: "Newborn Care", schedule: "Schedule & Reminders", milestones: "Milestone Assessment", vaccines: "Vaccination Digital Record", card: "Digital Vaccine Card", aefi: "AEFI Register", growth: "Growth Assessment (IAP / WHO)", labs: "Labs & Anaemia", screen: "Screening Suite", chronic: "Chronic Flowsheets", letters: "Letters & Certificates", diet: "Diet Planner", hand: "Parent Handouts", visits: "Visits & Clinical Notes", timeline: "Patient Timeline", rx: "Prescription", consent: "E-Consent", nicu: "NICU", mar: "eMAR", hri: "HRI Follow-up", calc: "Calculators", mrd: "MRD Registers", formulary: "Formulary Review", front: "Frontdesk — Tokens & Billing", analytics: "Clinic Analytics", emg: "Emergency Ready-Reckoner", reports: "Reports & Certificates", export: "Data & Exports", users: "Users & Audit", settings: "Settings", stock: "Vaccine Stock & Ledger", display: "Token Display" };
 const ROUTE_ALIASES = { pricing: "billing" }; // merged pages: old route → canonical (deep links keep working)
-const RENDER_FOR = { dashboard: "renderDashboard", billing: "renderBilling", children: "renderChildren", nb: "renderNB", schedule: "renderSchedule", milestones: "renderMilestones", vaccines: "renderVaccines", card: "renderCard", aefi: "renderAefi", growth: "renderGrowth", labs: "renderLabs", screen: "renderScreen", diet: "renderDiet", hand: "renderHand", visits: "renderVisits", timeline: "renderTimeline", rx: "renderRx", consent: "renderConsent", nicu: "renderNicu", mar: "renderMar", calc: "renderCalc", mrd: "renderMrd", formulary: "renderFormulary", front: "renderFront", analytics: "renderAnalytics", emg: "renderEmergency", export: "renderExport", users: "renderUsers", stock: "renderStock", display: "renderDisplay" };
+const RENDER_FOR = { dashboard: "renderDashboard", billing: "renderBilling", children: "renderChildren", nb: "renderNB", schedule: "renderSchedule", milestones: "renderMilestones", vaccines: "renderVaccines", card: "renderCard", aefi: "renderAefi", growth: "renderGrowth", labs: "renderLabs", screen: "renderScreen", chronic: "renderChronic", letters: "renderLetters", diet: "renderDiet", hand: "renderHand", visits: "renderVisits", timeline: "renderTimeline", rx: "renderRx", consent: "renderConsent", nicu: "renderNicu", mar: "renderMar", hri: "renderHri", calc: "renderCalc", mrd: "renderMrd", formulary: "renderFormulary", front: "renderFront", analytics: "renderAnalytics", emg: "renderEmergency", export: "renderExport", users: "renderUsers", stock: "renderStock", display: "renderDisplay" };
 function toast(m) {
   try {
     let t = document.getElementById("appToast");
@@ -472,6 +481,7 @@ function openChildModal(id) {
   $("cFather").value = c?.father || ""; $("cMother").value = c?.mother || "";
   $("cFHt").value = c?.fHt || ""; $("cMHt").value = c?.mHt || ""; $("cPhone").value = c?.phone || "";
   $("cPed").value = c?.ped || ""; $("cAllergy").value = c?.allergy || ""; $("cAbha").value = c?.abha || "";
+  try { if (typeof Hx !== "undefined" && Hx.fill) Hx.fill(c); } catch (eHx) {}
   openModal("mChild");
 }
 /* ---------------- MRN (medical record number, auto-assigned) ---------------- */
@@ -493,6 +503,7 @@ function saveChild() {
   const dups = findDupChildren({ name, dob, phone: $("cPhone").value }, DB.children, id || null);
   if (dups.length && !confirm(`⚠️ Possible duplicate record:\n${dups.slice(0, 3).map((d) => `• ${d.c.name} (DOB ${fmtDate(d.c.dob)}) — ${d.why}`).join("\n")}\n\nSave anyway?`)) return;
   const data = { name, sex: $("cSex").value, dob, blood: $("cBlood").value, birthWt: parseFloat($("cBirthWt").value) || "", gest: $("cGest").value, birthLen: parseFloat($("cBirthLen").value) || "", birthHC: parseFloat($("cBirthHC").value) || "", father: $("cFather").value.trim(), mother: $("cMother").value.trim(), fHt: parseFloat($("cFHt").value) || "", mHt: parseFloat($("cMHt").value) || "", phone: $("cPhone").value.trim(), abha: $("cAbha").value.trim(), ped: $("cPed").value.trim(), allergy: $("cAllergy").value.trim() };
+  try { if (typeof Hx !== "undefined" && Hx.collect) Object.assign(data, Hx.collect()); } catch (eHx) {}
   if (id) { const ex = DB.children.find((x) => x.id === id); if (ex) normalizeChild(Object.assign(ex, data)); }
   else DB.children.push(normalizeChild(Object.assign({ id: uid(), created: todayISO(), mrn: nextMrn(DB.children) }, data)));
   if (!DB.activeId) DB.activeId = DB.children[0].id;
@@ -643,7 +654,7 @@ function renderChildren() {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-p btn-sm" onclick="setActive('${c.id}');go('dashboard')">Open</button>
         <button class="btn btn-o btn-sm" onclick="openChildModal('${c.id}')">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteChild('${c.id}')">Delete</button>
+        <button class="btn btn-danger btn-sm" onclick="eraseRequest('${c.id}')">Erase…</button>
       </div>`;
     box.appendChild(div);
   });
@@ -699,7 +710,7 @@ function timelineHTML(c, filter) {
 }
 function renderTimeline() {
   const el = $("timelineList"); if (!el) return;
-  el.innerHTML = timelineHTML(child(), (typeof TIMELINE_FILTER !== "undefined") ? TIMELINE_FILTER : "all");
+  el.innerHTML = timelineHTML(child(), (typeof TIMELINE_FILTER !== "undefined") ? TIMELINE_FILTER : "all") + ((typeof Comply !== "undefined") ? Comply.auditStrip(child()) : "");
 }
 
 /* ================= VACCINES ================= */
@@ -1048,6 +1059,8 @@ function openVisitModal(id) {
   $("vsType").value = v?.type || "Routine / Well-child";
   $("vsSubj").value = v?.subj || ""; $("vsObj").value = v?.obj || ""; $("vsPlan").value = v?.plan || "";
   if (typeof voiceReset === "function") voiceReset(v?.voice || "");
+  try { if (typeof Hx !== "undefined" && Hx.fillVisit) Hx.fillVisit(v, c); } catch (eHx) {}
+  try { if (typeof Ex !== "undefined" && Ex.fillVisit) Ex.fillVisit(v, c); } catch (eEx) {}
   openModal("mVisit");
 }
 function saveVisit() {
@@ -1055,8 +1068,11 @@ function saveVisit() {
   if (!$("vsDate").value) return alert("Date required.");
   const v = { id: $("vsId").value || uid(), date: $("vsDate").value, type: $("vsType").value, subj: $("vsSubj").value.trim(), obj: $("vsObj").value.trim(), plan: $("vsPlan").value.trim() };
   if (typeof voiceData === "function" && voiceData()) v.voice = voiceData();
+  try { if (typeof Hx !== "undefined" && Hx.collectVisitIcd) v.icd = Hx.collectVisitIcd(); } catch (eHx) {}
+  try { if (typeof Ex !== "undefined" && Ex.collectVisit) Object.assign(v, Ex.collectVisit()); } catch (eEx) {}
   const i = c.visits.findIndex((x) => x.id === v.id);
   if (i >= 0) c.visits[i] = v; else c.visits.push(v);
+  try { if (typeof Ex !== "undefined" && Ex.raiseFlagsOnSave) Ex.raiseFlagsOnSave(v, c); } catch (eEx) {}
   auditSafe("Visit note", v.type + " — " + c.name);
   save(); closeModal("mVisit"); renderAll();
 }
@@ -1078,6 +1094,8 @@ function renderVisits() {
     ${v.subj ? `<div style="font-size:13.5px;margin-bottom:6px"><b>S:</b> ${esc(v.subj)}</div>` : ""}
     ${v.obj ? `<div style="font-size:13.5px;margin-bottom:6px"><b>O:</b> ${esc(v.obj)}</div>` : ""}
     ${v.plan ? `<div style="font-size:13.5px"><b>A/P:</b> ${esc(v.plan)}</div>` : ""}
+    ${(() => { try { return (typeof Hx !== "undefined" && Hx.visitIcdHTML) ? Hx.visitIcdHTML(v) : ""; } catch (eHx) { return ""; } })()}
+    ${(() => { try { return (typeof Ex !== "undefined" && Ex.visitVitalsHTML) ? Ex.visitVitalsHTML(v, c) : ""; } catch (eEx) { return ""; } })()}
     ${v.voice ? '<div style="margin-top:6px"><audio controls src="' + v.voice + '" style="height:32px;max-width:260px;vertical-align:middle"></audio></div>' : ""}</div>`).join("") ||
     `<div class="card"><div class="empty"><div class="big">🩺</div>No visit notes yet.</div></div>`;
 }
@@ -1435,7 +1453,7 @@ function childHeader(c) {
     <dt>Parents</dt><dd>${esc(c.father || "—")} · ${esc(c.mother || "—")} ${c.phone ? "· ☎ " + esc(c.phone) : ""}</dd>
     ${c.abha ? "<dt>ABHA</dt><dd>" + esc(c.abha) + "</dd>" : ""}
     <dt>Birth</dt><dd>${c.birthWt ? c.birthWt + " kg" : "—"} ${c.gest ? "· " + c.gest + " wk" : ""} ${c.blood ? "· Blood " + esc(c.blood) : ""}</dd>
-    ${c.allergy ? `<dt>Alerts</dt><dd style="color:var(--red)">⚠ ${esc(c.allergy)}</dd>` : ""}</dl>`;
+    ${c.allergy ? `<dt>Alerts</dt><dd style="color:var(--red)">⚠ ${esc(c.allergy)}</dd>` : ""}${(() => { try { return (typeof Hx !== "undefined" && Hx.headerProblems) ? Hx.headerProblems(c) : ""; } catch (eHx) { return ""; } })()}</dl>`;
 }
 function buildSummary() {
   const c = child(); if (!c) return;
@@ -1521,6 +1539,7 @@ function backupPreviewLine(st) {
 }
 function freshDb() {
   return {
+    _sv: (typeof SCHEMA_V === "number" ? SCHEMA_V : 1), // record schema (see js/migrate.js)
     children: [], activeId: null, settings: { clinic: "", doctor: "", reg: "", addr: "" },
     msBand: null, gTab: "wt", appts: [], tokens: [], bills: [], users: [], audit: [], session: {},
   };
@@ -1532,6 +1551,7 @@ function buildDbFromBackup(d) {
   if (!out.settings || typeof out.settings !== "object") out.settings = freshDb().settings;
   if (!out.session || typeof out.session !== "object") out.session = {};
   ensureMrns(out.children);
+  try { if (typeof migrateDB === "function") migrateDB(out); } catch (e) {}
   return out;
 }
 // Single funnel for every restore path (JSON + encrypted): validate → confirm →
@@ -1722,7 +1742,7 @@ function renderAll() {
   if (!child() && DB.children.length) DB.activeId = DB.children[0].id;
   DB.appts = DB.appts || []; DB.tokens = DB.tokens || []; DB.bills = DB.bills || []; DB.users = DB.users || []; DB.audit = DB.audit || []; DB.session = DB.session || {};
   try { syncChildPicker(); } catch (e) {}
-  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
+  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderNicu", "renderHri", "renderChronic", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
   try { applyFolds(); } catch (e) {}
 }
 window.addEventListener("resize", () => drawGrowthChart());
@@ -1739,4 +1759,4 @@ function applyRefVersions() {
   try { document.querySelectorAll("[data-vaxver]").forEach((el) => { el.textContent = VAX_SCHEDULE_VERSION; n++; }); } catch (e) {}
   return n;
 }
-load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyMotion(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();
+load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyMotion(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); try { if (typeof Comply !== "undefined") Comply.purge(); } catch (eCP) {} renderAll();

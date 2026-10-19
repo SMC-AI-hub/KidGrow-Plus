@@ -134,7 +134,7 @@ try {
 /* ---------------- audit ---------------- */
 function log(action, detail) {
   DB.audit = DB.audit || [];
-  DB.audit.unshift({ t: new Date().toISOString(), user: (currentUser() || {}).name || "?", action: action || "", detail: detail || "" });
+  DB.audit.unshift({ t: new Date().toISOString(), cid: (typeof DB !== "undefined" && DB.activeId) || "", user: (currentUser() || {}).name || "?", action: action || "", detail: detail || "" });
   if (DB.audit.length > 500) DB.audit.length = 500;
 }
 function exportAudit() {

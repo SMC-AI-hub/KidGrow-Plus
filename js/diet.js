@@ -63,18 +63,26 @@ function thaliSVG() {
   return `<svg viewBox="0 0 200 200" style="width:190px;height:auto">${paths}<text x="100" y="96" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">My</text><text x="100" y="114" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">Thali</text></svg>
   <div style="font-size:12.5px">${segs.map(([l, p, col]) => `<div><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${col}"></span> ${l} — ${p}%</div>`).join("")}</div>`;
 }
+function dietWeightNote(cl) {
+  try {
+    if (/overweight|obes/i.test((cl && cl.bmi && cl.bmi.label) || "")) return "over";
+    const s = ((cl.wt && cl.wt.sev) || "") + ((cl.bmi && cl.bmi.sev) || "");
+    if (/(red|amber)/.test(s)) return "catchup";
+  } catch (e) {}
+  return null;
+}
 function dietOf(c) { c.diet = c.diet || { type: "veg" }; return c.diet; }
 function renderDiet() {
   if (!$("pg-diet")) return;
   const c = child();
   if (!c) { $("dietBox").innerHTML = `<div class="empty">No child selected.</div>`; return; }
   const d = dietOf(c);
-  const ageM = ageBetween(c.dob).years * 12 + ageBetween(c.dob).months;
+  const ageM = ageMonths(c.dob);
   const needs = dietNeeds(ageM, c.sex);
-  let catchup = false;
+  let catchup = false, overwt = false;
   try {
     const lm = latestMeasure(c);
-    if (lm) { const cl = classifyGrowth(c, lm); const s = ((cl.wt && cl.wt.sev) || "") + ((cl.bmi && cl.bmi.sev) || ""); if (/(red|amber)/.test(s) && !/overweight|obes/i.test((cl.bmi && cl.bmi.label) || "")) catchup = true; }
+    if (lm) { const wn = dietWeightNote(classifyGrowth(c, lm)); catchup = wn === "catchup"; overwt = wn === "over"; }
   } catch (e) {}
   let anaemic = false;
   try {
@@ -106,6 +114,7 @@ function renderDiet() {
   <div style="height:16px"></div>
   <div class="card"><h3>📅 Sample day menu</h3>
     <table class="tbl">${needs.menu.map((m) => { const i = m.indexOf(":"); return `<tr><td style="white-space:nowrap"><b>${esc(m.slice(0, i))}</b></td><td>${esc(m.slice(i + 1).trim())}</td></tr>`; }).join("")}</table>
+    ${overwt ? `<div class="alert a-amber">⚖️ <div><b>Healthy-weight eating:</b> water instead of sweet drinks and packets, vegetables half the thali, no second helpings of rice, 60 min active play daily. No crash diets in children — hold weight while growing taller.</div></div>` : ""}
     ${catchup ? `<div class="alert a-amber">🍚 <div><b>Catch-up feeding (undernourished):</b> one EXTRA meal daily + 2 tsp oil/ghee in each meal + egg / groundnut / milk every day. Weekly weight check until recovered. Treat worms, anaemia, infections in parallel.</div></div>` : ""}
     ${anaemic ? `<div class="alert a-amber">🩸 <div><b>Anaemia diet:</b> ragi, bajra, greens (murungai / arai keerai), jaggery, dates, groundnuts, egg yolk, meat + Vit-C foods (guava, amla, lemon) WITH meals. Tea/coffee AWAY from meals. Continue iron medicine — food alone won't correct moderate anaemia fast.</div></div>` : ""}
     <div class="hint">Water: safe boiled/cooled, freely. Sweets/packets/cola: only sometimes. This chart counsels — it does not replace individual medical advice.</div>

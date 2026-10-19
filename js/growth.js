@@ -320,6 +320,46 @@ function classifyGrowth(c, m) {
   return out;
 }
 
+/* Plain-language interpretation over the graded rows (Phase 6). Reads the
+   existing grades — introduces no new cutoffs. diet:true links the Diet page. */
+function growthInterp(c, m) {
+  const out = { pattern: "", sev: "gray", diet: false };
+  try {
+    const cl = classifyGrowth(c, m), A = cl._A || {};
+    const z = (o) => (o && isFinite(o.z) ? o.z : null);
+    const wz = z(cl.wt), hz = z(cl.ht);
+    const wh = (A.rows || []).find((r) => r.key === "WHZ");
+    const whz = wh && isFinite(wh.z) ? wh.z : null;
+    const over = /overweight|obes/i.test((cl.bmi && cl.bmi.label) || "");
+    if (wz === null && hz === null && !over) { out.pattern = "Not enough data to interpret — record weight + length/height."; return out; }
+    if (whz !== null && whz < -2) {
+      out.pattern = whz < -3 ? "Severely wasted — urgent nutritional rehabilitation + find the driver (intake, infection, losses). Admit if complications." : "Wasted — acute undernutrition. Start nutritional rehabilitation + hunt the cause (intake, infection, losses).";
+      out.sev = whz < -3 ? "red" : "amber"; out.diet = true;
+    } else if (wz !== null && wz < -2 && hz !== null && hz < -2 && (whz === null || whz >= -2)) {
+      out.pattern = "Underweight + stunted but not wasted — chronic undernutrition pattern. Look beyond food: recurrent illness, thyroid, coeliac, anaemia; stunting reverses slowly.";
+      out.sev = "amber"; out.diet = true;
+    } else if (wz !== null && wz < -2) {
+      out.pattern = "Underweight — add energy + protein (see Diet catch-up), deworm, correct anaemia, re-weigh in 2–4 weeks.";
+      out.sev = "amber"; out.diet = true;
+    } else if (hz !== null && hz < -2) {
+      out.pattern = "Stunted with preserved weight — long-standing pattern. Review chronic nutrition, thyroid, coeliac; endocrine referral if severe or falling further.";
+      out.sev = "amber";
+    } else if (over) {
+      out.pattern = `BMI says ${cl.bmi.label} — swap sugary drinks for water, vegetables half the thali, 60 min active play daily; recheck the trend, not one point.`;
+      out.sev = /obes/i.test(cl.bmi.label) ? "red" : "amber"; out.diet = true;
+    } else {
+      out.pattern = "Growing within the normal range — continue routine diet, play, sleep and surveillance.";
+      out.sev = "green";
+    }
+    const mu = cl.muac;
+    if (mu && (mu.sev === "red" || mu.sev === "amber") && /SAM|MAM/.test(mu.label || "")) {
+      out.pattern += ` MUAC: ${mu.label}.`;
+      if (mu.sev === "red") out.sev = "red";
+    }
+  } catch (e) { out.pattern = "Interpretation unavailable."; }
+  return out;
+}
+
 /* ---------------- measures ---------------- */
 function latestMeasure(c) { return [...(c.measures || [])].sort((a, b) => a.date.localeCompare(b.date)).pop() || null; }
 function birthPoint(c) {
@@ -374,6 +414,7 @@ function saveGrowth() {
     bmi: +(wt / Math.pow(ht / 100, 2)).toFixed(1), note: $("gNote").value.trim(), by: $("gBy").value.trim() };
   const i = c.measures.findIndex((x) => x.id === m.id);
   if (i >= 0) c.measures[i] = m; else c.measures.push(m);
+  try { if (typeof Dose !== "undefined" && Dose.growthFlags && typeof Alerts !== "undefined" && Alerts.raise) { Dose.growthFlags(c, m).forEach((f) => Alerts.raise("warn", "GROWTH", `${c.name}: ${f.text}`)); } } catch (eDx) {}
   auditSafe("Growth recorded", c.name + " — " + m.wt + " kg");
   save(); closeModal("mGrowth"); renderAll();
 }
@@ -449,7 +490,7 @@ function renderGrowth() {
     if (A.tooEarly) al += `<div class="alert a-blue">👶 <div>PMA ${pmaStr(A.ga.pmaD)} (below term-equivalent): plot on the official Fenton chart in NICU. This app assesses from term-equivalent age using corrected age.</div></div>`;
     (A.biv || []).forEach((f) => (al += `<div class="alert a-red">⚠️ <div><b>Data check:</b> ${esc(f)}</div></div>`));
     A.triage.forEach((t) => (al += `<div class="alert ${t.sev === "red" ? "a-red" : "a-amber"}">${t.sev === "red" ? "🔴" : "🟡"} <div><b>${esc(t.title)}</b><br>${esc(t.body)}</div></div>`));
-    if (!A.triage.length && !A.tooEarly && !(A.biv || []).length) al += `<div class="alert a-green">🟢 <div><b>Growing well</b> — latest assessment (${fmtDate(lm.date)}) within normal range on exact references. Continue routine surveillance.</div></div>`;
+    try { const gi = growthInterp(c, lm); al += `<div class="alert ${gi.sev === "red" ? "a-red" : gi.sev === "amber" ? "a-amber" : gi.sev === "gray" ? "a-gray" : "a-green"}">📖 <div><b>What this means:</b> ${esc(gi.pattern)}${gi.diet ? ` <a href="#" onclick="go('diet');return false">Diet →</a>` : ""}</div></div>`; } catch (e) {}
     $("growthAlerts").innerHTML = al;
   }
   const sub = DB.gSub || "charts";

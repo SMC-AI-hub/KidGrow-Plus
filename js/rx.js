@@ -13,8 +13,7 @@ function rxChildWt(c) {
   return (lm && lm.wt) || c.birthWt || "";
 }
 function rxAgeM(c) {
-  const a = ageBetween(c.dob);
-  return a.years * 12 + a.months;
+  return ageMonths(c.dob);
 }
 function renderRx() {
   if (!$("pg-rx")) return;
@@ -31,7 +30,9 @@ function renderRx() {
   const cats = [...new Set(DRUGS.map((x) => x.cat))];
   const calc = d.info ? { ok: true, infoOnly: true, take: d.info, warns: [] }
     : calcDose(d.id, RXB.wt, rxAgeM(c), RXB.stIdx, RXB.freq, RXB.days);
-  const al = allergyCheck(d.id, c.allergy);
+  const hxAlg = ((typeof Hx !== "undefined" && Hx.allergyText) ? Hx.allergyText(c) : c.allergy);
+  const al = allergyCheck(d.id, hxAlg);
+  const dxChecks = (() => { try { return (typeof Dose !== "undefined" && Dose.checkRx) ? Dose.checkRx({ drugId: d.id, wtKg: RXB.wt, ageM: rxAgeM(c), freq: RXB.freq, child: c, draftItems: dft.items }) : { flags: [], hard: false }; } catch (e) { return { flags: [], hard: false }; } })();
   const prev = [...c.rx].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   $("rxBox").innerHTML = `
   <div class="grid g2">
@@ -48,9 +49,9 @@ function renderRx() {
         <div><label>Instruction (optional)</label><input value="${esc(RXB.instr)}" placeholder="e.g. After food / SOS fever" oninput="RXB.instr=this.value"></div>
       </div>
       <div id="rxCalc"></div>
-      ${al.hit ? `<div class="alert a-red">⚠️ <div><b>ALLERGY ALERT:</b> ${esc(d.name)} matches recorded allergy “${esc(c.allergy)}” (matched: ${al.matched.map(esc).join(", ")}). Prescribe only if benefit outweighs risk — flag will print on the Rx.</div></div>` : ""}
+      ${(() => { try { return (typeof Dose !== "undefined" && Dose.checksHTML) ? Dose.checksHTML(dxChecks) : (al.hit ? `<div class="alert a-red">⚠️ <div><b>ALLERGY ALERT:</b> ${esc(d.name)} matches recorded allergy.</div></div>` : ""); } catch (e) { return ""; } })()}
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn btn-p btn-sm" onclick="rxAddItem(${al.hit})" ${calc.ok ? "" : "disabled"}>＋ Add to prescription</button>
+        <button class="btn btn-p btn-sm" onclick="rxAddItem(${al.hit})" ${calc.ok && !dxChecks.hard ? "" : "disabled"} title="${dxChecks.hard ? "Blocked by safety check" : "Add to prescription"}">＋ Add to prescription</button>
       </div>
       ${d.notes ? `<div class="hint" style="margin-top:8px">ℹ️ ${esc(d.notes)}</div>` : ""}
     </div>
@@ -105,8 +106,10 @@ function rxAddItem(isAllergy) {
   const calc = d.info ? { ok: true, take: d.info, qtyText: "As directed" }
     : calcDose(d.id, RXB.wt, rxAgeM(c), RXB.stIdx, RXB.freq, RXB.days || d.defDays);
   if (!calc.ok) return alert(calc.why || "Cannot compute dose.");
+  const dxAdd = (() => { try { return (typeof Dose !== "undefined" && Dose.checkRx) ? Dose.checkRx({ drugId: d.id, wtKg: RXB.wt, ageM: rxAgeM(c), freq: RXB.freq, child: c, draftItems: rxDraft().items }) : { flags: [], hard: false }; } catch (e) { return { flags: [], hard: false }; } })();
+  if (dxAdd.hard) { try { if (typeof Alerts !== "undefined" && Alerts.raise) Alerts.raise("hard", "RX-BLOCKED", ((dxAdd.flags || []).find((f) => f.tier === "hard") || {}).text || "Blocked by safety check."); } catch (e2) {} return; }
   const dft = rxDraft();
-  dft.items.push({ drug: d.name, strength: (d.strengths[RXB.stIdx] || {}).label || "", freq: RXB.freq, days: RXB.days || d.defDays || "", take: calc.take, qty: calc.qtyText || "", instr: RXB.instr });
+  dft.items.push({ drug: d.name, strength: (d.strengths[RXB.stIdx] || {}).label || "", freq: RXB.freq, days: RXB.days || d.defDays || "", take: calc.take, qty: calc.qtyText || "", instr: RXB.instr, checks: (dxAdd.flags || []).map((f) => ({ tier: f.tier, code: f.code, text: f.text })) });
   if (isAllergy) dft.allergyFlag = `Allergy alert acknowledged for ${d.name}`;
   RXB.instr = "";
   renderRx();
@@ -117,9 +120,10 @@ function saveRx() {
   c.rx = c.rx || [];
   const dft = rxDraft();
   if (!dft.items.length) return alert("Add at least one medicine.");
+  if (dft.items.some((i) => (i.checks || []).some((f) => f.tier === "hard"))) return alert("⛔ A blocked item is in this prescription — remove it before saving.");
   c.rx.push({ id: uid(), date: todayISO(), wt: RXB.wt, dx: dft.dx, items: dft.items, advice: dft.advice, review: dft.review, by: dft.by || DB.settings.doctor || "", allergyFlag: dft.allergyFlag });
   RX_DRAFT = null;
-  auditSafe("Prescription", `${dft.items.length} item(s) for ${c.name}${dft.dx ? " — " + dft.dx : ""}`);
+  auditSafe("Prescription", `${dft.items.length} item(s) for ${c.name}${dft.dx ? " — " + dft.dx : ""}${(() => { const _n = dft.items.reduce((s, i) => s + ((i.checks || []).length), 0); return _n ? ` · ${_n} check flag(s)` : ""; })()}`);
   save(); renderAll();
   alert("Prescription saved. Print it from Previous prescriptions.");
 }
@@ -134,7 +138,7 @@ function delRx(id) {
 function printRx(id) {
   const c = child(); if (!c) return;
   const r = (c.rx || []).find((x) => x.id === id); if (!r) return;
-  $("rxPrint").innerHTML = `${clinicHeader()}${childHeader(c)}
+  $("rxPrint").innerHTML = `${clinicHeader()}${childHeader(c)}${(() => { try { return (typeof Hx !== "undefined" && Hx.rxStripHTML) ? Hx.rxStripHTML(c) : ""; } catch (eHx) { return ""; } })()}
     <div class="alert ${r.allergyFlag ? "a-red" : "a-gray"}" style="margin:0 0 12px">⚠️ <div><b>R<sub>x</sub> — ${fmtDate(r.date)}</b>${r.wt ? ` · Wt ${esc(String(r.wt))} kg` : ""} · Dx: <b>${esc(r.dx || "—")}</b>${r.allergyFlag ? `<br><b>ALLERGY FLAG:</b> ${esc(r.allergyFlag)}` : ""}</div></div>
     <table class="tbl"><tr><th>#</th><th>Medicine</th><th>Dose</th><th>Freq × Days</th><th>Qty</th><th>Instructions</th></tr>
     ${(r.items || []).map((it, n) => `<tr><td>${n + 1}</td><td><b>${esc(it.drug)}</b>${it.strength ? `<br><span style="font-size:11.5px;color:var(--muted)">${esc(it.strength)}</span>` : ""}</td><td><b>${esc(it.take || "—")}</b></td><td>${esc(it.freq)} × ${esc(String(it.days))}</td><td style="font-size:12px">${esc(it.qty || "—")}</td><td style="font-size:12px">${esc(it.instr || "—")}</td></tr>`).join("")}</table>

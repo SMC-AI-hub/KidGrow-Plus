@@ -57,6 +57,8 @@
       <button data-page="growth"><span class="ic">📈</span>Growth (IAP/WHO)</button>
       <button data-page="milestones"><span class="ic">🌟</span>Milestones</button>
       <button data-page="screen"><span class="ic">🔍</span>Screening</button>
+      <button data-page="chronic"><span class="ic">📊</span>Chronic</button>
+      <button data-page="letters"><span class="ic">✉️</span>Letters</button>
       <button data-page="diet"><span class="ic">🥗</span>Diet</button>
       <button data-page="labs"><span class="ic">🩸</span>Labs & Anaemia</button>
       <button data-page="consent"><span class="ic">✍️</span>Consent</button>
@@ -79,6 +81,7 @@
       <div class="navsec-b">
       <button data-page="nicu"><span class="ic">🏥</span>NICU</button>
       <button data-page="mar"><span class="ic">💊</span>eMAR</button>
+      <button data-page="hri"><span class="ic">🍼</span>HRI Follow-up</button>
       </div>
       </div>
       <div class="navsec" data-sec="reports">
@@ -219,6 +222,8 @@
 
       <!-- ======== SCREENING ======== -->
       <section class="page" id="pg-screen"><div id="ph-screen"></div><div id="screenBox"></div></section>
+      <section class="page" id="pg-chronic"><div id="ph-chronic"></div><div id="chronicBox"></div></section>
+      <section class="page" id="pg-letters"><div id="ph-letters"></div><div id="lettersBox"></div></section>
 
       <!-- ======== RX ======== -->
       <section class="page" id="pg-rx"><div id="ph-rx"></div><div id="rxBox"></div></section>
@@ -256,6 +261,7 @@
       <section class="page" id="pg-mrd"><div id="mrdBox"></div></section>
       <section class="page" id="pg-nicu"><div id="ph-nicu"></div><div id="nicuBox"></div></section>
       <section class="page" id="pg-mar"><div id="ph-mar"></div><div id="marBox"></div></section>
+      <section class="page" id="pg-hri"><div id="ph-hri"></div><div id="hriBox"></div></section>
       <section class="page" id="pg-calc"><div id="calcBox"></div></section>
       <section class="page" id="pg-children">
         <div class="toolbar">
@@ -471,6 +477,7 @@
     <div><label>Pediatrician</label><input id="cPed" placeholder="Treating doctor"></div>
     <div class="full"><label>Allergies / conditions</label><input id="cAllergy" placeholder="e.g. Egg allergy, asthma"></div>
   </div>
+  <div id="hxCards"></div>
   <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mChild')">Cancel</button><button class="btn btn-p" onclick="saveChild()">💾 Save child</button></div>
 </div></div>
 
@@ -539,14 +546,19 @@
 </div></div>
 
 <div class="modal-bg" id="mVisit"><div class="modal">
-  <h3>Visit note</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">SOAP-style clinical note</div>
+  <h3>Visit note</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">SOAP-style clinical note</div><div id="vsChanges" style="margin-bottom:8px"></div>
   <div class="form-grid">
     <input type="hidden" id="vsId">
     <div><label>Date *</label><input type="date" id="vsDate"></div>
     <div><label>Visit type</label><select id="vsType"><option>Routine / Well-child</option><option>Illness</option><option>Vaccination</option><option>Growth review</option><option>Developmental review</option><option>Teleconsult</option></select></div>
+    <div><label>Template (optional)</label><div style="display:flex;gap:6px"><select id="vsTemplate" style="flex:1"><option value="">— No template —</option></select><button type="button" class="btn btn-o btn-sm" onclick="Ex.applyTemplate(document.getElementById('vsTemplate').value)">Apply</button></div></div>
+    <div class="full" id="vsTplIcd"></div>
     <div class="full"><label>Complaints / History</label><textarea id="vsSubj" rows="2" placeholder="e.g. Fever 2 days, cold, appetite ok"></textarea></div>
     <div class="full"><label>Examination</label><textarea id="vsObj" rows="2" placeholder="e.g. Alert, hydrated; throat congested; chest clear"></textarea></div>
     <div class="full"><label>Assessment & Plan</label><textarea id="vsPlan" rows="2" placeholder="e.g. Viral URI — paracetamol SOS, fluids, review 3 days"></textarea></div>
+    <div class="full"><label>Diagnoses (ICD-10)</label><input type="hidden" id="vsIcd" value="[]"><div id="vsIcdChips"></div><input id="vsIcdQ" placeholder="Type to search diagnoses…" autocomplete="off"><div id="vsIcdList"></div></div>
+    <div class="full"><div class="card" style="margin:0"><h3>🩺 Vitals</h3><div id="vsVitalsBox"></div></div></div>
+    <div class="full"><div class="card" style="margin:0"><h3>🔍 Examination <span style="font-size:11.5px;font-weight:400;color:var(--muted)">(assess systems, then insert)</span></h3><div id="exRows"></div><button type="button" class="btn btn-o btn-xs" style="margin-top:6px" onclick="Ex.insertExam()">＋ Insert exam into Examination</button></div></div>
     <div class="full"><label>🎙️ Voice note (speak any language · max 60 s)</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn btn-o btn-sm" id="voiceRecBtn" onclick="voiceToggle()">⏺ Record</button><span id="voiceStatus" style="font-size:12.5px;color:var(--muted)">No recording</span><audio id="voicePlay" controls style="display:none;max-width:220px;height:32px"></audio><button class="btn btn-o btn-xs" id="voiceDelBtn" onclick="voiceClear()" style="display:none">✕</button></div></div>
   </div>
   <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mVisit')">Cancel</button><button class="btn btn-p" onclick="saveVisit()">💾 Save note</button></div>
@@ -623,9 +635,25 @@
 <script src="js/rx.js"></script>
 <script src="js/front.js"></script>
 <script src="js/nb.js"></script>
+<script src="js/cdata.gen.js"></script>
+<script src="js/migrate.js"></script>
+<script src="js/content.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/forms.js"></script>
+<script src="js/scores.js"></script>
+<script src="js/alerts.js"></script>
+<script src="js/terms.js"></script>
+<script src="js/hx.js"></script>
+<script src="js/exam.js"></script>
+<script src="js/dose.js"></script>
 <script src="js/labs.js"></script>
 <script src="js/aefi.js"></script>
 <script src="js/screen.js"></script>
+<script src="js/chronic.js"></script>
+<script src="js/labpanels.js"></script>
+<script src="js/letters.js"></script>
+<script src="js/fhirx.js"></script>
+<script src="js/comply.js"></script>
 <script src="js/diet.js"></script>
 <script src="js/consent.js"></script>
 <script src="js/handouts.js"></script>
@@ -639,6 +667,7 @@
 <script src="js/sync-rel.js"></script>
 <script src="js/nicu.js"></script>
 <script src="js/mar.js"></script>
+<script src="js/hri.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/mrd.js"></script>
 <script src="js/metrics.js"></script>

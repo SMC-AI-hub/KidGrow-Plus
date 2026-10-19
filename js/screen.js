@@ -86,7 +86,7 @@ function toothToggle(t) {
 }
 function dentalHTML(c) {
   c.dental = c.dental || {};
-  const ageM = ageBetween(c.dob).years * 12 + ageBetween(c.dob).months;
+  const ageM = ageMonths(c.dob);
   const isPrim = (t) => !["16", "26", "36", "46"].includes(t);
   const primErupted = Object.keys(c.dental).filter((t) => isPrim(t) && c.dental[t].st === "e").length;
   const flag = dentalFlag(ageM, primErupted);
@@ -127,6 +127,52 @@ function rbskHTML(c) {
       <button class="btn ${v === "ref" ? "btn-danger" : "btn-o"} btn-xs" onclick="rbskSet('${esc(it).replace(/'/g, "\\'")}','ref')">Refer</button>
       ${v ? `<button class="btn btn-o btn-xs" onclick="rbskSet('${esc(it).replace(/'/g, "\\'")}','')">↩</button>` : ""}</div>`; }).join("")}`).join("")}`;
 }
+/* ---------------- screening calculators (Phase 5: Scores registry) ---------------- */
+function screenCalcsHTML(c) {
+  const g = esc(c.gest || ""), dob = c.dob || "", bw = esc(c.birthWt || "");
+  return `<div class="hint">ROP first-exam timing (AAP 2018) + CCHD pulse-ox interpretation (AAP 2025). Screening aids — clinical judgement prevails.</div>
+  <div class="grid g2">
+    <div>
+      <h4 style="margin:6px 0">👁️ ROP first exam</h4>
+      <div class="form-grid">
+        <div><label>GA at birth (wk)</label><input type="number" step="0.1" id="scRopGa" value="${g}"></div>
+        <div><label>Date of birth</label><input type="date" id="scRopDob" value="${dob}"></div>
+        <div><label>Birth wt (kg)</label><input type="number" step="0.1" id="scRopBw" value="${bw}"></div>
+        <div><label>Unstable course</label><select id="scRopUn"><option value="">No</option><option value="y">Yes</option></select></div>
+      </div>
+      <button class="btn btn-o btn-sm" style="margin-top:6px" onclick="runRopCalc()">Calculate</button>
+      <div id="scRopOut" style="margin-top:6px;font-size:13.5px"></div>
+    </div>
+    <div>
+      <h4 style="margin:6px 0">❤️ CCHD pulse-ox</h4>
+      <div class="form-grid">
+        <div><label>Right hand %</label><input type="number" id="scCchdHand" placeholder="97"></div>
+        <div><label>Foot %</label><input type="number" id="scCchdFoot" placeholder="96"></div>
+        <div><label>Screen</label><select id="scCchdAtt"><option value="1">First</option><option value="2">Repeat (1h)</option></select></div>
+      </div>
+      <button class="btn btn-o btn-sm" style="margin-top:6px" onclick="runCchdCalc()">Interpret</button>
+      <div id="scCchdOut" style="margin-top:6px;font-size:13.5px"></div>
+    </div>
+  </div>`;
+}
+function runRopCalc() {
+  const out = document.getElementById("scRopOut");
+  try {
+    const r = Scores.run("rop-first", { ga: document.getElementById("scRopGa").value, dob: document.getElementById("scRopDob").value, bwKg: document.getElementById("scRopBw").value, unstable: document.getElementById("scRopUn").value === "y" });
+    out.innerHTML = !r.ok ? `<span style="color:var(--red)">${esc(r.reason)}</span>`
+      : !r.eligible ? `⚪ ${esc(r.interp)}<br><span style="font-size:12px;color:var(--muted)">${esc(r.source)}</span>`
+      : `🟡 First ROP exam by <b>${esc(r.date)}</b> (${esc(r.basis)}).<br><span style="font-size:12px;color:var(--muted)">${esc(r.source)}</span>`;
+  } catch (e) { out.innerHTML = `<span style="color:var(--red)">Calculator unavailable.</span>`; }
+}
+function runCchdCalc() {
+  const out = document.getElementById("scCchdOut");
+  try {
+    const r = Scores.run("cchd", { hand: document.getElementById("scCchdHand").value, foot: document.getElementById("scCchdFoot").value, attempt: document.getElementById("scCchdAtt").value });
+    if (!r.ok) { out.innerHTML = `<span style="color:var(--red)">${esc(r.reason)}</span>`; return; }
+    const dot = r.result === "pass" ? "🟢" : r.result === "retest" ? "🟡" : "🔴";
+    out.innerHTML = `${dot} <b>${esc(r.result.toUpperCase())}</b> — ${esc(r.action)}<br><span style="font-size:12px;color:var(--muted)">${esc(r.source)}</span>`;
+  } catch (e) { out.innerHTML = `<span style="color:var(--red)">Calculator unavailable.</span>`; }
+}
 /* ---------------- page ---------------- */
 function renderScreen() {
   if (!$("pg-screen")) return;
@@ -138,6 +184,8 @@ function renderScreen() {
   <div class="card"><h3>🫁 Asthma action plan + PEF diary</h3>${asthmaPlanHTML(c)}</div>
   <div style="height:16px"></div>
   <div class="card"><h3>🦷 Dental eruption chart</h3>${dentalHTML(c)}</div>
+  <div style="height:16px"></div>
+  <div class="card"><h3>🧮 Newborn screening calculators</h3>${screenCalcsHTML(c)}</div>
   <div style="height:16px"></div>
   <div class="card"><h3>🏥 RBSK 4Ds checklist</h3><div class="hint">Rashtriya Bal Swasthya Karyakram — 0–18 y screening: Defects, Deficiencies, Diseases, Developmental delays</div>${rbskHTML(c)}</div>`;
 }

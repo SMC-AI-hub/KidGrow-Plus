@@ -76,15 +76,18 @@ function abhaJson(c) {
     record: "KidGrowPro-Child-Health-Record", version: 2, abdmReady: true,
     note: "Links to ABHA ID for ABDM HIP/MHR upload via a registered integrator.",
     profile: { name: c.name, dob: c.dob, sex: c.sex, blood: c.blood || "", phone: c.phone || "", father: c.father || "", mother: c.mother || "", abhaId: c.abha || "", address: (DB.settings || {}).addr || "" },
-    allergies: c.allergy || "",
+    allergies: ((typeof Hx !== "undefined" && Hx.allergyText) ? Hx.allergyText(c) : (c.allergy || "")),
+    structuredAllergies: c.allergies || [],
+    problems: c.problems || [],
+    perinatal: c.perinatal || {}, maternal: c.maternal || {}, familyHistory: c.family || {},
     birth: { weightKg: c.birthWt || "", gestationWk: c.gest || "", lengthCm: c.birthLen || "", hcCm: c.birthHC || "" },
     immunization: codes.map((x) => {
       const r = (c.vaccines || {})[x.code];
       return { code: x.code, vaccine: x.name, due: dueDateFor(c, x.visit), given: r ? { date: r.date || "", brand: r.brand || "", manufacturer: r.mfr || "", batch: r.batch || "" } : null };
     }),
     growth: (c.measures || []).map((m) => ({ date: m.date, wtKg: m.wt, htCm: m.ht, hcCm: m.hc || "", muacCm: m.muac || "", bmi: m.bmi })),
-    visits: (c.visits || []).map((v) => ({ date: v.date, type: v.type || "", complaints: v.subj || "", examination: v.obj || "", plan: v.plan || "", hasVoiceNote: !!v.voice })),
-    prescriptions: (c.rx || []).map((r) => ({ date: r.date, dx: r.dx || "", items: (r.items || []).map((it) => ({ drug: it.drug, strength: it.strength || "", take: it.take || "", freq: it.freq || "", days: it.days || "", qty: it.qty || "", instr: it.instr || "" })), advice: r.advice || "", review: r.review || "" })),
+    visits: (c.visits || []).map((v) => ({ date: v.date, type: v.type || "", complaints: v.subj || "", examination: v.obj || "", plan: v.plan || "", icd: v.icd || [], vitals: v.vitals || {}, exam: v.exam || {}, template: v.template || "", hasVoiceNote: !!v.voice })),
+    prescriptions: (c.rx || []).map((r) => ({ date: r.date, dx: r.dx || "", items: (r.items || []).map((it) => ({ drug: it.drug, strength: it.strength || "", take: it.take || "", freq: it.freq || "", days: it.days || "", qty: it.qty || "", instr: it.instr || "", allergyFlag: !!it.allergyFlag, checks: it.checks || [] })), advice: r.advice || "", review: r.review || "" })),
     milestones: { currentBand: MILESTONES[bandForAge(ageBetween(c.dob).months)].band, achieved: Object.keys(c.milestones || {}).filter((k) => c.milestones[k] === "A").length, emerging: Object.keys(c.milestones || {}).filter((k) => c.milestones[k] === "E").length, notYet: Object.keys(c.milestones || {}).filter((k) => c.milestones[k] === "N").length },
     generated: new Date().toISOString(), clinic: DB.settings || {},
   };
@@ -96,6 +99,7 @@ function renderExport() {
   const due = clinicDueList(DB.children, t).filter((i) => i.band !== "upcoming").length;
   const nae = DB.children.reduce((s, c) => s + ((c.aefi || []).length), 0);
   const c = child();
+  const del = (typeof Comply !== "undefined") ? Comply.deleted() : [];
   const card = (icon, title, desc, btn, fn) => `<div class="card"><h3>${icon} ${title}</h3><div class="hint">${desc}</div>
     <button class="btn btn-p btn-sm" onclick="${fn}">${btn}</button></div>`;
   $("expBox").innerHTML = `
@@ -106,7 +110,12 @@ function renderExport() {
     ${card("⚠️", "AEFI line-list (CSV)", `${nae} event(s) across all children for DIO reporting.`, "⬇ Download", "dlAefi()")}
     ${card("📖", "Birth register (CSV)", `One row per child with delivery + screening results.`, "⬇ Download", "dlBirth()")}
     ${card("🪪", "ABHA-ready record (JSON)", `${c ? `For <b>${esc(c.name)}</b>${c.abha ? ` · ABHA ${esc(c.abha)}` : " · <span style='color:var(--amber)'>no ABHA linked — add in Children → Edit</span>"}` : "No child selected."} Links demographics + immunisation + growth to the ABHA ID.`, "⬇ Download", "dlAbha()")}
+    ${card("🔥", "FHIR R4 Bundle (JSON)", `${c ? `For <b>${esc(c.name)}</b> — Patient, Immunizations, Observations, Encounters, Allergies, Consents.` : "No child selected."}`, "⬇ Download", "dlFhir()")}
   </div>
+  <div class="card" style="margin-top:12px"><h3>🗑️ Erased records (30-day grace)</h3>
+  ${del.length ? del.map((d) => `<div class="vac-row"><div class="grow">🧾 <b>${esc((d.child || {}).name)}</b><br><span style="font-size:12.5px;color:var(--muted)">erased ${esc(d.erasedAt)} by ${esc(d.by)} · purges after ${esc(d.purgeAfter)} · ${esc(d.reason)}</span></div>
+    <button class="btn btn-o btn-xs" onclick="eraseRestore('${(d.child || {}).id}')">Restore</button>
+    <button class="btn btn-danger btn-xs" onclick="erasePurgeNow('${(d.child || {}).id}')">Purge now</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">None — erased records wait here 30 days before auto-purge.</div>`}</div>
   <div style="height:16px"></div>
   <div class="card"><h3>💾 Full backup</h3><div class="hint">Everything in one file. 🔐 Encrypted = safe on Google Drive / WhatsApp / email. Restore JSON from Settings → Import.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-o btn-sm" onclick="exportData()">⬇ JSON backup</button>
@@ -118,6 +127,16 @@ function renderExport() {
     <div class="hint">${(typeof undoImportLine === "function") ? undoImportLine() : ""}</div></div>
   <div class="hint" style="margin-top:8px">ABDM gateway upload itself needs a registered Health Information Provider + patient consent — these files are integration-ready for that step.</div>`;
 }
+function dlFhir() {
+  const c = child();
+  if (!c) return alert("Select a child first.");
+  try {
+    downloadFile(`fhir_${String(c.name).replace(/\s+/g, "_")}_${todayISO()}.json`, JSON.stringify(FhirX.bundle(c), null, 1), "application/json");
+    auditSafe("Export", `FHIR Bundle — ${c.name}`);
+  } catch (e) { alert("FHIR export failed: " + e.message); }
+}
+function eraseRestore(id) { try { Comply.restore(id); } catch (e) {} }
+function erasePurgeNow(id) { if (!confirm("Permanently delete this record now? This cannot be undone.")) return; try { Comply.purgeOne(id); } catch (e) {} }
 function dlUip() { downloadFile(`uip_register_${todayISO()}.csv`, uipCsv(DB.children), "text/csv"); auditSafe("Export", "UIP register"); }
 function dlDue() { downloadFile(`due_list_${todayISO()}.csv`, dueListCsv(DB.children, todayISO()), "text/csv"); auditSafe("Export", "Due-list"); }
 function dlCov() { downloadFile(`coverage_${todayISO()}.csv`, covCsv(DB.children, todayISO()), "text/csv"); auditSafe("Export", "Coverage"); }
