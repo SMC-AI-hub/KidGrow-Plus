@@ -108,19 +108,19 @@ async function main() {
   ok(sb.t("missing.key") === "missing.key", "t() falls back to key itself");
 
   // ---- migrate ----
-  ok(vm.runInContext("SCHEMA_V", sb) === 1, "SCHEMA_V is 1");
+  ok(vm.runInContext("SCHEMA_V", sb) === 2, "SCHEMA_V is 2");
   const old = { children: [{ id: "c1", name: "Old Kid", visits: [{ id: "v1", date: "2026-01-01" }] }] };
   const rep = sb.migrateDB(old);
-  ok(old._sv === 1 && JSON.stringify(rep.applied) === "[1]", "old backup migrates to v1, reports [1]");
+  ok(old._sv === 2 && JSON.stringify(rep.applied) === "[1,2]", "old backup migrates to v2, reports [1,2]");
   ok(old.children[0].perinatal && old.children[0].maternal && old.children[0].family, "v1 adds history containers");
   ok(Array.isArray(old.children[0].allergies) && Array.isArray(old.children[0].problems), "v1 adds allergies + problems");
   ok(Array.isArray(old.children[0].visits[0].icd), "v1 adds visit icd[]");
   ok(old.children[0].name === "Old Kid" && old.children[0].visits[0].id === "v1", "migration preserves existing data");
   ok(sb.migrateDB(old).applied.length === 0, "migration is idempotent");
   const built = sb.buildDbFromBackup({ children: [{ id: "c9", name: "Imp", visits: [] }] });
-  ok(built._sv === 1 && Array.isArray(built.children[0].problems), "import path (buildDbFromBackup) migrates");
-  ok(vm.runInContext("parseDB(JSON.stringify({children:[{id:'x',visits:[]} ]}))._sv", sb) === 1, "load path (parseDB) migrates");
-  ok(vm.runInContext("freshDb()._sv", sb) === 1, "fresh DBs are stamped with current schema");
+  ok(built._sv === 2 && Array.isArray(built.children[0].problems), "import path (buildDbFromBackup) migrates");
+  ok(vm.runInContext("parseDB(JSON.stringify({children:[{id:'x',visits:[]} ]}))._sv", sb) === 2, "load path (parseDB) migrates v2");
+  ok(vm.runInContext("freshDb()._sv", sb) === 2, "fresh DBs are stamped with current schema");
 
   // ---- scores math ----
   const Sc = sb.Scores;

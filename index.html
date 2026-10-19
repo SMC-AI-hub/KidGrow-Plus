@@ -545,10 +545,14 @@
     <input type="hidden" id="vsId">
     <div><label>Date *</label><input type="date" id="vsDate"></div>
     <div><label>Visit type</label><select id="vsType"><option>Routine / Well-child</option><option>Illness</option><option>Vaccination</option><option>Growth review</option><option>Developmental review</option><option>Teleconsult</option></select></div>
+    <div><label>Template (optional)</label><div style="display:flex;gap:6px"><select id="vsTemplate" style="flex:1"><option value="">— No template —</option></select><button type="button" class="btn btn-o btn-sm" onclick="Ex.applyTemplate(document.getElementById('vsTemplate').value)">Apply</button></div></div>
+    <div class="full" id="vsTplIcd"></div>
     <div class="full"><label>Complaints / History</label><textarea id="vsSubj" rows="2" placeholder="e.g. Fever 2 days, cold, appetite ok"></textarea></div>
     <div class="full"><label>Examination</label><textarea id="vsObj" rows="2" placeholder="e.g. Alert, hydrated; throat congested; chest clear"></textarea></div>
     <div class="full"><label>Assessment & Plan</label><textarea id="vsPlan" rows="2" placeholder="e.g. Viral URI — paracetamol SOS, fluids, review 3 days"></textarea></div>
     <div class="full"><label>Diagnoses (ICD-10)</label><input type="hidden" id="vsIcd" value="[]"><div id="vsIcdChips"></div><input id="vsIcdQ" placeholder="Type to search diagnoses…" autocomplete="off"><div id="vsIcdList"></div></div>
+    <div class="full"><div class="card" style="margin:0"><h3>🩺 Vitals</h3><div id="vsVitalsBox"></div></div></div>
+    <div class="full"><div class="card" style="margin:0"><h3>🔍 Examination <span style="font-size:11.5px;font-weight:400;color:var(--muted)">(assess systems, then insert)</span></h3><div id="exRows"></div><button type="button" class="btn btn-o btn-xs" style="margin-top:6px" onclick="Ex.insertExam()">＋ Insert exam into Examination</button></div></div>
     <div class="full"><label>🎙️ Voice note (speak any language · max 60 s)</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn btn-o btn-sm" id="voiceRecBtn" onclick="voiceToggle()">⏺ Record</button><span id="voiceStatus" style="font-size:12.5px;color:var(--muted)">No recording</span><audio id="voicePlay" controls style="display:none;max-width:220px;height:32px"></audio><button class="btn btn-o btn-xs" id="voiceDelBtn" onclick="voiceClear()" style="display:none">✕</button></div></div>
   </div>
   <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mVisit')">Cancel</button><button class="btn btn-p" onclick="saveVisit()">💾 Save note</button></div>
@@ -634,6 +638,7 @@
 <script src="js/alerts.js"></script>
 <script src="js/terms.js"></script>
 <script src="js/hx.js"></script>
+<script src="js/exam.js"></script>
 <script src="js/labs.js"></script>
 <script src="js/aefi.js"></script>
 <script src="js/screen.js"></script>

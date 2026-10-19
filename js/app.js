@@ -101,7 +101,7 @@ function normalizeChild(c) {
   if (!c.family || typeof c.family !== "object") c.family = {};
   if (!Array.isArray(c.allergies)) c.allergies = [];
   if (!Array.isArray(c.problems)) c.problems = [];
-  if (Array.isArray(c.visits)) c.visits.forEach((v) => { if (v && !Array.isArray(v.icd)) v.icd = []; });
+  if (Array.isArray(c.visits)) c.visits.forEach((v) => { if (!v) return; if (!Array.isArray(v.icd)) v.icd = []; if (!v.vitals || typeof v.vitals !== "object") v.vitals = {}; if (!v.exam || typeof v.exam !== "object") v.exam = {}; if (typeof v.template !== "string") v.template = ""; });
   if (!c.asthma || typeof c.asthma !== "object") c.asthma = { pef: [], triggers: [] };
   if (!Array.isArray(c.asthma.pef)) c.asthma.pef = [];
   if (!Array.isArray(c.asthma.triggers)) c.asthma.triggers = [];
@@ -1059,6 +1059,7 @@ function openVisitModal(id) {
   $("vsSubj").value = v?.subj || ""; $("vsObj").value = v?.obj || ""; $("vsPlan").value = v?.plan || "";
   if (typeof voiceReset === "function") voiceReset(v?.voice || "");
   try { if (typeof Hx !== "undefined" && Hx.fillVisit) Hx.fillVisit(v, c); } catch (eHx) {}
+  try { if (typeof Ex !== "undefined" && Ex.fillVisit) Ex.fillVisit(v, c); } catch (eEx) {}
   openModal("mVisit");
 }
 function saveVisit() {
@@ -1067,8 +1068,10 @@ function saveVisit() {
   const v = { id: $("vsId").value || uid(), date: $("vsDate").value, type: $("vsType").value, subj: $("vsSubj").value.trim(), obj: $("vsObj").value.trim(), plan: $("vsPlan").value.trim() };
   if (typeof voiceData === "function" && voiceData()) v.voice = voiceData();
   try { if (typeof Hx !== "undefined" && Hx.collectVisitIcd) v.icd = Hx.collectVisitIcd(); } catch (eHx) {}
+  try { if (typeof Ex !== "undefined" && Ex.collectVisit) Object.assign(v, Ex.collectVisit()); } catch (eEx) {}
   const i = c.visits.findIndex((x) => x.id === v.id);
   if (i >= 0) c.visits[i] = v; else c.visits.push(v);
+  try { if (typeof Ex !== "undefined" && Ex.raiseFlagsOnSave) Ex.raiseFlagsOnSave(v, c); } catch (eEx) {}
   auditSafe("Visit note", v.type + " — " + c.name);
   save(); closeModal("mVisit"); renderAll();
 }
@@ -1091,6 +1094,7 @@ function renderVisits() {
     ${v.obj ? `<div style="font-size:13.5px;margin-bottom:6px"><b>O:</b> ${esc(v.obj)}</div>` : ""}
     ${v.plan ? `<div style="font-size:13.5px"><b>A/P:</b> ${esc(v.plan)}</div>` : ""}
     ${(() => { try { return (typeof Hx !== "undefined" && Hx.visitIcdHTML) ? Hx.visitIcdHTML(v) : ""; } catch (eHx) { return ""; } })()}
+    ${(() => { try { return (typeof Ex !== "undefined" && Ex.visitVitalsHTML) ? Ex.visitVitalsHTML(v, c) : ""; } catch (eEx) { return ""; } })()}
     ${v.voice ? '<div style="margin-top:6px"><audio controls src="' + v.voice + '" style="height:32px;max-width:260px;vertical-align:middle"></audio></div>' : ""}</div>`).join("") ||
     `<div class="card"><div class="empty"><div class="big">🩺</div>No visit notes yet.</div></div>`;
 }

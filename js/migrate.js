@@ -2,7 +2,7 @@
    DB._sv tracks the record schema. Every phase adds ONE migration that only
    ADDS containers/fields — existing data is never altered or dropped.
    Old backups (no _sv) migrate on import AND on load. */
-const SCHEMA_V = 1;
+const SCHEMA_V = 2;
 function migEnsureChildV1(c) {
   if (!c || typeof c !== "object") return c;
   if (!c.perinatal || typeof c.perinatal !== "object") c.perinatal = {};
@@ -13,8 +13,16 @@ function migEnsureChildV1(c) {
   if (Array.isArray(c.visits)) c.visits.forEach((v) => { if (v && !Array.isArray(v.icd)) v.icd = []; });
   return c;
 }
+function migEnsureVisitV2(v) {
+  if (!v || typeof v !== "object") return v;
+  if (!v.vitals || typeof v.vitals !== "object") v.vitals = {};
+  if (!v.exam || typeof v.exam !== "object") v.exam = {};
+  if (typeof v.template !== "string") v.template = "";
+  return v;
+}
 const MIGRATIONS = [
   { v: 1, note: "Phase 1: perinatal/maternal/family containers + allergies + problems + visit ICD", up(db) { (db.children || []).forEach(migEnsureChildV1); } },
+  { v: 2, note: "Phase 2: visit vitals + exam + template", up(db) { (db.children || []).forEach((c) => { (c.visits || []).forEach(migEnsureVisitV2); }); } },
 ];
 function migrateDB(db) {
   if (!db || typeof db !== "object") return { from: 0, to: SCHEMA_V, applied: [] };
