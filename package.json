@@ -4,7 +4,7 @@
   "private": true,
   "description": "NeoKid Care — offline-first neonatal & pediatric clinic PWA with cloud sync",
   "scripts": {
-    "test": "node tests/cloud-offline.test.js && node tests/tenant-isolation.test.js && node tests/hardening.test.js && node tests/api.test.js && node tests/history.test.js && node tests/exam.test.js && node tests/dose.test.js && node tests/nicu.test.js && node tests/hri.test.js",
+    "test": "node tests/cloud-offline.test.js && node tests/tenant-isolation.test.js && node tests/hardening.test.js && node tests/api.test.js && node tests/history.test.js && node tests/exam.test.js && node tests/dose.test.js && node tests/nicu.test.js && node tests/hri.test.js && node tests/chronic.test.js",
     "test:offline": "node tests/cloud-offline.test.js",
     "test:isolation": "node tests/tenant-isolation.test.js",
     "test:hardening": "node tests/hardening.test.js",
@@ -13,7 +13,8 @@
     "test:exam": "node tests/exam.test.js",
     "test:dose": "node tests/dose.test.js",
     "test:nicu": "node tests/nicu.test.js",
-    "test:hri": "node tests/hri.test.js"
+    "test:hri": "node tests/hri.test.js",
+    "test:chronic": "node tests/chronic.test.js"
   },
   "devDependencies": {
     "embedded-postgres": "17.10.0-beta.17",

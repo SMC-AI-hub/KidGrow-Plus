@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const R = path.join(__dirname, "..");
 const out = {};
-for (const f of ["intergrowth.json", "icd10.json", "strings.en.json", "vitals.json", "templates.json", "formulary.json", "labs.json", "nicu.json", "hri.json"]) {
+for (const f of ["intergrowth.json", "icd10.json", "strings.en.json", "vitals.json", "templates.json", "formulary.json", "labs.json", "nicu.json", "hri.json", "chronic.json"]) {
   const name = f.replace(".json", "").replace(".", "_");
   out[name] = JSON.parse(fs.readFileSync(path.join(R, "data", f), "utf8"));
 }
