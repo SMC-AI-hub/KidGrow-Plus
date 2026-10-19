@@ -53,11 +53,14 @@ function renderLabs() {
   const rows = [...c.labs].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const latest = rows[rows.length - 1];
   const hb = latest ? hbClass(ageM, +latest.hb) : null;
+  let labRc = [];
+  try { if (typeof LabX !== "undefined" && LabX.recheck) labRc = LabX.recheck(c.labs, (am, h) => hbClass(ageM, h), todayISO()); } catch (eRc) {}
   const sevBadge = (s) => s === "red" ? "🔴" : s === "amber" ? "🟡" : "🟢";
   const mx = Math.max(1, ...rows.map((r) => +r.hb || 0));
   $("labsBox").innerHTML = `
   <div class="toolbar"><span style="font-size:13px;color:var(--muted)">WHO/IAP cutoffs · age ${ageM} mo</span>
     <span class="sp"></span><button class="btn btn-o btn-sm" onclick="printPage('pg-labs')">🖨️ Print</button></div>
+  ${labRc.length ? `<div class="alert a-amber">⏰ <div><b>Recheck due:</b> ${esc(labRc[0].note)}</div></div>` : ""}
   ${latest && hb && hb.band === "severe" ? `<div class="alert a-red">🚨 <div><b>Severe anaemia (Hb ${esc(String(latest.hb))}).</b> ${esc(hbProtocol("severe"))}</div></div>` : ""}
   <div class="grid g2">
     <div class="card"><h3>🧪 Add lab report</h3>
@@ -69,6 +72,15 @@ function renderLabs() {
         <div><label>CRP (mg/L)</label><input type="number" step="0.1" id="lbCrp" placeholder="if done"></div>
         <div><label>B12 (pg/mL)</label><input type="number" step="1" id="lbB12" placeholder="if done"></div>
         <div><label>Vit D (ng/mL)</label><input type="number" step="0.1" id="lbVitD" placeholder="if done"></div>
+        <div><label>WBC (×10⁹/L)</label><input type="number" step="0.1" id="lbWbc" placeholder="if done"></div>
+        <div><label>Platelets (×10⁹/L)</label><input type="number" step="1" id="lbPlt" placeholder="if done"></div>
+        <div><label>TSH (mIU/L)</label><input type="number" step="0.01" id="lbTsh" placeholder="if done"></div>
+        <div><label>Urine protein</label><select id="lbUProt"><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
+        <div><label>Urine leucocytes</label><select id="lbULeu"><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
+        <div><label>Urine nitrite</label><select id="lbUNit"><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
+        <div><label>Urine blood</label><select id="lbUBld"><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
+        <div><label>Urine glucose</label><select id="lbUGlu"><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
+        <div><label>Urine ketones</label><select id="lbUKet"><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
         <div><label>Note</label><input id="lbNote" placeholder="e.g. Post-URI, on iron"></div>
       </div>
       <button class="btn btn-p btn-sm" onclick="saveLab()" style="margin-top:8px">＋ Save report</button>
@@ -90,6 +102,10 @@ function renderLabs() {
           ${latest.crp ? `<dt>CRP ${esc(String(latest.crp))}</dt><dd>${(() => { try { const _t = (typeof Dose !== "undefined" && Dose.crpLabel) ? Dose.crpLabel(+latest.crp) : ""; return (_t.indexOf("Markedly") === 0 ? "🔴 " : _t.indexOf("Raised") === 0 ? "🟡 " : "🟢 ") + esc(_t); } catch (e) { return ""; } })()}</dd>` : ""}
           ${latest.b12 ? `<dt>B12 ${esc(String(latest.b12))}</dt><dd>${sevBadge(b12.sev)} ${esc(b12.label)}</dd>` : ""}
           ${latest.vitD ? `<dt>Vit D ${esc(String(latest.vitD))}</dt><dd>${sevBadge(vd.sev)} ${esc(vd.label)}</dd>` : ""}
+          ${latest.wbc ? (() => { try { const w = LabX.wbc(ageBetween(c.dob, latest.date).days, ageM, +latest.wbc); return `<dt>WBC ${esc(String(latest.wbc))}</dt><dd>${sevBadge(w.sev)} ${esc(w.label)}</dd>`; } catch (e) { return ""; } })() : ""}
+          ${latest.plt ? (() => { try { const p = LabX.plt(+latest.plt); return `<dt>Plt ${esc(String(latest.plt))}</dt><dd>${sevBadge(p.sev)} ${esc(p.label)}</dd>`; } catch (e) { return ""; } })() : ""}
+          ${latest.tsh ? (() => { try { const th = LabX.tsh(ageM, +latest.tsh); return `<dt>TSH ${esc(String(latest.tsh))}</dt><dd>${sevBadge(th.sev)} ${esc(th.label)}</dd>`; } catch (e) { return ""; } })() : ""}
+          ${(() => { try { const us = LabX.urine(latest); return us.map((u) => `<dt>Urine ${esc(u.test)}${u.grade ? " " + esc(u.grade) : ""}</dt><dd>${sevBadge(u.sev)} ${esc(u.note)}</dd>`).join(""); } catch (e) { return ""; } })()}
         </dl>
         ${hb ? `<div class="alert ${hb.sev === "green" ? "a-green" : hb.sev === "red" ? "a-red" : "a-amber"}" style="margin-top:10px">📋 <div><b>Protocol:</b> ${esc(hbProtocol(hb.band))}</div></div>` : ""}
         ${hb && hb.band !== "normal" && hb.band !== "infant" ? `<button class="btn btn-p btn-sm" onclick="ironToRx()">💊 Send iron to prescription →</button>` : ""}`;
@@ -108,7 +124,7 @@ function saveLab() {
   const c = child(); if (!c) return;
   c.labs = c.labs || [];
   if (!$("lbDate").value) return alert("Date required.");
-  c.labs.push({ id: uid(), rev: "", date: $("lbDate").value, hb: $("lbHb").value, mcv: $("lbMcv").value, ferritin: $("lbFer").value, crp: $("lbCrp").value, b12: $("lbB12").value, vitD: $("lbVitD").value, note: $("lbNote").value.trim() });
+  c.labs.push({ id: uid(), rev: "", date: $("lbDate").value, hb: $("lbHb").value, mcv: $("lbMcv").value, ferritin: $("lbFer").value, crp: $("lbCrp").value, b12: $("lbB12").value, vitD: $("lbVitD").value, wbc: $("lbWbc").value, plt: $("lbPlt").value, tsh: $("lbTsh").value, uProt: $("lbUProt").value, uLeu: $("lbULeu").value, uNit: $("lbUNit").value, uBld: $("lbUBld").value, uGlu: $("lbUGlu").value, uKet: $("lbUKet").value, note: $("lbNote").value.trim() });
   try { if (typeof Dose !== "undefined" && Dose.labFlags && typeof Alerts !== "undefined" && Alerts.raise) { Dose.labFlags({ hb: $("lbHb").value, mcv: $("lbMcv").value, ferritin: $("lbFer").value, crp: $("lbCrp").value, b12: $("lbB12").value, vitD: $("lbVitD").value }).filter((f) => f.tier === "warn").forEach((f) => Alerts.raise("warn", "LAB", `${c.name}: ${f.text}`)); } } catch (eDx) {}
   auditSafe("Lab report", `${c.name} — Hb ${$("lbHb").value || "—"}`);
   save(); renderAll();

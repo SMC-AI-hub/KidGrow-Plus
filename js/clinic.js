@@ -291,13 +291,18 @@ function clinicPulseHTML() {
 function renderAnalytics() {
   if (!$("pg-analytics")) return;
   const t = todayISO(), cov = coverageStats(DB.children, t);
+  let hriDef = 0, chrN = 0;
+  try { hriDef = (typeof Hri !== "undefined" && Hri.defaulters) ? Hri.defaulters(DB.children, t).length : 0; } catch (eH) {}
+  try { chrN = (typeof Chronic !== "undefined" && Chronic.conds) ? DB.children.filter((cc) => Chronic.conds(cc).length).length : 0; } catch (eC) {}
   const nut = nutritionSnapshot(DB.children), falt = falteringFlags(DB.children), vol = visitVolume(DB.children, t, 6);
   const d = (x, good) => (x.pct === null ? "—" : `${x.pct}%`);
   $("anStats").innerHTML = `
     <div class="stat" style="--ac:var(--teal)"><div><div class="n">${cov.fic}/${cov.total}</div><div class="l">Fully immunised for age</div></div><div class="e">🛡️</div></div>
     <div class="stat" style="--ac:${cov.dtpDrop.pct !== null && cov.dtpDrop.pct > 10 ? "var(--red)" : "var(--green)"}"><div><div class="n">${d(cov.dtpDrop)}</div><div class="l">DTP1→DTP3 dropout (goal &lt;10%)</div></div><div class="e">📉</div></div>
     <div class="stat" style="--ac:${nut.sam ? "var(--red)" : "var(--green)"}"><div><div class="n">${nut.sam + nut.mam}</div><div class="l">SAM+MAM now (${nut.sam} SAM, of ${nut.n} screened)</div></div><div class="e">⚠️</div></div>
-    <div class="stat" style="--ac:${falt.length ? "var(--amber)" : "var(--green)"}"><div><div class="n">${falt.length}</div><div class="l">Growth-faltering alerts (of ${(typeof MetricsPure !== "undefined" ? MetricsPure.withMinMeasures(DB.children, 2) : "?")} with 2+ measures)</div></div><div class="e">🚨</div></div>`;
+    <div class="stat" style="--ac:${falt.length ? "var(--amber)" : "var(--green)"}"><div><div class="n">${falt.length}</div><div class="l">Growth-faltering alerts (of ${(typeof MetricsPure !== "undefined" ? MetricsPure.withMinMeasures(DB.children, 2) : "?")} with 2+ measures)</div></div><div class="e">🚨</div></div>
+    <div class="stat" style="--ac:${hriDef ? "var(--amber)" : "var(--green)"}"><div><div class="n">${hriDef}</div><div class="l">HRI defaulters (overdue follow-up)</div></div><div class="e">📅</div></div>
+    <div class="stat" style="--ac:var(--blue)"><div><div class="n">${chrN}</div><div class="l">Children on chronic flowsheets</div></div><div class="e">📊</div></div>`;
   const gLabel = { bcg: "BCG", opv: "OPV", hepb: "Hepatitis B", dtp: "DTP / combos", ipv: "Polio (IPV)", hib: "Hib", rota: "Rotavirus", pcv: "Pneumococcal", flu: "Influenza", mmr: "MMR / MR", typhoid: "Typhoid", vita: "Vitamin A", hepa: "Hepatitis A", je: "Japanese encephalitis", varicella: "Varicella", tdap: "Tdap / Td", hpv: "HPV" };
   const pools = Object.keys(cov.pool).filter((g) => cov.pool[g].eligible > 0)
     .sort((a, b) => (cov.pool[a].pct ?? 101) - (cov.pool[b].pct ?? 101));
