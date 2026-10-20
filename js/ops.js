@@ -670,7 +670,14 @@ function storageLine() {
     const mb = bytes / 1048576, pct = Math.round((mb / 5) * 100);
     if (mb > 3.5) return `⚠️ Local data is ${mb.toFixed(1)} MB of ~5 MB (${pct}%) — export a backup and contact support about the server store (F4).`;
     if (mb > 2) return `Local data: ${mb.toFixed(1)} MB of ~5 MB (${pct}%) — healthy, backups current recommended.`;
-    return `Local data: ${mb < 0.1 ? Math.round(bytes / 1024) + " KB" : mb.toFixed(1) + " MB"} of ~5 MB on this device.`;
+    let tail = `Local data: ${mb < 0.1 ? Math.round(bytes / 1024) + " KB" : mb.toFixed(1) + " MB"} of ~5 MB on this device.`;
+    try {
+      const st = (typeof IDB !== "undefined" && IDB && typeof IDB.status === "function") ? IDB.status() : null;
+      if (st && st.error === "unavailable") tail += " IndexedDB mirror: unavailable on this browser.";
+      else if (st && st.match === true) tail += ` IndexedDB mirror: in sync (${(st.idbBytes / 1048576).toFixed(1)} MB).`;
+      else if (st && st.match === false) tail += " IndexedDB mirror: differed at last check — will re-mirror on next save.";
+    } catch (e) {}
+    return tail;
   } catch (e) { return ""; }
 }
 function backupAgeLine() {

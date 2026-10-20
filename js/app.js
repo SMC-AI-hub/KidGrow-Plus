@@ -39,6 +39,8 @@ function save() {
     return;
   }
   try { localStorage.setItem(LS_KEY + "_auto", json); } catch (_) {}
+  try { localStorage.setItem(LS_KEY + "_meta", JSON.stringify({ at: Date.now(), len: json.length })); } catch (_) {}
+  try { if (typeof IDB !== "undefined" && IDB && typeof IDB.mirror === "function") IDB.mirror(json); } catch (_) {}
   try { if (typeof CloudSchedulePush === "function") CloudSchedulePush(); } catch (_) {}
 }
 let _saveSoonT = null;
@@ -1942,3 +1944,19 @@ try { // F17: no-PHI error beacon (page + message only)
 } catch (e) {}
 load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyMotion(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();
 try { if (typeof backupWatch === "function") setTimeout(backupWatch, 2500); } catch (e) {}
+try { // E1: verify the IndexedDB shadow; adopt it only if cutover armed + shadow provably newer
+  if (typeof IDB !== "undefined" && IDB && typeof IDB.verify === "function") {
+    IDB.verify().then(function (st) {
+      try {
+        if (st && st.adopt && typeof parseDB === "function") {
+          const d = parseDB(st.adopt);
+          if (d) {
+            DB = d;
+            try { if (typeof auditSafe === "function") auditSafe("Storage", "Adopted newer IndexedDB copy (E1 cutover)"); } catch (e2) {}
+            try { if (typeof renderAll === "function") renderAll(); } catch (e3) {}
+          }
+        }
+      } catch (e4) {}
+    });
+  }
+} catch (e) {}

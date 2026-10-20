@@ -1,10 +1,10 @@
 {
   "name": "neokid-care",
-  "version": "10.47.0",
+  "version": "10.48.0",
   "private": true,
   "description": "NeoKid Care — offline-first neonatal & pediatric clinic PWA with cloud sync",
   "scripts": {
-    "test": "node tests/cloud-offline.test.js && node tests/tenant-isolation.test.js && node tests/hardening.test.js && node tests/api.test.js && node tests/history.test.js && node tests/exam.test.js && node tests/dose.test.js && node tests/nicu.test.js && node tests/hri.test.js && node tests/chronic.test.js && node tests/panels.test.js && node tests/comply.test.js && node tests/syncmerge.test.js && node tests/printaudit.test.js && node tests/cmdk.test.js && node tests/validate.test.js && node tests/merge.test.js && node tests/load.test.js",
+    "test": "node tests/cloud-offline.test.js && node tests/tenant-isolation.test.js && node tests/hardening.test.js && node tests/api.test.js && node tests/history.test.js && node tests/exam.test.js && node tests/dose.test.js && node tests/nicu.test.js && node tests/hri.test.js && node tests/chronic.test.js && node tests/panels.test.js && node tests/comply.test.js && node tests/syncmerge.test.js && node tests/printaudit.test.js && node tests/cmdk.test.js && node tests/validate.test.js && node tests/merge.test.js && node tests/load.test.js && node tests/idb.test.js",
     "test:offline": "node tests/cloud-offline.test.js",
     "test:isolation": "node tests/tenant-isolation.test.js",
     "test:hardening": "node tests/hardening.test.js",
@@ -23,6 +23,7 @@
     "test:validate": "node tests/validate.test.js",
     "test:merge": "node tests/merge.test.js",
     "test:load": "node tests/load.test.js",
+    "test:idb": "node tests/idb.test.js",
     "test:smoke": "node tests/e2e-smoke.js"
   },
   "devDependencies": {
