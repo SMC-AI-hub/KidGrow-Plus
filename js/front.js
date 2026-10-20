@@ -3,7 +3,7 @@
    PIN login + roles · audit trail · token queue ·
    billing & receipts · users management.
    ===================================================== */
-const ROLE_RANK = { Doctor: 3, Admin: 3, Nurse: 2, Pharmacist: 2, Frontdesk: 1 };
+const ROLE_RANK = { owner: 3, Doctor: 3, Admin: 3, Nurse: 2, Pharmacist: 2, Frontdesk: 1 }; // owner was missing (rank 0): locked out of every gate
 const ROLE_HIDE = {
   Frontdesk: ["milestones", "growth", "visits", "timeline", "rx", "analytics", "reports", "users", "settings", "nb", "labs", "aefi", "screen", "diet", "consent", "export", "nicu", "mar", "calc", "mrd", "formulary", "billing"],
   Nurse: ["users", "settings", "billing"],
@@ -55,11 +55,23 @@ function enforceLock() {
     document.getElementById("lockMsg").textContent = "";
   }
 }
-/* PINs are salted hashes (SHA-256 via WebCrypto), never plaintext. Legacy plaintext
-   PINs migrate to hashes on next successful login. Honest limits: a 4-digit PIN
-   has ~13 bits of entropy — this stops casual reads, not targeted cracking.
-   The real multi-user security boundary is Supabase Auth + memberships (M3). */
+/* PINs are salted PBKDF2-SHA256-100k hashes (WebCrypto), never plaintext (F5).
+   Legacy single-round hashes verify-then-upgrade transparently on next login;
+   legacy plaintext PINs migrate the same way. Honest limits: a 4-digit PIN has
+   ~13 bits of entropy — PBKDF2 slows offline cracking ~100k-fold but a targeted
+   attacker with the DB file can still brute-force it. The real multi-user
+   security boundary is Supabase Auth + memberships (M3). */
 async function pinHash(pin, salt) {
+  if (window.crypto && crypto.subtle) {
+    try {
+      const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(pin)), "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(String(salt)), iterations: 100000, hash: "SHA-256" }, km, 256);
+      return "p2$" + [...new Uint8Array(bits)].map((x) => x.toString(16).padStart(2, "0")).join("");
+    } catch (e) { /* fall through to legacy below */ }
+  }
+  return pinHashLegacy(pin, salt);
+}
+async function pinHashLegacy(pin, salt) {
   const msg = salt + ":" + String(pin);
   if (window.crypto && crypto.subtle) {
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
@@ -84,7 +96,16 @@ async function doLogin() {
   const g = pinGuard();
   if (g.until && Date.now() < g.until) { msg.textContent = "🔒 Too many attempts — try again in " + Math.ceil((g.until - Date.now()) / 1000) + "s."; return; }
   let authed = false;
-  if (u && u.pinHash && u.pinSalt) authed = (await pinHash(pin, u.pinSalt)) === u.pinHash;
+  if (u && u.pinHash && u.pinSalt) {
+    if (String(u.pinHash).indexOf("p2$") === 0) authed = (await pinHash(pin, u.pinSalt)) === u.pinHash;
+    else { // legacy single-round hash: verify, then transparently upgrade (F5)
+      authed = (await pinHashLegacy(pin, u.pinSalt)) === u.pinHash;
+      if (authed) {
+        u.pinSalt = pinSalt(); u.pinHash = await pinHash(pin, u.pinSalt);
+        try { log("PIN security upgraded", u.name); } catch (eUp) {}
+      }
+    }
+  }
   else if (u && u.pin != null && String(u.pin) === String(pin)) {
     u.pinSalt = pinSalt(); u.pinHash = await pinHash(pin, u.pinSalt); delete u.pin; authed = true;
   }
@@ -207,6 +228,20 @@ function billAddCustom() {
   billDraft().items.push({ desc: d, amt: a }); renderFront();
 }
 function billDelItem(i) { billDraft().items.splice(i, 1); renderFront(); }
+function nextInvNoFor(bills, seq, year) {
+  let n = (+seq || 0);
+  (bills || []).forEach((b) => {
+    const m = /^INV-(\d{4})-(\d+)$/.exec(String((b && b.invNo) || ""));
+    if (m && m[1] === String(year)) n = Math.max(n, +m[2]);
+  });
+  return { invNo: "INV-" + year + "-" + String(n + 1).padStart(4, "0"), seq: n + 1 };
+}
+function nextInvNo() {
+  const r = nextInvNoFor(DB.bills, (DB.settings || {}).billSeq, todayISO().slice(0, 4));
+  DB.settings = Object.assign({}, DB.settings, { billSeq: r.seq });
+  return r.invNo;
+}
+function receiptRef(b) { return (b && b.invNo) || ("R-" + String((b && b.id) || "").slice(-6).toUpperCase()); }
 function saveBill() {
   if (typeof guardSubmit === "function" && !guardSubmit("bill")) return; // M4: no double bills
   const dft = billDraft();
@@ -214,7 +249,7 @@ function saveBill() {
   DB.bills = DB.bills || [];
   const kid = DB.children.find((x) => x.id === dft.childId);
   const total = billTotal(), paid = dft.paid === "" ? total : +dft.paid || 0;
-  DB.bills.push({ id: uid(), date: todayISO(), time: nowHM(), childId: dft.childId, name: kid ? kid.name : "Walk-in", items: dft.items.map((i) => ({ ...i })), total, paid, mode: dft.mode, by: (currentUser() || {}).name || "" });
+  DB.bills.push({ id: uid(), invNo: nextInvNo(), date: todayISO(), time: nowHM(), childId: dft.childId, name: kid ? kid.name : "Walk-in", items: dft.items.map((i) => ({ ...i })), total, paid, mode: dft.mode, by: (currentUser() || {}).name || "" });
   BILL_DRAFT = null;
   log("Bill", `₹${total} — ${kid ? kid.name : "Walk-in"}`);
   save(); renderAll();
@@ -230,7 +265,7 @@ function printBill(id) {
   const b = (DB.bills || []).find((x) => x.id === id); if (!b) return;
   const bal = b.total - b.paid;
   $("billPrint").innerHTML = `<div class="receipt">${clinicHeader()}
-    <div style="text-align:center;font-weight:800;letter-spacing:1px;margin:6px 0">RECEIPT · No. R-${b.id.slice(-6).toUpperCase()}</div>
+    <div style="text-align:center;font-weight:800;letter-spacing:1px;margin:6px 0">RECEIPT · No. ${esc(receiptRef(b))}</div>
     <dl class="kv"><dt>Date</dt><dd>${fmtDate(b.date)} ${esc(b.time || "")}</dd><dt>Received from</dt><dd><b>${esc(b.name)}</b></dd><dt>Mode</dt><dd>${esc(b.mode || "—")}</dd></dl>
     <table class="tbl"><tr><th>Particulars</th><th style="text-align:right">Amount (₹)</th></tr>
     ${b.items.map((i) => `<tr><td>${esc(i.desc)}</td><td style="text-align:right">${(+i.amt || 0).toFixed(0)}</td></tr>`).join("")}

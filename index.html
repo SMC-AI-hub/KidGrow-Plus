@@ -268,6 +268,7 @@
         <div class="toolbar">
           <input class="search" id="childSearch" placeholder="🔍 Search name, parent, phone…  ( press / anywhere )" oninput="renderChildren()" onkeydown="childSearchKey(event)">
           <span class="sp"></span>
+          <button class="btn btn-o btn-sm" onclick="openMergeModal()">⧉ Merge duplicates</button>
           <button class="btn btn-p" onclick="openChildModal()">+ Register child</button>
         </div>
         <div class="grid g3" id="childCards"></div>
@@ -401,6 +402,7 @@
               <div class="full"><label>Clinic / Hospital name</label><input id="sClinic" placeholder="e.g. Smile Child Care Clinic"></div>
               <div><label>Doctor name</label><input id="sDoctor" placeholder="e.g. Dr. A. Sharma, MD (Paeds)"></div>
               <div><label>Registration no.</label><input id="sReg" placeholder="MCI / State reg."></div>
+              <div><label>Clinic GSTIN (prints on receipts)</label><input id="sGstin" placeholder="e.g. 33ABCDE1234F1Z5" style="text-transform:uppercase"></div>
               <div><label>Address</label><input id="sAddr" placeholder="Street, area, city"></div>
               <div><label>Phone</label><input id="sPhone" placeholder="Clinic phone"></div>
               <div class="full"><label>Clinic / hospital logo (PNG/JPG · shows on sidebar + all letterheads)</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><img id="logoPrev" alt="" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;display:none"><input type="file" id="sLogo" accept="image/*" style="max-width:230px" onchange="handleLogoFile(this)"><button class="btn btn-o btn-xs" onclick="removeLogo()">Remove</button></div></div>
@@ -458,6 +460,27 @@
 </div></div>
 
 <!-- ============ MODALS ============ -->
+<div class="modal-bg" id="mBackupWatch"><div class="modal" style="max-width:440px" role="dialog" aria-label="Backup overdue">
+  <h3>💾 Backup overdue</h3>
+  <div class="hint" id="backupWatchLine" style="font-size:13.5px"></div>
+  <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+    <button class="btn btn-p btn-sm" onclick="closeModal('mBackupWatch');go('export')">Back up now</button>
+    <button class="btn btn-o btn-sm" onclick="snoozeBackup()">Remind tomorrow</button>
+  </div>
+</div></div>
+<div class="modal-bg" id="mMerge"><div class="modal" style="max-width:520px" role="dialog" aria-label="Merge duplicate patients">
+  <h3>⧉ Merge duplicate patients</h3>
+  <div class="hint" style="font-size:12.5px">Keeps the first record's identity, moves all visits / growth / vaccines / Rx from the second, then retires it (audited, reversible via restore).</div>
+  <div class="form-grid" style="margin-top:8px">
+    <div><label>Keep (surviving record)</label><select id="mgKeep"></select></div>
+    <div><label>Merge & retire (duplicate)</label><select id="mgDrop"></select></div>
+  </div>
+  <div class="hint" id="mgPrev" style="font-size:12.5px;margin-top:6px"></div>
+  <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+    <button class="btn btn-p btn-sm" onclick="confirmMerge()">Merge records</button>
+    <button class="btn btn-o btn-sm" onclick="closeModal('mMerge')">Cancel</button>
+  </div>
+</div></div>
 <div class="modal-bg" id="mChild"><div class="modal">
   <h3 id="childModalTitle">Register child</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">Starred fields are required</div>
   <div class="form-grid">
@@ -630,6 +653,7 @@
 <script src="js/growth.js"></script>
 <script src="js/growth-chart.js"></script>
 <script src="js/validate.js"></script>
+<script src="js/merge.js"></script>
 <script src="js/app.js"></script>
 <script src="js/qrcode.min.js"></script>
 <script src="js/clinic.js"></script>

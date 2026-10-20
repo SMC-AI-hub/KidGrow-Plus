@@ -178,6 +178,11 @@ ok(cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PROD
   ok(cloudSrc.includes("window.APP_VER"), "APP_VER exposed globally for version proof (F13)");
   ok(read("js/validate.js").includes("checkVitals") && read("js/app.js").includes("V.checkVitals") && read("js/growth.js").includes("V.check"), "saves route through central validators (F15)");
   ok(read("js/nicu.js").includes("NOT case-validated (F25)") && read("index.html").includes('id="sNicuValid"'), "NICU fence banner + settings flag (F25)");
+  ok(read("js/front.js").includes("PBKDF2") && read("js/front.js").includes("100000") && read("js/front.js").includes("p2$"), "PIN KDF is PBKDF2-100k (F5)");
+  ok(read("js/front.js").includes("nextInvNoFor") && read("index.html").includes('id="sGstin"') && read("js/app.js").includes("GSTIN"), "sequential invoices + GSTIN (F18)");
+  ok(read("index.html").includes('id="mBackupWatch"') && read("js/ops.js").includes("snoozeBackup") && read("js/app.js").includes("backupWatch"), "backup watchdog modal + boot hook (F20)");
+  ok(read("index.html").includes('id="mMerge"') && read("js/app.js").includes("confirmMerge") && read("sw.js").includes("./js/merge.js"), "merge tool UI wired + cached (F16)");
+  ok(/owner: 3/.test(read("js/front.js")), "owner role has gate rank (access fix)");
 }
 
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);

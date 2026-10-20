@@ -472,6 +472,33 @@ function syncChildPicker() {
 }
 $("childSelect").addEventListener("change", (e) => setActive(e.target.value));
 
+function openMergeModal() {
+  try {
+    if (typeof needSafe === "function" && !needSafe(2, "merge patients")) return;
+    const kids = (DB.children || []).filter((c) => c && !c._deleted);
+    const opts = kids.map((c) => `<option value="${c.id}">${esc(c.name)} · ${fmtDate(c.dob)}${c.mrn ? " · " + esc(c.mrn) : ""}</option>`).join("");
+    $("mgKeep").innerHTML = opts; $("mgDrop").innerHTML = opts;
+    const pairs = (typeof findDupCandidates === "function") ? findDupCandidates(kids) : [];
+    if (pairs.length) { $("mgKeep").value = pairs[0].a; $("mgDrop").value = pairs[0].b; }
+    const prev = $("mgPrev");
+    if (prev) prev.innerHTML = pairs.length
+      ? `🔍 <b>${pairs.length}</b> likely duplicate pair(s): ` + pairs.slice(0, 5).map((p) => { const an = (kids.find((c) => c.id === p.a) || {}).name, bn = (kids.find((c) => c.id === p.b) || {}).name; return `${esc(an)} + ${esc(bn)} (${esc(p.why)})`; }).join(" · ")
+      : "No likely duplicates found — you can still pick any two records.";
+    openModal("mMerge");
+  } catch (e) { alert("Merge tool failed to open: " + ((e && e.message) || e)); }
+}
+function confirmMerge() {
+  try {
+    const k = $("mgKeep").value, d = $("mgDrop").value;
+    if (!k || !d || k === d) return alert("Pick two different records.");
+    const kn = ((DB.children || []).find((c) => c.id === k) || {}).name, dn = ((DB.children || []).find((c) => c.id === d) || {}).name;
+    if (!confirm(`Merge "${dn}" INTO "${kn}"?\n\nAll visits, growth, vaccines and prescriptions move to ${kn}. "${dn}" is retired (audited). This cannot be undone except by restoring a backup.`)) return;
+    const r = mergeChildren(DB, k, d);
+    if (!r.ok) return alert(r.why || "Merge failed.");
+    save(); closeModal("mMerge"); syncChildPicker(); renderAll();
+    toast(`Merged: ${dn} → ${kn}.`);
+  } catch (e) { alert("Merge failed: " + ((e && e.message) || e)); }
+}
 function openChildModal(id) {
   const c = id ? DB.children.find((x) => x.id === id) : null;
   $("childModalTitle").textContent = c ? "Edit child" : "Register child";
@@ -1541,7 +1568,7 @@ function clinicHeader() {
   const logo = s.logo ? `<img src="${s.logo}" alt="logo" class="report-logo" onerror="this.style.display='none'">` : `<div style="font-size:40px">👶</div>`;
   const cc = splitClinicContact(s);
   return `<div class="report-head">${logo}<div><div class="clinic">${esc(s.clinic || "NeoKid Care Clinic")}</div>
-  <div style="font-size:13px;color:var(--muted)">${esc(ld.name)}${ld.qual ? ", " + esc(ld.qual) : ""} ${ld.reg ? "· Reg: " + esc(ld.reg) : ""}<br>${esc(cc.addr)}</div></div>
+  <div style="font-size:13px;color:var(--muted)">${esc(ld.name)}${ld.qual ? ", " + esc(ld.qual) : ""} ${ld.reg ? "· Reg: " + esc(ld.reg) : ""}${s.gstin ? " · GSTIN " + esc(s.gstin) : ""}<br>${esc(cc.addr)}</div></div>
   <div style="margin-left:auto;font-size:12px;color:var(--muted)">Generated ${fmtDate(todayISO())}</div></div>`;
 }
 function childHeader(c) {
@@ -1601,7 +1628,8 @@ function printCertificate() {
 function saveSettings() {
   const lm = document.getElementById("sLockMins"), scp0 = document.getElementById("sColorPrint");
   const snv = document.getElementById("sNicuValid");
-  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), addr: $("sAddr").value.trim(), phone: $("sPhone").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15"), colorPrint: scp0 ? scp0.checked : ((DB.settings || {}).colorPrint !== false), nicuValid: snv ? snv.checked : !!((DB.settings || {}).nicuValid) });
+  const sgst = document.getElementById("sGstin");
+  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), gstin: sgst ? sgst.value.trim().toUpperCase() : ((DB.settings || {}).gstin || ""), addr: $("sAddr").value.trim(), phone: $("sPhone").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15"), colorPrint: scp0 ? scp0.checked : ((DB.settings || {}).colorPrint !== false), nicuValid: snv ? snv.checked : !!((DB.settings || {}).nicuValid) });
   save(); syncChildPicker(); renderBrand(); applyPrintMode(); alert("Clinic profile saved.");
 }
 function savePrintPref() { const scp = $("sColorPrint"); if (!scp) return; DB.settings = Object.assign({}, DB.settings, { colorPrint: scp.checked }); save(); applyPrintMode(); toast(scp.checked ? "Color printing on 🎨" : "Ink-saver B&W printing on"); }
@@ -1610,7 +1638,7 @@ function applyPrintMode() {
   try { document.body.classList.toggle("bw-print", !color); document.body.dataset.printMode = color ? "color" : "bw"; } catch (e) {}
   return color;
 }
-function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; $("sAddr").value = s.addr || ""; $("sPhone").value = s.phone || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; const scp = document.getElementById("sColorPrint"); if (scp) scp.checked = s.colorPrint !== false; const snv = document.getElementById("sNicuValid"); if (snv) snv.checked = !!s.nicuValid; }
+function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; const sg = document.getElementById("sGstin"); if (sg) sg.value = s.gstin || ""; $("sAddr").value = s.addr || ""; $("sPhone").value = s.phone || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; const scp = document.getElementById("sColorPrint"); if (scp) scp.checked = s.colorPrint !== false; const snv = document.getElementById("sNicuValid"); if (snv) snv.checked = !!s.nicuValid; }
 function exportData() {
   DB.lastBackup = todayISO(); save();
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: "application/json" });
@@ -1843,6 +1871,7 @@ function renderAll() {
   try { syncChildPicker(); } catch (e) {}
   ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderNicu", "renderHri", "renderChronic", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
   try { applyFolds(); } catch (e) {}
+  try { if (typeof backupWatch === "function") backupWatch(); } catch (e) {} // F20: post-login watchdog
 }
 window.addEventListener("resize", () => drawGrowthChart());
 
@@ -1859,3 +1888,4 @@ function applyRefVersions() {
   return n;
 }
 load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyMotion(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();
+try { if (typeof backupWatch === "function") setTimeout(backupWatch, 2500); } catch (e) {}

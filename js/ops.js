@@ -157,7 +157,7 @@ function exportDayCloseCSV() {
   const d = dayCloseData(OPS.day);
   const q = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
   const L = [["Date", "Receipt", "Patient", "Particulars", "Mode", "Staff", "Total", "Paid"].map(q).join(",")];
-  d.bills.forEach((b) => L.push([d.date, "R-" + b.id.slice(-6).toUpperCase(), b.name, b.items.map((i) => i.desc).join(" + "), b.mode || "", b.by || "", b.total, b.paid].map(q).join(",")));
+  d.bills.forEach((b) => L.push([d.date, (typeof receiptRef === "function" ? receiptRef(b) : b.invNo || ("R-" + String(b.id || "").slice(-6).toUpperCase())), b.name, b.items.map((i) => i.desc).join(" + "), b.mode || "", b.by || "", b.total, b.paid].map(q).join(",")));
   const blob = new Blob([L.join("\n")], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = `dayclose-${d.date}.csv`; a.click();
@@ -639,6 +639,30 @@ function copyParentSummary() {
 }
 
 /* ================= G. ENCRYPTED BACKUPS (cloud-safe files) ================= */
+let _backupWatchShown = false;
+function backupWatch() {
+  try {
+    if (_backupWatchShown) return false;
+    if ((DB.settings || {}).backupWatchOff) return false;
+    if ((DB.users || []).length && !((DB.session || {}).userId)) return false; // locked: wait for login
+    const stale = !DB.lastBackup || (typeof dayDiff === "function" && dayDiff(DB.lastBackup, todayISO()) > 7);
+    if (!stale) return false;
+    if (DB._backupSnooze && DB._backupSnooze === todayISO()) return false;
+    _backupWatchShown = true;
+    const line = document.getElementById("backupWatchLine");
+    if (line) line.textContent = (typeof backupAgeLine === "function" ? backupAgeLine() : "Backup overdue.") + " Your data lives only on this device until you back it up.";
+    if (typeof openModal === "function") openModal("mBackupWatch");
+    return true;
+  } catch (e) { return false; }
+}
+function snoozeBackup() {
+  try {
+    DB._backupSnooze = todayISO(); save();
+    if (typeof auditSafe === "function") auditSafe("Backup reminder snoozed", "until tomorrow");
+    if (typeof closeModal === "function") closeModal("mBackupWatch");
+    if (typeof toast === "function") toast("Reminder snoozed until tomorrow.");
+  } catch (e) {}
+}
 function backupAgeLine() {
   if (!DB.lastBackup) return "Never backed up — export one today.";
   const d = dayDiff(DB.lastBackup, todayISO());

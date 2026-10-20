@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v39/.test(sw), "SW cache bumped to v39 (central validators: +validate)");
+  ok(/neokid-v40/.test(sw), "SW cache bumped to v40 (merge tool: +merge)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -143,8 +143,9 @@ async function main() {
 
   // ---- PIN hashing + migration + lockout ----
   const h1 = await sb.pinHash("4242", "salt-A"), h1b = await sb.pinHash("4242", "salt-A"), h2 = await sb.pinHash("4242", "salt-B");
-  ok(/^[0-9a-f]{64}$/.test(h1), "pinHash uses SHA-256 hex (strong path, not weak fallback)");
+  ok(/^p2\$[0-9a-f]{64}$/.test(h1), "pinHash uses PBKDF2-100k (p2$ + 256-bit hex, F5)");
   ok(h1 === h1b && h1 !== h2, "pinHash deterministic per salt, salt-sensitive");
+  ok(!/^p2\$/.test(await sb.pinHashLegacy("4242", "salt-A")), "legacy single-round hash has no p2$ marker");
   vm.runInContext("DB.users=[{id:'u9',name:'PIN Test',role:'Doctor',pin:'4242'}]; DB.session={};", sb);
   sb.document.getElementById("lockUser").value = "u9";
   sb.document.getElementById("lockPin").value = "4242";
@@ -155,6 +156,13 @@ async function main() {
   await sb.doLogin();
   vm.runInContext("globalThis.__pin2={sess:(DB.session||{}).userId}", sb);
   ok(sb.__pin2.sess === "u9", "hashed PIN login succeeds");
+  const legacyH = await sb.pinHashLegacy("7777", "salt-L");
+  vm.runInContext(`DB.users.push({id:'u8',name:'Legacy Test',role:'Doctor',pinSalt:'salt-L',pinHash:'${legacyH}'}); DB.session={};`, sb);
+  sb.document.getElementById("lockUser").value = "u8";
+  sb.document.getElementById("lockPin").value = "7777";
+  await sb.doLogin();
+  vm.runInContext("globalThis.__pinU={p2:(DB.users.find(u=>u.id==='u8')||{}).pinHash||'',sess:(DB.session||{}).userId}", sb);
+  ok(/^p2\$/.test(sb.__pinU.p2) && sb.__pinU.sess === "u8", "legacy hash verifies then transparently upgrades to PBKDF2 (F5)");
   vm.runInContext("DB.session={};", sb);
   sb.document.getElementById("lockPin").value = "0000";
   for (let i = 0; i < 5; i++) await sb.doLogin();
@@ -164,6 +172,15 @@ async function main() {
   await sb.doLogin();
   vm.runInContext("globalThis.__pin3={sess:(DB.session||{}).userId}", sb);
   ok(!sb.__pin3.sess && /try again/.test(sb.document.getElementById("lockMsg").textContent || ""), "lockout blocks even the correct PIN");
+
+  // ---- sequential invoice numbers (F18) ----
+  vm.runInContext("DB.bills=[]; DB.settings=Object.assign({},DB.settings,{billSeq:0});", sb);
+  ok(sb.nextInvNoFor([], 0, "2026").invNo === "INV-2026-0001", "first invoice of year is 0001");
+  ok(sb.nextInvNoFor([{ invNo: "INV-2026-0001" }, { invNo: "INV-2026-0007" }], 3, "2026").invNo === "INV-2026-0008", "sequence resumes from max(bills, counter)");
+  ok(sb.nextInvNoFor([{ invNo: "INV-2025-0099" }], 0, "2026").invNo === "INV-2026-0001", "sequence restarts each calendar year");
+  ok(sb.nextInvNoFor([{ id: "abcdef123456" }], 0, "2026").invNo === "INV-2026-0001", "legacy bills without invNo do not break sequencing");
+  ok(sb.receiptRef({ invNo: "INV-2026-0003", id: "x" }) === "INV-2026-0003", "receipt prefers invNo");
+  ok(sb.receiptRef({ id: "abcdef123456" }) === "R-123456", "receipt falls back to R-xxxxxx for legacy bills");
 
   // ---- inactivity auto-lock ----
   vm.runInContext("DB.users=[{id:'u9',name:'Idle Test',role:'Doctor',pinSalt:'s',pinHash:'h'}]; DB.session={userId:'u9',at:'x'}; DB.settings={lockMins:'15'}; IdleLast = Date.now() - 20*60e3;", sb);
