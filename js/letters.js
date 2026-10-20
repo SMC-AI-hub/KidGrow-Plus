@@ -79,7 +79,7 @@ function renderLetters() {
   <div class="card"><h3>📁 Saved letters</h3>
     ${rows.length ? rows.map((x) => `<div class="vac-row"><div class="grow"><b>${fmtDate(x.date)}</b> · ${x.kind === "referral" ? "Referral" : "Certificate"}${x.to ? " → " + esc(x.to) : ""}<br><span style="font-size:12.5px;color:var(--muted)">${esc(x.reason || x.certType || "")}</span></div>
     <button class="btn btn-o btn-xs" onclick='letterOpen("${x.id}")'>View</button>
-    <button class="btn btn-danger btn-xs" onclick='letterDel("${x.id}")'>✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No letters yet.</div>`}
+    <button class="btn btn-danger btn-xs" onclick='letterDel("${x.id}")'>✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No letters yet — fill the form and tap Preview, then Save.</div>`}
   </div></div>
   ${doc ? `<div class="card" style="margin-top:12px">${shareBarHTML("pg-letters", "letterDoc", "letter", "letters")}<div id="letterDoc">${doc}</div></div>` : ""}`;
 }

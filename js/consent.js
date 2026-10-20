@@ -50,7 +50,7 @@ function renderConsent() {
         ${x.sig ? `<img src="${x.sig}" style="height:44px;border:1px solid #e2e8f0;border-radius:6px;background:#fff" alt="sig">` : `<span style="font-size:12px;color:var(--muted)">no e-signature (wet-sign printout)</span>`}</div>
         <button class="btn btn-o btn-xs" onclick="printConsent('${x.id}')">🖨️</button>
         <button class="btn btn-danger btn-xs" onclick="delConsent('${x.id}')">✕</button></div>`).join("")
-      : `<div style="font-size:13px;color:var(--muted)">No consents yet.</div>`}
+      : `<div style="font-size:13px;color:var(--muted)">No consents yet — complete the form above and tap Save.</div>`}
     </div>
   </div>`;
   sigInit();

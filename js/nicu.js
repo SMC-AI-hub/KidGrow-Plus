@@ -381,7 +381,7 @@ function renderNicu() {
     return "<div class='card'><h3>" + (a.status === "admitted" ? "🟢 Active admission" : "⚪ " + esc(a.status)) + " · " + esc(String(a.admittedAt || "").slice(0, 10)) +
       " (day " + losDays(a.admittedAt, a.dischargedAt, today) + ")</h3>" +
       "<div class='hint'>" + esc(a.indication || "no indication recorded") + (a.birthWtG ? " · " + esc(a.birthWtG) + " g" : "") + (a.ga ? " · " + esc(a.ga) + " wk" : "") + "</div>" +
-      (rounds ? "<table class='tbl'><tr><th>Date</th><th>Wt(g)</th><th>Resp</th><th>Bili</th><th>Feeds(mL)</th><th>Events</th><th>Note</th></tr>" + rounds + "</table>" : "<div class='hint'>No rounds yet.</div>") +
+      (rounds ? "<table class='tbl'><tr><th>Date</th><th>Wt(g)</th><th>Resp</th><th>Bili</th><th>Feeds(mL)</th><th>Events</th><th>Note</th></tr>" + rounds + "</table>" : "<div class='hint'>No rounds yet — add the first round above.</div>") +
       (a.status === "admitted"
         ? "<div class='form-grid' style='margin-top:8px'><div><label>Round date</label><input type='date' id='nrDate' value='" + today + "'></div>" +
           "<div><label>Weight (g)</label><input type='number' id='nrWt' placeholder='e.g. 2450'></div>" +

@@ -611,3 +611,8 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
 .ctx-dot.ctx-growth{background:#d97706}.ctx-card.ctx-growth{border-left-color:#d97706}
 .ctx-dot.ctx-labs{background:#0284c7}.ctx-card.ctx-labs{border-left-color:#0284c7}
 .ctx-dot.ctx-aefi{background:#dc2626}.ctx-card.ctx-aefi{border-left-color:#dc2626}
+/* ⌘K command palette */
+.cmdk-res{max-height:320px;overflow:auto;margin-top:8px}
+.cmdk-sec{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:8px 2px 3px}
+.cmdk-row{display:flex;gap:8px;align-items:center;padding:7px 9px;border-radius:9px;font-size:13.5px;cursor:pointer}
+.cmdk-row.sel{background:var(--card2);outline:1.5px solid var(--teal)}

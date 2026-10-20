@@ -18,7 +18,8 @@ var TRIAL_DAYS = CFG.TRIAL_DAYS || 14;
 var GRACE_MS = (CFG.OFFLINE_GRACE_DAYS || 7) * 864e5;
 var STATUS_KEY = "kidgrow_cloud_status", HASH_KEY = "kidgrow_last_push_hash", SEEN_KEY = "kidgrow_cloud_seen";
 var LATEST_KEY = "kidgrow_cloud_latest"; // "id|created_at" of newest cloud row this device has seen
-var APP_VER = "v10.42";
+var APP_VER = "v10.43";
+try { if (typeof window !== "undefined") window.APP_VER = APP_VER; } catch (e) {}
 
 var sb = null, session = null, profile = null;
 var pushTimer = null, suspendPush = false, rzpLoading = null;
@@ -290,12 +291,21 @@ function pushNow(manual, force) {
     return pushInsert(manual);
   }).catch(function (e) { syncLine("Sync failed \u2014 will retry."); if (manual) toast("Upload check failed: " + (e.message || "network error")); });
 }
+function syncBusy(which) {
+  try {
+    const k = which === "up" ? "_upBusy" : "_downBusy", now = Date.now();
+    if (Cloud[k] && now - Cloud[k] < 30000) return true;
+    Cloud[k] = now; return false;
+  } catch (e) { return false; }
+}
+function syncFree(which) { try { Cloud[which === "up" ? "_upBusy" : "_downBusy"] = 0; } catch (e) {} }
 function pushInsert(manual, dataOverride) {
   if (!Cloud.enabled) return Promise.resolve();
   if (!session) { if (manual) toast("Sign in first (Settings → Cloud)."); return Promise.resolve(); }
   if (typeof navigator !== "undefined" && navigator.onLine === false) { syncLine("\u23F3 Waiting for network \u2014 will upload when back online."); if (manual) toast("You're offline — will sync when online."); return Promise.resolve(); } // 'online' listener retries
   if (!currentAccess().ok) { if (manual) toast("Subscription required for cloud sync."); return Promise.resolve(); }
   if (suspendPush) return Promise.resolve(); // applying a download: never echo it back
+  if (syncBusy("up")) { if (manual) toast("Upload already running…"); return Promise.resolve(); }
   syncLine("Uploading…");
   var plainDB = (dataOverride && dataOverride.children) ? dataOverride : (typeof DB !== "undefined" ? DB : {});
   var encOn = false;
@@ -329,7 +339,7 @@ function pushInsert(manual, dataOverride) {
         return sb.from("clinic_snapshots").delete().in("id", old);
       }
     });
-  }).catch(function (e) { syncLine("Sync failed — will retry."); if (manual) toast("Upload failed: " + (e.message || "network error")); });
+  }).then(function () { syncFree("up"); }).catch(function (e) { syncFree("up"); syncLine("Sync failed — will retry."); if (manual) toast("Upload failed: " + (e.message || "network error")); });
 }
 function autoSyncOn() { try { return ((typeof DB !== "undefined" && DB.settings) || {}).autoSync !== false; } catch (e) { return true; } }
 function encSyncOn() { try { return !!(((typeof DB !== "undefined" && DB.settings) || {}).encSync); } catch (e) { return false; } }
@@ -353,10 +363,11 @@ function autoPullTick() {
 }
 function pullNow(silent) {
   if (!Cloud.enabled || !session) { if (!silent) toast("Sign in first (Settings → Cloud)."); return; }
+  if (syncBusy("down")) { if (!silent) toast("Download already running…"); return; }
   syncLine("Checking cloud…");
   sb.from("clinic_snapshots").select("id,data,created_at").eq("user_id", session.user.id).order("id", { ascending: false }).limit(1).maybeSingle().then(function (r) {
     if (r.error) throw r.error;
-    if (!r.data) { if (!silent) toast("No cloud backup yet — use Upload first."); syncLine(""); return; }
+    if (!r.data) { syncFree("down"); if (!silent) toast("No cloud backup yet — use Upload first."); syncLine(""); return; }
     try { lsSet(SEEN_KEY, String(r.data.id)); } catch (e) {}
     rememberLatest(r.data.id, r.data.created_at);
     var rawData = r.data.data || {};
@@ -379,16 +390,18 @@ function pullNow(silent) {
         if (!silent) toast("Already up to date ✓");
         syncLine("Synced " + dayTime() + " ✓");
         try { diagLine(); } catch (eD) {}
+        syncFree("down");
         return;
       }
       try { lsSet(SEEN_KEY, String(r.data.id)); } catch (eS) {}
       if (m.changedLocal) applySnapshot(m.db, true);
-      if (m.changedCloud) return pushInsert(false, m.db); // converge the cloud, quietly
+      if (m.changedCloud) { syncFree("down"); return pushInsert(false, m.db); } // converge the cloud, quietly
       if (!silent) toast("Synced ✓" + (m.notes.length ? " · " + m.notes.length + " field(s) differed — kept this device's, see audit" : ""));
       syncLine("Synced " + dayTime() + " ✓");
       try { diagLine(); } catch (eD2) {}
+      syncFree("down");
     });
-  }).catch(function (e) { if (e && e.silent) { syncLine(""); return; } if (!silent) toast("Download failed: " + ((e && e.message) || "network error")); syncLine(""); });
+  }).catch(function (e) { syncFree("down"); if (e && e.silent) { syncLine(""); return; } if (!silent) toast("Download failed: " + ((e && e.message) || "network error")); syncLine(""); });
 }
 function applySnapshot(data, quiet) {
   try {

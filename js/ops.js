@@ -297,7 +297,7 @@ function renderStock() {
   <div class="card"><h3>📒 Recent movements</h3><div class="hint">Auto-deducts + manual adjustments (last 12)</div>
   ${log.length ? log.map((m) => `<div style="font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><b>${fmtDate(m.date)}</b> · ${esc(m.lot)} ·
     <b style="color:${m.change < 0 ? "var(--red)" : "var(--teal-d)"}">${m.change > 0 ? "+" : ""}${m.change}</b>
-    <span style="color:var(--muted)">· ${esc(m.why)}</span></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No movements yet.</div>`}</div>`;
+    <span style="color:var(--muted)">· ${esc(m.why)}</span></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No movements yet — movements appear here when stock is added or doses are given.</div>`}</div>`;
 }
 function openStockModal(id) {
   const lots = stockLots();

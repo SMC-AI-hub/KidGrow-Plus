@@ -505,7 +505,7 @@ function renderGrowth() {
 /* ---------------- full assessment tab ---------------- */
 function renderGAssess(c) {
   const rows = allMeasures(c), box = $("gs-assess");
-  if (!rows.length) { box.innerHTML = `<div class="card"><div class="empty"><div class="big">🧾</div>No measurements yet.</div></div>`; return; }
+  if (!rows.length) { box.innerHTML = `<div class="card"><div class="empty"><div class="big">🧾</div>No measurements yet — tap Record measurements above.</div></div>`; return; }
   if (!DB.gAssessId || !rows.some((r) => r.id === DB.gAssessId)) DB.gAssessId = rows[rows.length - 1].id;
   const m = rows.find((r) => r.id === DB.gAssessId), A = assessMeasure(c, m);
   const opts = rows.map((r) => `<option value="${r.id}" ${r.id === m.id ? "selected" : ""}>${fmtDate(r.date)} — ${ageStr(ageBetween(c.dob, r.date))}${r.birth ? " (birth)" : ""}</option>`).join("");

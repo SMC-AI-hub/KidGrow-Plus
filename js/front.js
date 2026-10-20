@@ -296,7 +296,7 @@ function renderFront() {
       <div class="hint">Quick charges (₹ — edit rates below)</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${rKeys.map((k) => `<button class="btn btn-o btn-xs" onclick="billAddRate('${esc(k).replace(/'/g, "&#39;")}')">${esc(k)} ₹${r[k]}</button>`).join("")}</div>
       <div style="display:flex;gap:6px;margin-bottom:8px"><input id="bDesc" placeholder="Custom charge" style="flex:2"><input id="bAmt" type="number" min="0" placeholder="₹" style="flex:1"><button class="btn btn-o btn-sm" onclick="billAddCustom()">Add</button></div>
-      ${dft.items.length ? dft.items.map((i, n) => `<div class="vac-row"><div class="grow">${esc(i.desc)}</div><b>₹${(+i.amt || 0).toFixed(0)}</b><button class="btn btn-danger btn-xs" onclick="billDelItem(${n})">✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No charges yet.</div>`}
+      ${dft.items.length ? dft.items.map((i, n) => `<div class="vac-row"><div class="grow">${esc(i.desc)}</div><b>₹${(+i.amt || 0).toFixed(0)}</b><button class="btn btn-danger btn-xs" onclick="billDelItem(${n})">✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No charges yet — tap a quick charge above or set rates below.</div>`}
       <div class="form-grid" style="margin-top:8px">
         <div><label>Total (₹)</label><input value="${billTotal()}" disabled></div>
         <div><label>Paid (₹)</label><input id="bPaid" type="number" min="0" value="${dft.paid}" placeholder="${billTotal()}" oninput="billDraft().paid=this.value"></div>
@@ -313,7 +313,7 @@ function renderFront() {
         <b>₹${b.total.toFixed(0)}</b>
         <button class="btn btn-o btn-xs" onclick="printBill('${b.id}')">🖨️</button>
         <button class="btn btn-danger btn-xs" onclick="delBill('${b.id}')">✕</button></div>`).join("")
-      : `<div style="font-size:13px;color:var(--muted)">No bills today yet.</div>`}
+      : `<div style="font-size:13px;color:var(--muted)">No bills today yet — start one from a token above.</div>`}
       ${bills.filter((b) => b.date !== t).length ? `<div class="hint" style="margin-top:8px">Earlier (${bills.filter((b) => b.date !== t).length}) — latest:</div>` + bills.filter((b) => b.date !== t).slice(0, 5).map((b) => `<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)">${fmtDate(b.date)} · ${esc(b.name)} · <b>₹${b.total.toFixed(0)}</b> <button class="btn btn-o btn-xs" onclick="printBill('${b.id}')">🖨️</button></div>`).join("") : ""}
     </div>
     <div class="card"><h3>💰 Charge rates</h3><div class="hint">Doctor can edit · used by quick-charge buttons</div>
@@ -346,7 +346,7 @@ function renderUsers() {
       <div style="margin-top:10px">${(DB.users || []).map((u) => `<div class="vac-row"><div class="grow">👤 <b>${esc(u.name)}</b> <span class="badge b-teal">${esc(u.role)}</span>
         ${(DB.session || {}).userId === u.id ? ` <span class="badge b-gray">logged in</span>` : ""}</div>
         <button class="btn btn-o btn-xs" onclick="editUser('${u.id}')">Edit</button>
-        <button class="btn btn-danger btn-xs" onclick="delUser('${u.id}')">✕</button></div>`).join("") || `<div style="font-size:13px;color:var(--muted)">No users yet.</div>`}</div>
+        <button class="btn btn-danger btn-xs" onclick="delUser('${u.id}')">✕</button></div>`).join("") || `<div style="font-size:13px;color:var(--muted)">No users yet — add a Doctor user + PIN to enable login.</div>`}</div>
       <div style="margin-top:10px"><button class="btn btn-o btn-sm" onclick="doLogout()">Logout now</button></div>
     </div>
     <div class="card"><h3>📜 Audit trail <span style="font-size:13px;color:var(--muted)">(latest ${(DB.audit || []).length}, kept 500)</span></h3>

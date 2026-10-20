@@ -112,6 +112,7 @@
       <button class="icon-btn" id="navToggle" onclick="toggleNav()" title="Collapse / expand menu">☰</button>
       <div><h2 id="pageTitle">Dashboard</h2><div class="sub" id="clinicLine">—</div></div>
       <span id="netBadge" class="badge b-green" title="Connection status">● Online</span>
+      <button class="icon-btn" id="cmdkBtn" onclick="CmdK.open()" title="Search / commands (Ctrl+K)">🔍</button>
       <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Theme: light (tap to change)">🌙</button>
       <button class="icon-btn" id="settingsGear" onclick="go('settings')" title="Settings — clinic profile, logo, doctors">⚙️</button>
       <div class="child-picker">
@@ -674,6 +675,7 @@
 <script src="js/metrics.js"></script>
 <script src="js/formulary.js"></script>
 <script src="js/ops.js"></script>
+<script src="js/cmdk.js"></script>
 <div id="updateBar" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#0c2340;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px;text-align:center">A new version of NeoKid Care is ready. <button onclick="kgUpdate()" style="background:#0e7c7b;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;margin-left:8px">Refresh now</button></div>
 <script>
 function kgUpdate() { try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage("SKIP_WAITING"); } catch (e) {} location.reload(); }

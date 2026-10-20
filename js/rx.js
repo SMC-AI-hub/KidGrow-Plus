@@ -78,7 +78,7 @@ function renderRx() {
       <span style="font-size:12.5px;color:var(--muted)">${(r.items || []).map((i) => esc(i.drug) + " " + esc(i.take || "")).join(" · ")}</span></div>
       <button class="btn btn-o btn-xs" onclick="printRx('${r.id}')">🖨️ Print</button>
       <button class="btn btn-danger btn-xs" onclick="delRx('${r.id}')">✕</button></div>`).join("")
-    : `<div style="font-size:13px;color:var(--muted)">No prescriptions yet.</div>`}</div>`;
+    : `<div style="font-size:13px;color:var(--muted)">No prescriptions yet — calculate a dose on the left, then Add.</div>`}</div>`;
   renderRxCalc(); renderRxItems();
 }
 function renderRxCalc() {

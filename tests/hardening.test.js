@@ -164,5 +164,19 @@ const formSrc = read("js/formulary.js");
 ok(formSrc.includes("needSafe(2") && formSrc.includes('guardSubmit("formulary")'), "reviews are role-gated + double-submit guarded");
 ok(read("js/drugs.js").includes("ALWAYS verify"), "formulary keeps its verify warning");
 
+const cfgSrc = read("js/config.js");
+ok(cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PROD_HOSTS covers canonical + legacy prod hosts (F2)");
+{
+  const pkg = JSON.parse(read("package.json"));
+  const appVer = (read("js/cloud.js").match(/var APP_VER = "v([\d.]+)"/) || [])[1] || "";
+  const healthFb = (read("api/health.js").match(/let VERSION = "([\d.]+)"/) || [])[1] || "";
+  const norm = (v) => String(v).replace(/(\.0)+$/, "");
+  ok(norm(pkg.version) === norm(appVer) && norm(appVer) === norm(healthFb) && !!norm(appVer), `release versions agree (pkg ${pkg.version} / app v${appVer} / health ${healthFb}, F13)`);
+  const cloudSrc = read("js/cloud.js");
+  ok(cloudSrc.includes('syncBusy("up")') && cloudSrc.includes('syncBusy("down")'), "sync busy-guard called on both push and pull (quick win)");
+  ok((cloudSrc.match(/syncFree\("/g) || []).length >= 6, "busy-guard freed on every exit path");
+  ok(cloudSrc.includes("window.APP_VER"), "APP_VER exposed globally for version proof (F13)");
+}
+
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
