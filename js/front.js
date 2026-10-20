@@ -336,7 +336,7 @@ function renderUsers() {
   <div class="grid g2">
     <div class="card"><h3>👥 Users & PINs</h3>
       ${(DB.users || []).length ? "" : `<div class="alert a-amber">🔓 <div><b>Open mode</b> — anyone can use the app. Add a Doctor user + PIN to enable login.</div></div>`}
-      <div class="form-grid">
+      <div class="form-grid no-print">
         <input type="hidden" id="uId">
         <div><label>Name</label><input id="uName" placeholder="e.g. Dr. Sharma"></div>
         <div><label>Role</label><select id="uRole"><option>Doctor</option><option>Nurse</option><option>Pharmacist</option><option>Frontdesk</option><option>Admin</option></select></div>

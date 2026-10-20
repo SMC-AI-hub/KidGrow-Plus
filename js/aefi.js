@@ -29,7 +29,7 @@ function renderAefi() {
     <button class="btn btn-o btn-sm" onclick="printPage('pg-aefi')">🖨️ Print register</button></div>
   ${serious.length ? `<div class="alert a-red">🚨 <div><b>${serious.length} serious AEFI.</b> India guidelines: report serious AEFI to the Medical Officer / DIO <b>within 24 hours</b> (AEFI register / HMIS), hospitalise & investigate; do not wait for causality proof.</div></div>` : ""}
   <div class="grid g2">
-    <div class="card"><h3>📝 Record event</h3>
+    <div class="card no-print"><h3>📝 Record event</h3>
       <div class="form-grid">
         <div><label>Event date *</label><input type="date" id="aeDate" value="${todayISO()}"></div>
         <div><label>Vaccine</label><select id="aeVac">${aefiVaccineOptions().map((o) => `<option value="${o.code}">${esc(o.label)}</option>`).join("")}<option value="OTHER">Other / extra</option></select></div>

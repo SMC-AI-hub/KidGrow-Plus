@@ -95,6 +95,8 @@ function renderNB() {
   const gestWk = parseFloat(c.gest) || null;
   const agree = (gestWk && b.complete) ? Math.abs(b.weeks - gestWk) : null;
   const flags = nbScreenFlags(c.dob, gestWk, parseFloat(c.birthWt) || null, nb.screen, todayISO());
+  const apT = (k) => apgarTotal((nb.apgar || {})[k]);
+  const scrT = (k) => { const s = (nb.screen || {})[k] || {}; return ((s.date ? fmtDate(s.date) : "—") + " · " + (s.res || "Pending")); };
   const scrRow = (k, label, hint) => {
     const s = nb.screen[k] || {};
     return `<tr><td><b>${label}</b><br><span style="font-size:11.5px;color:var(--muted)">${hint}</span></td>
@@ -106,8 +108,9 @@ function renderNB() {
   <div class="toolbar"><span style="font-size:13px;color:var(--muted)">Birth record for <b>${esc(c.name)}</b> · born ${fmtDate(c.dob)}${c.birthWt ? ` · ${c.birthWt} kg` : ""}${c.gest ? ` · ${c.gest} wk` : ""}</span>
     <span class="sp"></span><button class="btn btn-o btn-sm" onclick="printPage('pg-nb')">🖨️ Print</button></div>
   ${flags.map((f) => `<div class="alert ${f.sev === "red" ? "a-red" : "a-amber"}">⚠️ <div>${esc(f.text)}</div></div>`).join("")}
+  <div class="card print-only"><h3>🏥 Birth record</h3><dl class="kv"><dt>Place</dt><dd>${esc(nb.place || "—")}</dd><dt>Mode</dt><dd>${esc(nb.mode || "—")}</dd><dt>Cried at birth</dt><dd>${esc(nb.cried || "—")}</dd><dt>Resuscitation</dt><dd>${esc(nb.resus || "—")}</dd><dt>Vitamin K</dt><dd>${esc(nb.vitK || "—")}</dd><dt>Feeds</dt><dd>${esc(nb.feed || "—")}</dd><dt>TSH</dt><dd>${esc(scrT("tsh"))}</dd><dt>ROP</dt><dd>${esc(scrT("rop"))}</dd><dt>Hearing</dt><dd>${esc(scrT("hear"))}</dd><dt>Pulse-ox</dt><dd>${esc(scrT("ox"))}</dd><dt>Bilirubin</dt><dd>${esc(scrT("bili"))}</dd><dt>APGAR 1&prime;</dt><dd>${apT("t1").total === null ? "—" : apT("t1").total + " · " + apT("t1").interp}</dd><dt>APGAR 5&prime;</dt><dd>${apT("t5").total === null ? "—" : apT("t5").total + " · " + apT("t5").interp}</dd><dt>APGAR 10&prime;</dt><dd>${apT("t10").total === null ? "—" : apT("t10").total + " · " + apT("t10").interp}</dd><dt>Ballard</dt><dd>${b.total}${b.complete ? "" : " (incomplete)"} &rarr; ${b.label}</dd></dl></div>
   <div class="grid g2">
-    <div class="card"><h3>🏥 Delivery & resuscitation</h3>
+    <div class="card no-print"><h3>🏥 Delivery & resuscitation</h3>
       <div class="form-grid">
         <div><label>Place of birth</label><select onchange="nbSet('place',this.value)">
           ${["", "This clinic", "Hospital", "Home", "Other"].map((o) => `<option value="${o}"${(nb.place || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
@@ -130,14 +133,14 @@ function renderNB() {
       ${scrRow("ox", "Pulse-ox (CCHD)", "After 24 h, before discharge")}
       ${scrRow("bili", "Bilirubin", "If jaundiced · plot on hour-specific chart")}</table>
     </div>
-    <div class="card" data-fold="nb-apgar"><h3 onclick="toggleFold('nb-apgar')" title="Tap to collapse / expand" style="cursor:pointer">📟 APGAR score</h3>
+    <div class="card no-print" data-fold="nb-apgar"><h3 onclick="toggleFold('nb-apgar')" title="Tap to collapse / expand" style="cursor:pointer">📟 APGAR score</h3>
       <div class="hint">Record only — never delay resuscitation to assign scores</div>
       <table class="tbl"><tr><th>Sign</th>${tps.map(([k, l]) => `<th>${l}<br><span id="apgarT${k}" style="font-weight:400"></span></th>`).join("")}</tr>
       ${APGAR_ITEMS.map((it, idx) => `<tr><td><b>${it.name}</b><br><span style="font-size:11px;color:var(--muted)">${it.opts.join(" · ")}</span></td>
         ${tps.map(([k]) => `<td><select onchange="nbSetApgar('${k}',${idx},this.value)" style="max-width:64px">
           <option value="">—</option>${[0, 1, 2].map((v) => `<option value="${v}"${String((nb.apgar[k] || [])[idx]) === String(v) ? " selected" : ""}>${v}</option>`).join("")}</select></td>`).join("")}</tr>`).join("")}</table>
       </div>
-      <div class="card" data-fold="nb-ballard"><h3 onclick="toggleFold('nb-ballard')" title="Tap to collapse / expand" style="cursor:pointer">🧮 New Ballard Score</h3>
+      <div class="card no-print" data-fold="nb-ballard"><h3 onclick="toggleFold('nb-ballard')" title="Tap to collapse / expand" style="cursor:pointer">🧮 New Ballard Score</h3>
       <div class="hint">Score each sign per the NBS chart (−10…50 ≈ 20…44 wk)</div>
       ${BALLARD_ITEMS.map((it) => {
         const btns = [];

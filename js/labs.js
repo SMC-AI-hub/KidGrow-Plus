@@ -63,7 +63,7 @@ function renderLabs() {
   ${labRc.length ? `<div class="alert a-amber">⏰ <div><b>Recheck due:</b> ${esc(labRc[0].note)}</div></div>` : ""}
   ${latest && hb && hb.band === "severe" ? `<div class="alert a-red">🚨 <div><b>Severe anaemia (Hb ${esc(String(latest.hb))}).</b> ${esc(hbProtocol("severe"))}</div></div>` : ""}
   <div class="grid g2">
-    <div class="card"><h3>🧪 Add lab report</h3>
+    <div class="card"><div class="no-print"><h3>🧪 Add lab report</h3>
       <div class="form-grid">
         <div><label>Date *</label><input type="date" id="lbDate" value="${todayISO()}"></div>
         <div><label>Hb (g/dL)</label><input type="number" step="0.1" id="lbHb" placeholder="e.g. 10.2"></div>
@@ -83,7 +83,7 @@ function renderLabs() {
         <div><label>Urine ketones</label><select id="lbUKet"><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
         <div><label>Note</label><input id="lbNote" placeholder="e.g. Post-URI, on iron"></div>
       </div>
-      <button class="btn btn-p btn-sm" onclick="saveLab()" style="margin-top:8px">＋ Save report</button>
+      <button class="btn btn-p btn-sm" onclick="saveLab()" style="margin-top:8px">＋ Save report</button></div>
       <h3 style="margin-top:14px">📈 Hb trend</h3>
       ${rows.filter((r) => +r.hb > 0).length ? `<div style="display:flex;gap:8px;align-items:flex-end;height:110px;margin-top:6px">${rows.filter((r) => +r.hb > 0).slice(-8).map((r) => {
         const cl = hbClass(ageM, +r.hb);

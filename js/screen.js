@@ -41,21 +41,22 @@ function asthmaPlanHTML(c) {
   const zoneDot = (z) => z === "green" ? "🟢" : z === "yellow" ? "🟡" : z === "red" ? "🔴" : "—";
   const rows = [...a.pef].sort((x, y) => (x.date || "").localeCompare(y.date || "")).slice(-14);
   return `
-  <div class="form-grid">
+  <div class="form-grid no-print">
     <div><label>Severity</label><select onchange="astSet('sev',this.value)">${["", "Intermittent", "Mild persistent", "Moderate persistent", "Severe persistent"].map((o) => `<option value="${o}"${(a.sev || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
     <div><label>Personal best PEF (L/min)</label><input type="number" value="${a.best || ""}" placeholder="auto from diary" onchange="astSet('best',this.value);renderScreen()"></div>
     <div><label>Controller (daily)</label><input value="${esc(a.controller || "")}" placeholder="e.g. Budesonide 100 MDI 2 puff BD + spacer" onchange="astSet('controller',this.value)"></div>
     <div><label>Reliever</label><input value="${esc(a.reliever || "")}" placeholder="e.g. Salbutamol MDI 2–4 puff SOS" onchange="astSet('reliever',this.value)"></div>
   </div>
-  <div class="hint">Triggers</div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${["Dust", "Smoke", "Viral cold", "Exercise", "Weather change", "Pets", "Strong smells", "Cockroach"].map((t) => `<label class="sib" style="font-size:12.5px"><input type="checkbox" ${a.triggers.includes(t) ? "checked" : ""} onchange="astToggleTrigger('${t}')"> ${t}</label>`).join("")}</div>
-  <div class="form-grid">
+  <div class="no-print"><div class="hint">Triggers</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${["Dust", "Smoke", "Viral cold", "Exercise", "Weather change", "Pets", "Strong smells", "Cockroach"].map((t) => `<label class="sib" style="font-size:12.5px"><input type="checkbox" ${a.triggers.includes(t) ? "checked" : ""} onchange="astToggleTrigger('${t}')"> ${t}</label>`).join("")}</div></div>
+  <div class="print-only"><dl class="kv"><dt>Severity</dt><dd>${esc(a.sev || "—")}</dd><dt>Personal best</dt><dd>${best ? best + " L/min" : "—"}</dd><dt>Controller</dt><dd>${esc(a.controller || "—")}</dd><dt>Reliever</dt><dd>${esc(a.reliever || "—")}</dd><dt>Triggers</dt><dd>${esc((a.triggers || []).join(", ") || "None recorded")}</dd><dt>🟢 Green</dt><dd>${esc(a.green || "Continue controller daily.")}</dd><dt>🟡 Yellow</dt><dd>${esc(a.yellow || "—")}</dd><dt>🔴 Red</dt><dd>${esc(a.red || "—")}</dd></dl></div>
+  <div class="form-grid no-print">
     <div class="full"><label>🟢 Green — doing well (PEF ≥80% best${best ? `, ≥${Math.round(best * 0.8)}` : ""})</label><input value="${esc(a.green || "Continue controller daily.")}" onchange="astSet('green',this.value)"></div>
     <div class="full"><label>🟡 Yellow — getting worse (PEF 50–80%)</label><input value="${esc(a.yellow || "Double reliever via spacer, start oral steroids per doctor, review within 24–48 h.")}" onchange="astSet('yellow',this.value)"></div>
     <div class="full"><label>🔴 Red — emergency (PEF <50%, can't talk/walk, ribs pulling)</label><input value="${esc(a.red || "Reliever now + rush to hospital / call doctor immediately.")}" onchange="astSet('red',this.value)"></div>
   </div>
   <h3 style="margin-top:12px">📓 PEF diary ${best ? `(best ${best} L/min)` : ""}</h3>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+  <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
     <input type="date" id="pefDate" value="${todayISO()}" style="max-width:150px">
     <input type="number" id="pefAM" placeholder="Morning" style="max-width:110px">
     <input type="number" id="pefPM" placeholder="Evening" style="max-width:110px">
@@ -96,10 +97,11 @@ function dentalHTML(c) {
     const fg = s ? "#fff" : "var(--navy)";
     return `<button onclick="toothToggle('${t}')" title="${t} · ${TOOTH_REF[t] || ""} · ${TOOTH_LBL[s]}" style="width:44px;height:52px;border:2px solid ${s ? bg : "#cbd5e1"};border-radius:10px;background:${bg};color:${fg};font-weight:800;font-size:13px;cursor:pointer">${t}<div style="font-size:9px;font-weight:600">${s === "e" ? "✓" : s === "g" ? "~" : s === "x" ? "✕" : "·"}</div></button>`;
   };
-  return `<div class="hint">Tap a tooth to cycle: blank → erupting (~) → erupted (✓) → lost (✕). Primary teeth in white rows; 16/26/36/46 are first permanent molars (~6 y).</div>
+  return `<div class="hint no-print">Tap a tooth to cycle: blank → erupting (~) → erupted (✓) → lost (✕). Primary teeth in white rows; 16/26/36/46 are first permanent molars (~6 y).</div>
   ${flag ? `<div class="alert a-amber">🦷 <div>${esc(flag)}</div></div>` : ""}
   <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:8px 0">${TEETH_UPPER.map(cell).join("")}</div>
   <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:8px 0">${TEETH_LOWER.map(cell).join("")}</div>
+  <div class="print-only" style="font-size:13px">Teeth: ${Object.keys(c.dental).length ? Object.keys(c.dental).sort().map((t) => `${t} ${TOOTH_LBL[(c.dental[t] || {}).st] || ""}`).join(" · ") : "No teeth charted yet."}</div>
   <div style="font-size:12.5px;color:var(--muted)">Primary erupted: <b>${primErupted}/20</b> · Reference: centrals 6–10 mo · laterals 9–13 mo · canines 16–22 mo · 1st molars 13–19 mo · 2nd molars 25–33 mo.</div>`;
 }
 /* ---------------- RBSK 4Ds ---------------- */
@@ -115,7 +117,7 @@ function rbskMeta(k, v) { const c = child(); if (!c) return; rbskOf(c)[k] = v; s
 function rbskHTML(c) {
   const r = rbskOf(c);
   const refs = Object.keys(r.items).filter((k) => r.items[k] === "ref");
-  return `<div class="form-grid">
+  return `<div class="print-only" style="font-size:13.5px;margin-bottom:6px">Screened on <b>${esc(r.date || "—")}</b> by <b>${esc(r.by || "—")}</b>${r.refTo ? ` · Refer to: <b>${esc(r.refTo)}</b>` : ""}</div><div class="form-grid no-print">
     <div><label>Screened on</label><input type="date" value="${r.date || ""}" onchange="rbskMeta('date',this.value)"></div>
     <div><label>Screened by</label><input value="${esc(r.by || "")}" placeholder="Name" onchange="rbskMeta('by',this.value)"></div>
     <div class="full"><label>Refer to (if any)</label><input value="${esc(r.refTo || "")}" placeholder="e.g. DEIC, District Hospital" onchange="rbskMeta('refTo',this.value)"></div>
@@ -134,7 +136,7 @@ function screenCalcsHTML(c) {
   <div class="grid g2">
     <div>
       <h4 style="margin:6px 0">👁️ ROP first exam</h4>
-      <div class="form-grid">
+      <div class="form-grid no-print">
         <div><label>GA at birth (wk)</label><input type="number" step="0.1" id="scRopGa" value="${g}"></div>
         <div><label>Date of birth</label><input type="date" id="scRopDob" value="${dob}"></div>
         <div><label>Birth wt (kg)</label><input type="number" step="0.1" id="scRopBw" value="${bw}"></div>
@@ -145,7 +147,7 @@ function screenCalcsHTML(c) {
     </div>
     <div>
       <h4 style="margin:6px 0">❤️ CCHD pulse-ox</h4>
-      <div class="form-grid">
+      <div class="form-grid no-print">
         <div><label>Right hand %</label><input type="number" id="scCchdHand" placeholder="97"></div>
         <div><label>Foot %</label><input type="number" id="scCchdFoot" placeholder="96"></div>
         <div><label>Screen</label><select id="scCchdAtt"><option value="1">First</option><option value="2">Repeat (1h)</option></select></div>

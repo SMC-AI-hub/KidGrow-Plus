@@ -68,7 +68,8 @@ function renderMrd() {
   var R = buildRegisters(DB.children, MRD_FROM, MRD_TO);
   box.innerHTML = "<div class='card'><h3>📋 MRD registers</h3>" +
     "<div class='hint'>Derived from local records for the selected range. For filing + audits.</div>" +
-    "<div class='form-grid'><div><label>From</label><input type='date' value='" + MRD_FROM + "' onchange='MRD_FROM=this.value;renderMrd()'></div>" +
+    "<div class='print-only'>Register range: <b>" + MRD_FROM + "</b> to <b>" + MRD_TO + "</b></div>" +
+    "<div class='form-grid no-print'><div><label>From</label><input type='date' value='" + MRD_FROM + "' onchange='MRD_FROM=this.value;renderMrd()'></div>" +
     "<div><label>To</label><input type='date' value='" + MRD_TO + "' onchange='MRD_TO=this.value;renderMrd()'></div></div>" +
     "<button class='btn btn-o btn-sm' style='margin-top:8px' onclick=\"printPage('pg-mrd')\">🖨️ Print registers</button></div>" +
     regTable("🏥 NICU admissions", R.admissions, "admissions") +
