@@ -51,11 +51,24 @@ ok(src("js/front.js").includes("${esc(u.name)}</b> <span") , "users: user list s
 // --- dedicated print shells stay doc-only ---
 {
   const html = src("index.html");
-  for (const id of ["pg-conprint", "pg-dayprint", "pg-growthprint", "pg-msprint", "pg-nicuprint", "pg-summary"]) {
+  for (const id of ["pg-conprint", "pg-dayprint", "pg-growthprint", "pg-msprint", "pg-nicuprint", "pg-summary", "pg-rxprint"]) {
     const m = html.match(new RegExp(`<section class="page" id="${id}">([\\s\\S]*?)</section>`));
     ok(!!m, `shell present: ${id}`);
     if (m) ok(!/<input|<select|<textarea|<button|form-grid|toolbar/.test(m[1]), `shell doc-only: ${id}`);
   }
+}
+
+// --- F19: Rx print head carries NMC essentials ---
+{
+  const rx = src("js/rx.js");
+  const m = rx.match(/function printRx\(id\) \{([\s\S]*?)\n\}\n/);
+  ok(!!m, "F19: printRx dedicated builder exists");
+  const b = m ? m[1] : "";
+  ok(b.includes("clinicHeader()") && b.includes("childHeader(c)"), "F19: clinic letterhead (reg no) + child header");
+  ok(b.includes("<th>Medicine</th>") && b.includes("<th>Dose</th>") && b.includes("<th>Freq"), "F19: item table with medicine/dose/frequency");
+  ok(b.includes("Signature & seal"), "F19: signature block");
+  ok(b.includes("Advice:") && b.includes("Review on:"), "F19: advice + review print");
+  ok(!/<input|<select|<textarea/.test(b), "F19: Rx print emits zero form controls");
 }
 
 // --- print-only mechanics locked ---

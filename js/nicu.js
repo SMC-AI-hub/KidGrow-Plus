@@ -51,6 +51,12 @@ function roundValid(r, todayISO) {
   if (!r.date) errs.push("round date required");
   else if (r.date > todayISO) errs.push("round date cannot be in the future");
   if (r.wtG != null && r.wtG !== "" && !(+r.wtG >= 300 && +r.wtG <= 15000)) errs.push("weight 300–15000 g");
+  try { // F15: central vitals ranges
+    if (typeof V !== "undefined" && r.vitals) {
+      const vv = V.checkVitals(r.vitals);
+      vv.bad.forEach(function (w) { errs.push(w); });
+    }
+  } catch (e) {}
   return errs;
 }
 // Enteral feed advancement guide (term/m Late-preterm; ELBW individualised).
@@ -427,7 +433,9 @@ function renderNicu() {
   var fg = feedGuide(dol, wtKg);
   var fl = fluidGuide(dol, act && act.ga, wtKg);
   var flLine = fl && fl.lo ? (" · fluids: <b>" + fl.lo + "–" + fl.hi + " mL/kg/day</b> (≈" + fl.totalLo + "–" + fl.totalHi + " mL/day" + (fl.band === "term" ? ", NICE NG29" : ", RCH preterm") + ")") : (fl && fl.note ? " · fluids: " + esc(fl.note) : "");
-  box.innerHTML = nicuBoardHTML() + "<div class='card'><h3>🏥 NICU — " + esc(c.name) + "</h3>" +
+  const fence = (!((typeof DB !== "undefined" && DB.settings) || {}).nicuValid)
+    ? "<div class='alert a-red no-print'>⚠️ <div><b>NICU tools are NOT case-validated (F25)</b> — confirm every value against your references before acting. Enable “NICU case-validated” in Settings only after sign-off.</div></div>" : "";
+  box.innerHTML = nicuBoardHTML() + fence + "<div class='card'><h3>🏥 NICU — " + esc(c.name) + "</h3>" +
     "<div class='hint'>Day of life " + dol + " · feed guide: <b>" + fg.mlPerKg + " mL/kg/day</b> (≈" + fg.totalMl + " mL/day, " + fg.perFeedQ3h + " mL q3h) — " + esc(fg.note) + flLine + "</div>" +
     "<div style='margin-top:8px'><button class='btn btn-o btn-sm' onclick='printNicuHandover()'>🖨️ Shift handover</button></div></div>" +
     (act ? "" : "<div class='card'><h3>+ New admission</h3><div class='form-grid'>" +

@@ -205,7 +205,7 @@ function baseDB() {
   ok(/function applySnapshot\(data, quiet\)[\s\S]*?SyncMerge\.merge/.test(syCloud), "applySnapshot merge-applies (never wholesale-replaces)");
   ok(html.indexOf("js/syncmerge.js") !== -1 && html.indexOf("js/syncmerge.js") < html.indexOf("js/cloud.js"), "syncmerge loads before cloud");
   ok(sw.includes("./js/syncmerge.js"), "SW shell caches syncmerge");
-  ok(/var APP_VER = "v10\.43"/.test(syCloud) && /neokid-v38/.test(sw), "version pins (app v10.43, sw v38)");
+  ok(/var APP_VER = "v10\.44"/.test(syCloud) && /neokid-v39/.test(sw), "version pins (app v10.44, sw v39)");
 }
 
 console.log(`syncmerge: ${pass} pass, ${fail} fail`);

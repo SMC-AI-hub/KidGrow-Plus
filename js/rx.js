@@ -37,7 +37,7 @@ function renderRx() {
   $("rxBox").innerHTML = `
   <div class="grid g2">
     <div class="card"><h3>🧮 Dose calculator</h3>
-      <div class="hint">Weight defaults to latest measurement · verify every dose</div>
+      <div class="hint">Weight defaults to latest measurement · dose packs PENDING clinician validation (F1) — verify every dose against CIMS/IAP before filing</div>
       <div class="form-grid">
         <div><label>Weight (kg)</label><input type="number" step="0.1" min="1" value="${RXB.wt}" oninput="RXB.wt=this.value;renderRxCalc()"></div>
         <div><label>Drug</label><select onchange="RXB.drugId=this.value;RXB.stIdx=0;RXB.days='';renderRx()">

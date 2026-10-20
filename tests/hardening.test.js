@@ -176,6 +176,8 @@ ok(cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PROD
   ok(cloudSrc.includes('syncBusy("up")') && cloudSrc.includes('syncBusy("down")'), "sync busy-guard called on both push and pull (quick win)");
   ok((cloudSrc.match(/syncFree\("/g) || []).length >= 6, "busy-guard freed on every exit path");
   ok(cloudSrc.includes("window.APP_VER"), "APP_VER exposed globally for version proof (F13)");
+  ok(read("js/validate.js").includes("checkVitals") && read("js/app.js").includes("V.checkVitals") && read("js/growth.js").includes("V.check"), "saves route through central validators (F15)");
+  ok(read("js/nicu.js").includes("NOT case-validated (F25)") && read("index.html").includes('id="sNicuValid"'), "NICU fence banner + settings flag (F25)");
 }
 
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);

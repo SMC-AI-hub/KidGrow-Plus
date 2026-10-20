@@ -403,10 +403,15 @@ function saveGrowth() {
   if (!$("gDate").value || !wt || !ht) return alert("Date, weight and length/height are required.");
   if ($("gDate").value > todayISO()) return alert("Measurement date cannot be in the future.");
   if ($("gDate").value < c.dob) return alert("Measurement date cannot be before birth.");
-  if (!(wt >= 0.3 && wt <= 200) || !(ht >= 20 && ht <= 230)) return alert("Please check the values — weight should be 0.3–200 kg and length/height 20–230 cm.");
+  if (typeof V !== "undefined") { // F15: central validators
+    for (const [f, v] of [["wt", wt], ["ht", ht], ["hc", $("gHc").value], ["muac", $("gMuac").value]]) {
+      const r = V.check(f, v === "" ? "" : Number(v));
+      if (!r.ok) return alert(r.why);
+    }
+  } else {
+    if (!(wt >= 0.3 && wt <= 200) || !(ht >= 20 && ht <= 230)) return alert("Please check the values — weight should be 0.3–200 kg and length/height 20–230 cm.");
+  }
   const hcV = parseFloat($("gHc").value) || "", muacV = parseFloat($("gMuac").value) || "";
-  if (hcV !== "" && !(hcV >= 20 && hcV <= 70)) return alert("Head circumference looks wrong (expected 20–70 cm).");
-  if (muacV !== "" && !(muacV >= 5 && muacV <= 40)) return alert("MUAC looks wrong (expected 5–40 cm).");
   const m = { id: $("gId").value || uid(), date: $("gDate").value, wt, ht,
     pos: $("gPos").value, hc: hcV, muac: muacV,
     sitHt: parseFloat($("gSit").value) || "", armSpan: parseFloat($("gSpan").value) || "",

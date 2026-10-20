@@ -425,6 +425,7 @@
           <div class="card"><h3>🔒 Session lock</h3><div class="hint">Auto-locks the app after inactivity (needs user PINs set up)</div>
             <div class="form-grid">
               <div><label>Lock after (minutes, 1–480)</label><input id="sLockMins" type="number" min="1" max="480" placeholder="15"></div>
+              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sNicuValid" onchange="saveSettings()"> ✅ NICU case-validated — check ONLY after F25 sign-off (≥10 real cases vs discharge/bili builders)</label></div>
             </div>
             <button class="btn btn-p" onclick="saveSettings()">💾 Save lock setting</button>
           </div>
@@ -628,6 +629,7 @@
 <script src="js/ref-cdc.js"></script>
 <script src="js/growth.js"></script>
 <script src="js/growth-chart.js"></script>
+<script src="js/validate.js"></script>
 <script src="js/app.js"></script>
 <script src="js/qrcode.min.js"></script>
 <script src="js/clinic.js"></script>

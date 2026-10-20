@@ -1161,6 +1161,13 @@ function saveVisit() {
   if (typeof voiceData === "function" && voiceData()) v.voice = voiceData();
   try { if (typeof Hx !== "undefined" && Hx.collectVisitIcd) v.icd = Hx.collectVisitIcd(); } catch (eHx) {}
   try { if (typeof Ex !== "undefined" && Ex.collectVisit) Object.assign(v, Ex.collectVisit()); } catch (eEx) {}
+  try { // F15: impossible vitals never save; unusual ones need confirmation
+    if (typeof V !== "undefined" && v.vitals) {
+      const vv = V.checkVitals(v.vitals);
+      if (vv.bad.length) return alert("These vitals look impossible — not saved:\n" + vv.bad.join("\n"));
+      if (vv.warns.length && !confirm("Unusual vitals:\n" + vv.warns.join("\n") + "\n\nSave anyway?")) return;
+    }
+  } catch (eV) {}
   const i = c.visits.findIndex((x) => x.id === v.id);
   if (i >= 0) c.visits[i] = v; else c.visits.push(v);
   try { if (typeof Ex !== "undefined" && Ex.raiseFlagsOnSave) Ex.raiseFlagsOnSave(v, c); } catch (eEx) {}
@@ -1593,7 +1600,8 @@ function printCertificate() {
 /* ================= SETTINGS / DATA ================= */
 function saveSettings() {
   const lm = document.getElementById("sLockMins"), scp0 = document.getElementById("sColorPrint");
-  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), addr: $("sAddr").value.trim(), phone: $("sPhone").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15"), colorPrint: scp0 ? scp0.checked : ((DB.settings || {}).colorPrint !== false) });
+  const snv = document.getElementById("sNicuValid");
+  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), addr: $("sAddr").value.trim(), phone: $("sPhone").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15"), colorPrint: scp0 ? scp0.checked : ((DB.settings || {}).colorPrint !== false), nicuValid: snv ? snv.checked : !!((DB.settings || {}).nicuValid) });
   save(); syncChildPicker(); renderBrand(); applyPrintMode(); alert("Clinic profile saved.");
 }
 function savePrintPref() { const scp = $("sColorPrint"); if (!scp) return; DB.settings = Object.assign({}, DB.settings, { colorPrint: scp.checked }); save(); applyPrintMode(); toast(scp.checked ? "Color printing on 🎨" : "Ink-saver B&W printing on"); }
@@ -1602,7 +1610,7 @@ function applyPrintMode() {
   try { document.body.classList.toggle("bw-print", !color); document.body.dataset.printMode = color ? "color" : "bw"; } catch (e) {}
   return color;
 }
-function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; $("sAddr").value = s.addr || ""; $("sPhone").value = s.phone || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; const scp = document.getElementById("sColorPrint"); if (scp) scp.checked = s.colorPrint !== false; }
+function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; $("sAddr").value = s.addr || ""; $("sPhone").value = s.phone || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; const scp = document.getElementById("sColorPrint"); if (scp) scp.checked = s.colorPrint !== false; const snv = document.getElementById("sNicuValid"); if (snv) snv.checked = !!s.nicuValid; }
 function exportData() {
   DB.lastBackup = todayISO(); save();
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: "application/json" });
