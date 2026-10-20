@@ -92,10 +92,10 @@ function showAuth(mode) {
     '<div id="cloudAuthErr" style="color:var(--red,#dc2626);font-size:13px;min-height:18px;margin-top:6px"></div>' +
     '<input id="cloudEmail" type="email" placeholder="Email address" autocomplete="email" style="margin-bottom:8px">' +
     '<input id="cloudPass" type="password" placeholder="Password (min 6 characters)" autocomplete="' + (mode === "signup" ? "new-password" : "current-password") + '">' +
-    '<button class="btn btn-p" style="width:100%;margin-top:10px" onclick="Cloud.authGo(\'' + mode + '\')">' + (mode === "signup" ? "Start free trial" : "Sign in") + "</button>" +
+    '<button class="btn btn-p" style="width:100%;margin-top:10px" data-act="cloudAuthGo" data-arg="' + mode + '">' + (mode === "signup" ? "Start free trial" : "Sign in") + "</button>" +
     '<div style="margin-top:10px;font-size:13px">' + (mode === "signup"
-      ? 'Have an account? <a href="#" onclick="Cloud.showAuth(\'login\');return false">Sign in</a>'
-      : 'New clinic? <a href="#" onclick="Cloud.showAuth(\'signup\');return false">Start free trial</a> · <a href="#" onclick="Cloud.forgot();return false">Forgot password</a>') + "</div>" +
+      ? 'Have an account? <a href="#" data-act="cloudShowAuth" data-arg="login">Sign in</a>'
+      : 'New clinic? <a href="#" data-act="cloudShowAuth" data-arg="signup">Start free trial</a> · <a href="#" data-act="cloudForgot">Forgot password</a>') + "</div>" +
     '<div class="hint" style="margin-top:10px">Works offline after first sign-in · your data stays yours.</div>' +
     "</div></div>";
   setTimeout(function () { var e = $("cloudEmail"); if (e) e.focus(); }, 60);
@@ -112,8 +112,8 @@ function showPaywall(a) {
     '<div class="hint">Keep unlimited children, growth charts, vaccines, billing & cloud backup.</div>' +
     '<div class="card" style="margin:14px 0;text-align:left"><h3>' + esc(PLAN_NAME) + '</h3><div style="font-size:26px;font-weight:800;color:var(--navy)">' + esc(PLAN_PRICE) + "</div>" +
     '<div style="font-size:13px;margin-top:8px">✓ Unlimited children & records<br>✓ Automatic cloud backup + multi-device sync<br>✓ WhatsApp reminders & vaccine alerts<br>✓ Cancel anytime</div></div>' +
-    '<button class="btn btn-p" style="width:100%" onclick="Cloud.subscribe()">Subscribe now</button>' +
-    '<div style="margin-top:10px;font-size:13px"><a href="#" onclick="Cloud.logout();return false">Sign in as a different account</a></div>' +
+    '<button class="btn btn-p" style="width:100%" data-act="cloudSubscribe">Subscribe now</button>' +
+    '<div style="margin-top:10px;font-size:13px"><a href="#" data-act="cloudLogout">Sign in as a different account</a></div>' +
     "</div></div>";
 }
 function hidePaywall() { var m = $("mPay"); if (m) { m.classList.remove("open"); m.remove(); } }
@@ -121,9 +121,9 @@ function renderBanner(a) {
   var old = $("cloudBanner"); if (old) old.remove();
   if (!a.ok) return;
   var msg = "";
-  if (a.reason === "trial") msg = "🎁 Free trial: " + a.daysLeft + " day" + (a.daysLeft === 1 ? "" : "s") + " left — <a href='#' onclick='Cloud.subscribe();return false' style='color:#fff;font-weight:700'>Subscribe</a>";
-  else if (a.reason === "past_due") msg = "⚠️ Last payment failed — <a href='#' onclick='Cloud.subscribe();return false' style='color:#fff;font-weight:700'>update payment</a> to stay subscribed.";
-  else if (a.reason === "cancelled") msg = "💎 Subscription cancelled — access continues" + ((a.daysLeft != null) ? " for " + a.daysLeft + " more day" + (a.daysLeft === 1 ? "" : "s") : "") + " — <a href='#' onclick='Cloud.subscribe();return false' style='color:#fff;font-weight:700'>Resubscribe</a>";
+  if (a.reason === "trial") msg = "🎁 Free trial: " + a.daysLeft + " day" + (a.daysLeft === 1 ? "" : "s") + " left — <a href='#' data-act='cloudSubscribe' style='color:#fff;font-weight:700'>Subscribe</a>";
+  else if (a.reason === "past_due") msg = "⚠️ Last payment failed — <a href='#' data-act='cloudSubscribe' style='color:#fff;font-weight:700'>update payment</a> to stay subscribed.";
+  else if (a.reason === "cancelled") msg = "💎 Subscription cancelled — access continues" + ((a.daysLeft != null) ? " for " + a.daysLeft + " more day" + (a.daysLeft === 1 ? "" : "s") : "") + " — <a href='#' data-act='cloudSubscribe' style='color:#fff;font-weight:700'>Resubscribe</a>";
   else if (a.reason === "grace") msg = "📴 Offline — using your last verified subscription. Will re-check when online.";
   if (!msg) return;
   var b = document.createElement("div");
@@ -148,14 +148,14 @@ function renderCloudCard() {
     "<div class='hint'>" + esc(email || "Sign in to sync & subscribe") + " · " + esc(statusLine) + "</div>" +
     "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-top:8px'>" +
     (session
-      ? "<button class='btn btn-p btn-sm' onclick='Cloud.syncNow()'>↻ Sync now</button>" +
-        "<button class='btn btn-o btn-sm' id='cloudUpBtn' onclick='Cloud.pushNow(true)'>⬆ Upload this device</button>" +
-        "<button class='btn btn-o btn-sm' id='cloudDownBtn' onclick='Cloud.pullNow()'>⬇ Download from cloud</button>" +
-        (a.ok && a.reason !== "active" ? "<button class='btn btn-d btn-sm' onclick='Cloud.subscribe()'>💎 Subscribe</button>" : "") +
-        "<button class='btn btn-o btn-sm' onclick='Cloud.logout()'>Logout</button>"
-      : "<button class='btn btn-p btn-sm' onclick='Cloud.showAuth(\"login\")'>Sign in / Sign up</button>") +
-    "<label style='display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px'><input type='checkbox'" + (autoSyncOn() ? " checked" : "") + " onchange='Cloud.setAuto(this.checked)'> ↻ Auto-refresh from cloud (minutely + on return)</label>" +
-    "<label style='display:flex;gap:8px;align-items:center;margin-top:6px;font-size:13px'><input type='checkbox'" + (encSyncOn() ? " checked" : "") + " onchange='Cloud.setEnc(this.checked)'> 🔐 Encrypt cloud snapshots (passphrase, opt-in)</label></div><div class='hint' id='cloudSyncLine' style='margin-top:8px'></div><div class='hint' id='cloudDiagLine' style='margin-top:2px'></div>";
+      ? "<button class='btn btn-p btn-sm' data-act='cloudSyncNow'>↻ Sync now</button>" +
+        "<button class='btn btn-o btn-sm' id='cloudUpBtn' data-act='cloudPushNow'>⬆ Upload this device</button>" +
+        "<button class='btn btn-o btn-sm' id='cloudDownBtn' data-act='cloudPullNow'>⬇ Download from cloud</button>" +
+        (a.ok && a.reason !== "active" ? "<button class='btn btn-d btn-sm' data-act='cloudSubscribe'>💎 Subscribe</button>" : "") +
+        "<button class='btn btn-o btn-sm' data-act='cloudLogout'>Logout</button>"
+      : "<button class='btn btn-p btn-sm' data-act='cloudShowAuth' data-arg='login'>Sign in / Sign up</button>") +
+    "<label style='display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px'><input type='checkbox'" + (autoSyncOn() ? " checked" : "") + " data-onchange='cloudSetAuto'> ↻ Auto-refresh from cloud (minutely + on return)</label>" +
+    "<label style='display:flex;gap:8px;align-items:center;margin-top:6px;font-size:13px'><input type='checkbox'" + (encSyncOn() ? " checked" : "") + " data-onchange='cloudSetEnc'> 🔐 Encrypt cloud snapshots (passphrase, opt-in)</label></div><div class='hint' id='cloudSyncLine' style='margin-top:8px'></div><div class='hint' id='cloudDiagLine' style='margin-top:2px'></div>";
   pg.appendChild(card);
   try { diagLine(); } catch (e) {}
 }
@@ -498,21 +498,21 @@ function billInfoHTML(info, a) {
     + "</dl>";
   if (!info || info.error) {
     return head + '<div class="hint">Could not load live billing details (offline or unreachable).</div>'
-      + '<button class="btn btn-o btn-sm" onclick="Cloud.refreshBilling()">↻ Retry</button></div>' + nkAboutHTML();
+      + '<button class="btn btn-o btn-sm" data-act="cloudRefreshBilling">↻ Retry</button></div>' + nkAboutHTML();
   }
   var body = head;
   if (a && a.ok && a.reason === "past_due") {
     body += '<div class="alert a-amber">⚠️ <div><b>Last payment failed.</b> Update your payment method to stay subscribed — access continues during retry.</div></div>'
-      + '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">Update payment</button> ';
+      + '<button class="btn btn-p btn-sm" data-act="cloudSubscribe">Update payment</button> ';
   } else if (!a || !a.ok) {
-    body += '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">Subscribe now</button> ';
+    body += '<button class="btn btn-p btn-sm" data-act="cloudSubscribe">Subscribe now</button> ';
   } else if (a.reason === "trial" || a.reason === "cancelled") {
-    body += '<button class="btn btn-p btn-sm" onclick="Cloud.subscribe()">' + (a.reason === "cancelled" ? "Resubscribe" : "Subscribe now") + "</button> ";
+    body += '<button class="btn btn-p btn-sm" data-act="cloudSubscribe">' + (a.reason === "cancelled" ? "Resubscribe" : "Subscribe now") + "</button> ";
   }
   if (info.subscription && (a.ok && (a.reason === "active" || a.reason === "past_due"))) {
-    body += '<button class="btn btn-o btn-sm" onclick="Cloud.cancelSub()">Cancel subscription</button> ';
+    body += '<button class="btn btn-o btn-sm" data-act="cloudCancelSub">Cancel subscription</button> ';
   }
-  body += '<button class="btn btn-o btn-sm" onclick="Cloud.refreshBilling()">↻ Refresh</button></div>';
+  body += '<button class="btn btn-o btn-sm" data-act="cloudRefreshBilling">↻ Refresh</button></div>';
   body += '<div class="card"><h3>🧾 Invoices</h3>';
   if (!info.invoices || !info.invoices.length) {
     body += '<div class="hint">No invoices yet — they appear here after each successful charge. GST invoices are emailed by Razorpay after every payment.</div>';
@@ -577,9 +577,9 @@ function nkAboutHTML() {
 }
 function subscriptionPitchHTML(authed) {
   var cta = authed
-    ? '<button class="btn btn-p" style="width:100%" onclick="Cloud.subscribe()">Subscribe now</button>'
-    : '<button class="btn btn-p" style="width:100%" onclick="Cloud.showAuth(\'signup\')">Start ' + TRIAL_DAYS + '-day free trial</button>'
-      + '<div style="margin-top:10px;font-size:13px">Have an account? <a href="#" onclick="Cloud.showAuth(\'login\');return false">Sign in</a></div>';
+    ? '<button class="btn btn-p" style="width:100%" data-act="cloudSubscribe">Subscribe now</button>'
+    : '<button class="btn btn-p" style="width:100%" data-act="cloudShowAuth" data-arg="signup">Start ' + TRIAL_DAYS + '-day free trial</button>'
+      + '<div style="margin-top:10px;font-size:13px">Have an account? <a href="#" data-act="cloudShowAuth" data-arg="login">Sign in</a></div>';
   return '<div class="card" style="max-width:520px;margin:0 auto"><div style="text-align:center"><img src="icon.svg" alt="NeoKid Care" style="width:54px;height:54px;border-radius:15px"><h2 style="margin:4px 0">' + esc(PLAN_NAME) + '</h2>'
     + '<div style="font-size:30px;font-weight:800;color:var(--navy)">' + esc(PLAN_PRICE || "—") + '</div><div class="hint">per clinic, per month · cancel anytime</div></div>'
     + '<div style="font-size:14px;margin:14px 0">✓ Unlimited children & records<br>✓ Automatic cloud backup + multi-device sync<br>✓ WhatsApp reminders & vaccine alerts<br>✓ Growth charts (WHO/CDC) & eMAR<br>✓ Works offline — syncs when online</div>'
@@ -662,3 +662,23 @@ window.subscriptionPitchHTML = subscriptionPitchHTML;
 window.CloudSchedulePush = schedulePush;
 
 })();
+
+/* E2b: delegated actions for templates in this file. */
+try {
+  actRegister("cloudSubscribe", function () { try { Cloud.subscribe(); } catch (e) { actReport("cloudSubscribe", e); } });
+  actRegister("cloudRefreshBilling", function () { try { Cloud.refreshBilling(); } catch (e) { actReport("cloudRefreshBilling", e); } });
+  actRegister("cloudLogout", function () { try { Cloud.logout(); } catch (e) { actReport("cloudLogout", e); } });
+  actRegister("cloudForgot", function () { try { Cloud.forgot(); } catch (e) { actReport("cloudForgot", e); } });
+  actRegister("cloudCancelSub", function () { try { Cloud.cancelSub(); } catch (e) { actReport("cloudCancelSub", e); } });
+  actRegister("cloudShowAuth", function (el) { try { Cloud.showAuth(actArg(el)); } catch (e) { actReport("cloudShowAuth", e); } });
+  actRegister("cloudAuthGo", function (el) { try { Cloud.authGo(actArg(el)); } catch (e) { actReport("cloudAuthGo", e); } });
+  actRegister("cloudSyncNow", function () { try { Cloud.syncNow(); } catch (e) { actReport("cloudSyncNow", e); } });
+  actRegister("cloudPushNow", function () { try { Cloud.pushNow(true); } catch (e) { actReport("cloudPushNow", e); } });
+  actRegister("cloudPullNow", function () { try { Cloud.pullNow(); } catch (e) { actReport("cloudPullNow", e); } });
+} catch (e) {}
+
+/* E2b stragglers. */
+try {
+  actRegister("cloudSetAuto", function (el) { try { Cloud.setAuto(el.checked); } catch (e) { actReport("cloudSetAuto", e); } });
+  actRegister("cloudSetEnc", function (el) { try { Cloud.setEnc(el.checked); } catch (e) { actReport("cloudSetEnc", e); } });
+} catch (e) {}

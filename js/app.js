@@ -398,7 +398,7 @@ function toggleNav() {
   if (f) { f.value = ""; filterNav(""); }
 }
 /* ---- v10.28.4: foldable cards. Any .card[data-fold="id"] collapses via its
-   first header (h3 onclick="toggleFold('id')"). State persists in
+   first header (h3 data-act="toggleFold" data-arg="id"). State persists in
    DB.settings.fold (default open); printing always unfolds first. ---- */
 function foldOpen(id) { return !(((DB.settings || {}).fold || {})[id]); }
 function toggleFold(id) {
@@ -690,7 +690,7 @@ function renderChildren() {
   const hits = matchChildren(q, DB.children, getRecentIds());
   if (!hits.length) {
     box.innerHTML = q.trim()
-      ? `<div class="card" style="grid-column:1/-1"><div class="empty"><div class="big">🔍</div>No matches for “${esc(q.trim())}”.<br><button class="btn btn-p btn-sm" style="margin-top:10px" onclick="openChildModal()">+ Register this child</button></div></div>`
+      ? `<div class="card" style="grid-column:1/-1"><div class="empty"><div class="big">🔍</div>No matches for “${esc(q.trim())}”.<br><button class="btn btn-p btn-sm" style="margin-top:10px" data-act="openChildModal">+ Register this child</button></div></div>`
       : `<div class="card" style="grid-column:1/-1"><div class="empty"><div class="big">🧒</div>No children found. Register your first child to begin.</div></div>`;
     return;
   }
@@ -714,9 +714,9 @@ function renderChildren() {
         <dt>Measures</dt><dd>${c.measures.length} records · ${c.visits.length} visits</dd>
       </dl>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-p btn-sm" onclick="setActive('${c.id}');go('dashboard')">Open</button>
-        <button class="btn btn-o btn-sm" onclick="openChildModal('${c.id}')">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="eraseRequest('${c.id}')">Erase…</button>
+        <button class="btn btn-p btn-sm" data-act="setActiveDash" data-arg="${c.id}">Open</button>
+        <button class="btn btn-o btn-sm" data-act="openChildModal" data-arg="${c.id}">Edit</button>
+        <button class="btn btn-danger btn-sm" data-act="eraseRequest" data-arg="${c.id}">Erase…</button>
       </div>`;
     box.appendChild(div);
   });
@@ -835,7 +835,7 @@ function timelineHTML(c, filter) {
   const list = f === "all" ? all : all.filter((e) => e.kind === f);
   const chips = TIMELINE_FILTERS.map(([k, l]) => {
     const n = k === "all" ? all.length : all.filter((e) => e.kind === k).length;
-    return `<button class="btn btn-xs ${k === f ? "btn-p" : "btn-o"}" onclick="TIMELINE_FILTER='${k}';renderTimeline()">${esc(l)} (${n})</button>`;
+    return `<button class="btn btn-xs ${k === f ? "btn-p" : "btn-o"}" data-act="timelineFilter" data-arg="${k}">${esc(l)} (${n})</button>`;
   }).join("");
   let snap = "";
   try { snap = timelineSnapshot(c); } catch (e) { snap = ""; }
@@ -937,7 +937,7 @@ function catchupHTML(c, plan) {
     return `<div class="vac-row"><div class="grow"><b>Visit ${i + 1} — earliest ${fmtDate(p.date)}</b>${isToday ? ` <span class="badge b-green">today</span>` : ""}<br>`
       + `<span style="font-size:12.5px">${p.items.map((it) => `${esc(it.name)} ${esc(it.dose || "")}`).join(" · ")}</span>`
       + `${p.rota ? `<br><span style="font-size:12px;color:#b45309">⚠️ Includes rotavirus — confirm age eligibility before giving.</span>` : ""}</div>`
-      + `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${p.items.map((it) => `<button class="btn btn-p btn-xs" onclick="openVacModal('${it.visitId}','${it.code}')">Record ${esc(it.code)}</button>`).join("")}</div></div>`;
+      + `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${p.items.map((it) => `<button class="btn btn-p btn-xs" data-act="openVacModal" data-arg="${it.visitId}" data-arg2="${it.code}">Record ${esc(it.code)}</button>`).join("")}</div></div>`;
   }).join("");
   return `<div class="card"><h3>📋 Catch-up plan — ${plan.length} visit(s)</h3><div class="hint">Missed doses in schedule order · no need to restart any series · minimum 4-week gap between visits. Planning aid — verify against the IAP catch-up chart; clinical judgement prevails.</div>${rows}</div>`;
 }
@@ -970,7 +970,7 @@ function renderVaccines() {
         const badge = st === "done" ? `<span class="badge b-green">✓ Given ${fmtDate(r.date)}</span>` : st === "overdue" ? `<span class="badge b-red">Overdue</span>` : st === "due" ? `<span class="badge b-amber">Due now</span>` : `<span class="badge b-blue">Upcoming</span>`;
         return `<div class="vac-row"><div class="grow"><b>${esc(vx.name)}</b> <span style="color:var(--muted);font-size:12px">· ${esc(vx.dose)} · ${esc(vx.protects)}</span><br>
           <span style="font-size:12px;color:var(--muted)">${esc(vx.route)} · ${esc(vx.site)} · ${esc(vx.cat)}${r?.brand ? ` · 💊 <b>${esc(r.brand)}</b>${r.mfr ? ` (${esc(r.mfr)})` : ""}` : ""}${r?.batch ? ` · Batch ${esc(r.batch)}` : ""}${r?.aer ? ` · <span style="color:var(--red)">AEFI: ${esc(r.aer)}</span>` : ""}</span></div>
-          ${badge}<button class="btn ${r ? "btn-o" : "btn-p"} btn-xs" onclick="openVacModal('${v.id}','${vx.code}')">${r ? "Edit" : "Record"}</button></div>`;
+          ${badge}<button class="btn ${r ? "btn-o" : "btn-p"} btn-xs" data-act="openVacModal" data-arg="${v.id}" data-arg2="${vx.code}">${r ? "Edit" : "Record"}</button></div>`;
       }).join("")}</div>`;
     tl.appendChild(d);
   });
@@ -1092,12 +1092,12 @@ function renderExtras(c) {
   const rows = [...c.extraVac].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   $("vacExtras").innerHTML = `<div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
     <h3 style="margin:0">➕ Additional / travel / seasonal vaccines</h3><span class="sp" style="flex:1"></span>
-    <button class="btn btn-p btn-sm" onclick="openExtraModal()">+ Add</button></div>
+    <button class="btn btn-p btn-sm" data-act="openExtraModal">+ Add</button></div>
     <div class="hint">Rabies, cholera, meningococcal, COVID-19, campaign OPV doses, extra boosters — included in the certificate.</div>
     ${rows.length ? rows.map((x) => `<div class="vac-row"><div class="grow"><b>${esc(x.name)}</b>${x.brand ? ` · 💊 <b>${esc(x.brand)}</b>${x.mfr ? ` (${esc(x.mfr)})` : ""}` : ""}<br>
       <span style="font-size:12px;color:var(--muted)">${x.date ? fmtDate(x.date) : "Date —"}${x.batch ? ` · Batch ${esc(x.batch)}` : ""}${x.by ? ` · ${esc(x.by)}` : ""}${x.note ? ` · ${esc(x.note)}` : ""}</span></div>
-      <button class="btn btn-o btn-xs" onclick="openExtraModal('${x.id}')">Edit</button>
-      <button class="btn btn-danger btn-xs" onclick="deleteExtra('${x.id}')">✕</button></div>`).join("")
+      <button class="btn btn-o btn-xs" data-act="openExtraModal" data-arg="${x.id}">Edit</button>
+      <button class="btn btn-danger btn-xs" data-act="deleteExtra" data-arg="${x.id}">✕</button></div>`).join("")
     : `<div style="font-size:13px;color:var(--muted)">None recorded. Use for anything outside the routine IAP timetable.</div>`}</div>`;
 }
 function openExtraModal(id) {
@@ -1174,9 +1174,9 @@ function renderMilestones() {
     row.innerHTML = `<span class="badge" style="background:${meta.color}1f;color:${meta.color}">${meta.icon} ${meta.label}</span>
       <span style="font-size:14px">${esc(it.t)}</span>
       <span class="st">
-        <button class="pill ${val === "A" ? "on-A" : ""}" onclick="markMs(${bi},${ii},'A')">✓ Done</button>
-        <button class="pill ${val === "E" ? "on-E" : ""}" onclick="markMs(${bi},${ii},'E')">◐ Emerging</button>
-        <button class="pill ${val === "N" ? "on-N" : ""}" onclick="markMs(${bi},${ii},'N')">✗ Not yet</button>
+        <button class="pill ${val === "A" ? "on-A" : ""}" data-act="markMs" data-arg="${bi}" data-arg2="${ii}" data-arg3="A">✓ Done</button>
+        <button class="pill ${val === "E" ? "on-E" : ""}" data-act="markMs" data-arg="${bi}" data-arg2="${ii}" data-arg3="E">◐ Emerging</button>
+        <button class="pill ${val === "N" ? "on-N" : ""}" data-act="markMs" data-arg="${bi}" data-arg2="${ii}" data-arg3="N">✗ Not yet</button>
       </span>`;
     list.appendChild(row);
   });
@@ -1249,8 +1249,8 @@ function renderVisits() {
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
       <b style="color:var(--navy)">${fmtDate(v.date)}</b><span class="badge b-teal">${esc(v.type)}</span>
       <span class="sp" style="flex:1"></span>
-      <button class="btn btn-o btn-xs" onclick="openVisitModal('${v.id}')">Edit</button>
-      <button class="btn btn-danger btn-xs" onclick="deleteVisit('${v.id}')">Delete</button></div>
+      <button class="btn btn-o btn-xs" data-act="openVisitModal" data-arg="${v.id}">Edit</button>
+      <button class="btn btn-danger btn-xs" data-act="deleteVisit" data-arg="${v.id}">Delete</button></div>
     ${v.subj ? `<div style="font-size:13.5px;margin-bottom:6px"><b>S:</b> ${esc(v.subj)}</div>` : ""}
     ${v.obj ? `<div style="font-size:13.5px;margin-bottom:6px"><b>O:</b> ${esc(v.obj)}</div>` : ""}
     ${v.plan ? `<div style="font-size:13.5px"><b>A/P:</b> ${esc(v.plan)}</div>` : ""}
@@ -1312,8 +1312,8 @@ function roleDashHTML(role) {
       + `<div class="stat" style="--ac:var(--blue)"><div><div class="n">${done}/${tod.length}</div><div class="l">Done</div></div><div class="e">✅</div></div></div>`
       + `<dl class="kv" style="margin-top:8px"><dt>Bills</dt><dd>${b.n} · ₹${b.paid} collected${b.total - b.paid > 0 ? ` · <b>₹${b.total - b.paid} pending</b>` : ""}</dd>`
       + `<dt>Appointments</dt><dd>${ap.length} open today</dd></dl>`
-      + `<button class="btn btn-p btn-sm" onclick="go('front')">Open frontdesk →</button> `
-      + `<button class="btn btn-o btn-sm" onclick="copyDayList()">📋 Copy day list</button></div>`;
+      + `<button class="btn btn-p btn-sm" data-act="goPage" data-arg="front">Open frontdesk →</button> `
+      + `<button class="btn btn-o btn-sm" data-act="copyDayList">📋 Copy day list</button></div>`;
   }
   if (role === "Nurse") {
     let due = [];
@@ -1327,18 +1327,18 @@ function roleDashHTML(role) {
       + `<div class="stat" style="--ac:var(--amber)"><div><div class="n">${ov.length + d14.length}</div><div class="l">Due/overdue</div></div><div class="e">💉</div></div>`
       + `<div class="stat" style="--ac:var(--blue)"><div><div class="n">${reds.length}</div><div class="l">Growth flags</div></div><div class="e">📉</div></div></div>`
       + (df.slice(0, 5).map((i) => `<div style="font-size:13px">• <b>${esc(i.child)}</b> — ${esc(i.name)} ${esc(i.dose || "")} <span style="color:var(--muted)">(due ${esc(dmy(i.due))}, +${i.daysOver}d)</span></div>`).join("") || `<div class="hint">No defaulters. 🎉</div>`)
-      + `<div style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="go('vaccines')">Vaccines →</button> <button class="btn btn-o btn-sm" onclick="go('mar')">eMAR →</button></div></div>` + mar;
+      + `<div style="margin-top:8px"><button class="btn btn-o btn-sm" data-act="goPage" data-arg="vaccines">Vaccines →</button> <button class="btn btn-o btn-sm" data-act="goPage" data-arg="mar">eMAR →</button></div></div>` + mar;
   }
   if (role === "Pharmacist") {
     const lines = rxToday(), left = lines.filter((l) => !l.item.dispensed);
     const rows = lines.slice(0, 12).map((l) => `<div class="vac-row"><div class="grow"><b>${esc(l.item.drug || "")}</b> ${esc(l.item.strength || "")} <span style="color:var(--muted)">· ${esc(l.child.name)}${l.item.take ? " · " + esc(l.item.take) : ""}</span><br>`
       + `<span style="font-size:12px;color:var(--muted)">${esc(l.rx.dx || "")}${l.item.dispensed ? ` · ✅ by ${esc(l.item.dispensed.by || "")}` : ""}</span></div>`
-      + `<button class="btn ${l.item.dispensed ? "btn-o" : "btn-p"} btn-xs" onclick="toggleDispense('${l.child.id}','${l.rx.id}',${l.idx})">${l.item.dispensed ? "Undo" : "Dispense"}</button></div>`).join("");
+      + `<button class="btn ${l.item.dispensed ? "btn-o" : "btn-p"} btn-xs" data-act="toggleDispense" data-arg="${l.child.id}" data-arg2="${l.rx.id}" data-arg3="${l.idx}">${l.item.dispensed ? "Undo" : "Dispense"}</button></div>`).join("");
     return `<div class="card"><h3>💊 Pharmacy — dispensing queue</h3>`
       + `<div style="font-size:13px;margin-bottom:8px">${left.length} of ${lines.length} items pending today</div>`
       + (rows || `<div class="hint">No prescriptions written today.</div>`)
       + (lines.length > 12 ? `<div class="hint">Showing 12 of ${lines.length}.</div>` : "")
-      + `<div style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="go('rx')">Prescriptions →</button> <button class="btn btn-o btn-sm" onclick="go('stock')">Stock →</button></div></div>`;
+      + `<div style="margin-top:8px"><button class="btn btn-o btn-sm" data-act="goPage" data-arg="rx">Prescriptions →</button> <button class="btn btn-o btn-sm" data-act="goPage" data-arg="stock">Stock →</button></div></div>`;
   }
   if (role === "Admin") {
     const users = DB.users || [];
@@ -1354,7 +1354,7 @@ function roleDashHTML(role) {
       + `<dl class="kv" style="margin-top:8px"><dt>Sync</dt><dd>${esc(cloud)}${plan}</dd>`
       + `<dt>Staff</dt><dd>${users.map((u) => esc(u.name) + " (" + esc(u.role) + ")").join(", ") || "—"}</dd></dl>`
       + (au ? `<div style="font-size:13px"><b>Recent activity</b></div>${au}` : "")
-      + `<div style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="go('users')">Users & audit →</button> <button class="btn btn-o btn-sm" onclick="go('settings')">Settings →</button></div></div>`;
+      + `<div style="margin-top:8px"><button class="btn btn-o btn-sm" data-act="goPage" data-arg="users">Users & audit →</button> <button class="btn btn-o btn-sm" data-act="goPage" data-arg="settings">Settings →</button></div></div>`;
   }
   // Doctor (default): today's queue + attention flags
   const q = queueToday(), reds = growthReds();
@@ -1368,7 +1368,7 @@ function roleDashHTML(role) {
     + (qrows || `<div class="hint">No patients in queue.</div>`)
     + (reds.slice(0, 4).map((r) => `<div style="font-size:13px">📉 <b>${esc(r.child.name)}</b> <span style="color:var(--muted)">· ${esc(r.msg.split(".")[0])}</span></div>`).join(""))
     + (conf ? `<div style="font-size:13px">🔀 <b>${conf} sync conflict(s)</b> need review.</div>` : "")
-    + `<div style="margin-top:8px"><button class="btn btn-p btn-sm" onclick="go('front')">Open queue →</button> <button class="btn btn-o btn-sm" onclick="go('timeline')">Timeline →</button></div></div>`;
+    + `<div style="margin-top:8px"><button class="btn btn-p btn-sm" data-act="goPage" data-arg="front">Open queue →</button> <button class="btn btn-o btn-sm" data-act="goPage" data-arg="timeline">Timeline →</button></div></div>`;
 }
 /* ---------------- Sunrise home: clinic-level data (pure) ---------------- */
 function homeStatsData(children, tokens, appts, today) {
@@ -1417,11 +1417,11 @@ function queueStatusBadge(st) {
   return `<span class="badge ${b[0]}">${esc(b[1])}</span>`;
 }
 function homeQueueHTML(rows) {
-  if (!rows.length) return `<div class="empty"><div class="big">🕘</div>No tokens or appointments today.<br><button class="btn btn-p btn-sm" style="margin-top:10px" onclick="go('front')">Open frontdesk →</button></div>`;
+  if (!rows.length) return `<div class="empty"><div class="big">🕘</div>No tokens or appointments today.<br><button class="btn btn-p btn-sm" style="margin-top:10px" data-act="goPage" data-arg="front">Open frontdesk →</button></div>`;
   return `<div style="overflow:auto"><table class="tbl"><tr><th>Time</th><th>Child</th><th>Reason</th><th>Status</th><th></th></tr>${rows.map((r) => {
     const act = !r.childId ? "" : (r.status === "waiting" || r.status === "booked")
-      ? `<button class="btn btn-p btn-xs" onclick="queueStart('${r.key}')">Start</button> <a href="#" onclick="queueOpen('${r.key}');return false">Open</a>`
-      : r.status === "in" ? `<a href="#" onclick="queueOpen('${r.key}');return false">Open</a>` : "";
+      ? `<button class="btn btn-p btn-xs" data-act="queueStart" data-arg="${r.key}">Start</button> <a href="#" data-act="queueOpen" data-arg="${r.key}">Open</a>`
+      : r.status === "in" ? `<a href="#" data-act="queueOpen" data-arg="${r.key}">Open</a>` : "";
     return `<tr style="${r.status === "done" ? "opacity:.55" : ""}"><td>${esc(r.time || "—")}${r.tag ? `<br><b>${esc(r.tag)}</b>` : ""}</td>`
       + `<td><b>${esc(r.name)}</b>${r.sub ? `<br><span style="font-size:11.5px;color:var(--muted)">${esc(r.sub)}</span>` : ""}</td>`
       + `<td>${esc(r.reason)}</td><td>${queueStatusBadge(r.status)}</td><td style="white-space:nowrap">${act}</td></tr>`;
@@ -1452,10 +1452,10 @@ function homeAlertsData(o) {
 function homeAlertsHTML(list) {
   if (!list || !list.length) return `<div class="alert a-green" style="margin:0">✅ <div><b>All clear</b> — nothing needs review.</div></div>`;
   const cls = { red: "a-red", amber: "a-amber", blue: "a-blue" };
-  return list.map((a) => `<div class="alert ${cls[a.sev] || "a-amber"}" style="margin:0 0 10px"><div><b>${esc(a.title)}</b> ${esc(a.body)}<br><a href="#" onclick="go('${a.page}');return false">${esc(a.cta)} →</a></div></div>`).join("");
+  return list.map((a) => `<div class="alert ${cls[a.sev] || "a-amber"}" style="margin:0 0 10px"><div><b>${esc(a.title)}</b> ${esc(a.body)}<br><a href="#" data-act="goPage" data-arg="${a.page}">${esc(a.cta)} →</a></div></div>`).join("");
 }
 function homeStatsHTML(s) {
-  const card = (ac, n, l, sub, page, aria) => `<div class="stat" style="--ac:${ac};cursor:pointer" tabindex="0" role="button" aria-label="${aria}" onclick="go('${page}')" onkeydown="if(event.key==='Enter')go('${page}')"><div><div class="n">${n}</div><div class="l">${l}</div><div style="font-size:11.5px;color:var(--muted)">${sub}</div></div></div>`;
+  const card = (ac, n, l, sub, page, aria) => `<div class="stat" style="--ac:${ac};cursor:pointer" tabindex="0" role="button" aria-label="${aria}" data-act="goPage" data-arg="${page}" data-onkey="goEnterKey" data-arg="${page}"><div><div class="n">${n}</div><div class="l">${l}</div><div style="font-size:11.5px;color:var(--muted)">${sub}</div></div></div>`;
   return card("var(--blue)", s.patients, "Patients today", `${s.seen} seen · ${s.waiting} waiting`, "front", "Open frontdesk")
     + card("var(--teal)", s.dueWeek, "Vaccines due this week", `${s.dueSoon} due in 2 days`, "schedule", "Open schedule")
     + card(s.overdueKids ? "var(--red)" : "var(--green)", s.overdueKids, "Overdue defaulters", s.overdueKids ? "Send reminders" : "None overdue", "schedule", "Open due list")
@@ -1471,8 +1471,8 @@ function dashSearchHTML(q, kids, recentIds) {
   q = (q || "").trim();
   if (q.length < 2) return "";
   const hits = matchChildren(q, kids, recentIds).slice(0, 6);
-  return hits.length ? hits.map((h) => `<button class="sr-row" onclick="dashPick('${h.c.id}')"><b>${esc(h.c.name)}</b><span style="font-size:12px;color:var(--muted)">${esc(ageStr(ageBetween(h.c.dob)))}${h.c.mrn ? ` · MRN ${esc(h.c.mrn)}` : ""}</span><span class="why">${esc(h.why.join(" · "))}</span></button>`).join("")
-    : `<div class="empty" style="padding:12px">No matches for “${esc(q)}”.<br><button class="btn btn-p btn-sm" style="margin-top:8px" onclick="openChildModal()">+ Register this child</button></div>`;
+  return hits.length ? hits.map((h) => `<button class="sr-row" data-act="dashPick" data-arg="${h.c.id}"><b>${esc(h.c.name)}</b><span style="font-size:12px;color:var(--muted)">${esc(ageStr(ageBetween(h.c.dob)))}${h.c.mrn ? ` · MRN ${esc(h.c.mrn)}` : ""}</span><span class="why">${esc(h.why.join(" · "))}</span></button>`).join("")
+    : `<div class="empty" style="padding:12px">No matches for “${esc(q)}”.<br><button class="btn btn-p btn-sm" style="margin-top:8px" data-act="openChildModal">+ Register this child</button></div>`;
 }
 function dashSearch() {
   const inp = $("dashSearch"), box = $("dashSearchRes");
@@ -1511,13 +1511,13 @@ function renderDashHome() {
     }
     hz.innerHTML = `<div class="hero-top"><div class="hero-logo">${logoHtml}</div><div><div class="hero-eyebrow">${esc(fmtDate(t))} · ${esc((DB.settings || {}).clinic || "NeoKid Care")} · what needs you today</div>
       <h2>${greet}, ${esc(greetName())} 👋</h2><div class="hero-sub">${sub}</div></div></div>
-      <div class="hero-search search-wrap"><input id="dashSearch" placeholder="🔍 Search name, parent, phone, MRN…" autocomplete="off" oninput="dashSearch()" onkeydown="dashSearchKey(event)"><div id="dashSearchRes" class="search-res" style="display:none"></div></div>
-      <div class="hero-actions"><button class="btn btn-p btn-sm" onclick="startVisit()">+ Start visit</button>
-      <button class="btn btn-o btn-sm" onclick="openChildModal()">+ Register child</button></div>
-      <div class="hero-actions" style="margin-top:8px"><button class="btn btn-o btn-sm" onclick="openGrowthModal()">+ Record growth</button>
-      <button class="btn btn-o btn-sm" onclick="openVisitModal()">+ Visit note</button>
-      <button class="btn btn-o btn-sm" onclick="openApptModal()">+ Book visit</button>
-      <button class="btn btn-o btn-sm" onclick="go('front')">🎟️ Frontdesk</button></div>`;
+      <div class="hero-search search-wrap"><input id="dashSearch" placeholder="🔍 Search name, parent, phone, MRN…" autocomplete="off" data-oninput="dashSearch" data-onkey="dashSearchKey"><div id="dashSearchRes" class="search-res" style="display:none"></div></div>
+      <div class="hero-actions"><button class="btn btn-p btn-sm" data-act="startVisit">+ Start visit</button>
+      <button class="btn btn-o btn-sm" data-act="openChildModal">+ Register child</button></div>
+      <div class="hero-actions" style="margin-top:8px"><button class="btn btn-o btn-sm" data-act="openGrowthModal">+ Record growth</button>
+      <button class="btn btn-o btn-sm" data-act="openVisitModal">+ Visit note</button>
+      <button class="btn btn-o btn-sm" data-act="openApptModal">+ Book visit</button>
+      <button class="btn btn-o btn-sm" data-act="goPage" data-arg="front">🎟️ Frontdesk</button></div>`;
   }
   const hs = homeStatsData(DB.children, DB.tokens, DB.appts, t);
   $("dashHome").innerHTML = homeStatsHTML(hs);
@@ -1556,14 +1556,14 @@ function renderDashboard() {
   const bi = bandForAge(a.months), b = MILESTONES[bi];
   let ach = 0; b.items.forEach((_, ii) => { if (c.milestones[bi + "_" + ii] === "A") ach++; });
   $("dashStats").innerHTML = `
-    <div class="stat" style="--ac:var(--blue);cursor:pointer" tabindex="0" role="button" aria-label="Open Children" onclick="go('children')" onkeydown="if(event.key==='Enter')go('children')"><div><div class="n">${ageStr(a)}</div><div class="l">Age · ${c.sex === "boy" ? "Boy" : "Girl"}</div></div><div class="e">🎂</div></div>
-    <div class="stat" style="--ac:var(--teal);cursor:pointer" tabindex="0" role="button" aria-label="Open vaccination record" onclick="go('vaccines')" onkeydown="if(event.key==='Enter')go('vaccines')"><div><div class="n">${vs.done}/${vs.total}</div><div class="l">Vaccines · ${vs.pct}%</div></div><div class="e">💉</div></div>
-    <div class="stat" style="--ac:var(--amber);cursor:pointer" tabindex="0" role="button" aria-label="Open milestones" onclick="go('milestones')" onkeydown="if(event.key==='Enter')go('milestones')"><div><div class="n">${ach}/${b.items.length}</div><div class="l">Milestones · ${esc(b.band)}</div></div><div class="e">🌟</div></div>
-    <div class="stat" style="--ac:var(--green);cursor:pointer" tabindex="0" role="button" aria-label="Open growth" onclick="go('growth')" onkeydown="if(event.key==='Enter')go('growth')"><div><div class="n">${lm ? lm.wt + " kg" : "—"}</div><div class="l">${lm ? "Wt · " + fmtDate(lm.date) : "No growth data"}</div></div><div class="e">⚖️</div></div>`;
+    <div class="stat" style="--ac:var(--blue);cursor:pointer" tabindex="0" role="button" aria-label="Open Children" data-act="goPage" data-arg="children" data-onkey="goEnterKey" data-arg="children"><div><div class="n">${ageStr(a)}</div><div class="l">Age · ${c.sex === "boy" ? "Boy" : "Girl"}</div></div><div class="e">🎂</div></div>
+    <div class="stat" style="--ac:var(--teal);cursor:pointer" tabindex="0" role="button" aria-label="Open vaccination record" data-act="goPage" data-arg="vaccines" data-onkey="goEnterKey" data-arg="vaccines"><div><div class="n">${vs.done}/${vs.total}</div><div class="l">Vaccines · ${vs.pct}%</div></div><div class="e">💉</div></div>
+    <div class="stat" style="--ac:var(--amber);cursor:pointer" tabindex="0" role="button" aria-label="Open milestones" data-act="goPage" data-arg="milestones" data-onkey="goEnterKey" data-arg="milestones"><div><div class="n">${ach}/${b.items.length}</div><div class="l">Milestones · ${esc(b.band)}</div></div><div class="e">🌟</div></div>
+    <div class="stat" style="--ac:var(--green);cursor:pointer" tabindex="0" role="button" aria-label="Open growth" data-act="goPage" data-arg="growth" data-onkey="goEnterKey" data-arg="growth"><div><div class="n">${lm ? lm.wt + " kg" : "—"}</div><div class="l">${lm ? "Wt · " + fmtDate(lm.date) : "No growth data"}</div></div><div class="e">⚖️</div></div>`;
   $("dashVac").innerHTML = vs.next
     ? `<div class="alert ${vs.overdue ? "a-red" : "a-amber"}" style="margin:0">💉 <div><b>${esc(vs.next.v.label)}</b> due <b>${fmtDate(vs.next.due)}</b><br><span style="font-size:12.5px">${esc(vs.next.v.vaccines.filter((x) => !c.vaccines[x.code]).map((x) => x.name + " " + x.dose).join(" · "))}</span>${vs.overdue ? `<br><b>${vs.overdue} overdue</b> — book catch-up.` : ""}</div></div>
-       <div style="margin-top:10px"><button class="btn btn-p btn-sm" onclick="go('vaccines')">Open vaccination record →</button></div>`
-    : `<div class="alert a-green" style="margin:0">✅ <div>Schedule complete. <button class="btn btn-d btn-xs" onclick="printCertificate()">Print certificate</button></div></div>`;
+       <div style="margin-top:10px"><button class="btn btn-p btn-sm" data-act="goPage" data-arg="vaccines">Open vaccination record →</button></div>`
+    : `<div class="alert a-green" style="margin:0">✅ <div>Schedule complete. <button class="btn btn-d btn-xs" data-act="printCertificate">Print certificate</button></div></div>`;
   if (lm) {
     const cl = classifyGrowth(c, lm);
     $("dashGrowth").innerHTML = `<dl class="kv">
@@ -1572,11 +1572,11 @@ function renderDashboard() {
       ${cl.wt ? `<dt>Weight</dt><dd>${fmtPct(cl.wt.pct)} · ${esc(cl.wt.label)}</dd>` : ""}
       ${cl.ht ? `<dt>Height</dt><dd>${fmtPct(cl.ht.pct)} · ${esc(cl.ht.label)}</dd>` : ""}
       ${cl.bmi ? `<dt>BMI</dt><dd>${fmtPct(cl.bmi.pct)} · ${esc(cl.bmi.label)}</dd>` : ""}</dl>
-      <div style="margin-top:10px"><button class="btn btn-p btn-sm" onclick="go('growth')">Open growth charts →</button></div>`;
-  } else $("dashGrowth").innerHTML = `<div class="empty"><div class="big">📈</div>No measurements.<br><button class="btn btn-p btn-sm" onclick="openGrowthModal()">Record now</button></div>`;
+      <div style="margin-top:10px"><button class="btn btn-p btn-sm" data-act="goPage" data-arg="growth">Open growth charts →</button></div>`;
+  } else $("dashGrowth").innerHTML = `<div class="empty"><div class="big">📈</div>No measurements.<br><button class="btn btn-p btn-sm" data-act="openGrowthModal">Record now</button></div>`;
   $("dashMs").innerHTML = `<div style="font-size:13.5px;margin-bottom:8px"><b>${esc(b.band)}</b> band — ${ach}/${b.items.length} achieved</div>
     <div class="progress"><div style="width:${Math.round((ach / b.items.length) * 100)}%"></div></div>
-    <div style="margin-top:10px"><button class="btn btn-p btn-sm" onclick="go('milestones')">Continue assessment →</button></div>`;
+    <div style="margin-top:10px"><button class="btn btn-p btn-sm" data-act="goPage" data-arg="milestones">Continue assessment →</button></div>`;
   const vv = [...c.visits].sort((x, y) => y.date.localeCompare(x.date)).slice(0, 3);
   $("dashVisits").innerHTML = vv.length ? vv.map((v) => `<div style="font-size:13.5px;padding:8px 0;border-bottom:1px solid var(--line)"><b>${fmtDate(v.date)}</b> <span class="badge b-gray">${esc(v.type)}</span><br><span style="color:var(--muted)">${esc((v.subj || v.plan || "").slice(0, 90))}</span></div>`).join("") : `<span style="color:var(--muted);font-size:13px">No visits recorded.</span>`;
 }
@@ -1600,7 +1600,7 @@ function splitClinicContact(s) {
 function clinicHeader() {
   const s = DB.settings || {};
   const ld = (typeof letterDoc === "function") ? letterDoc() : { name: s.doctor || "", qual: "", reg: s.reg || "" };
-  const logo = s.logo ? `<img src="${s.logo}" alt="logo" class="report-logo" onerror="this.style.display='none'">` : `<div style="font-size:40px">👶</div>`;
+  const logo = s.logo ? `<img src="${s.logo}" alt="logo" class="report-logo" data-onerror="hideImg">` : `<div style="font-size:40px">👶</div>`;
   const cc = splitClinicContact(s);
   return `<div class="report-head">${logo}<div><div class="clinic">${esc(s.clinic || "NeoKid Care Clinic")}</div>
   <div style="font-size:13px;color:var(--muted)">${esc(ld.name)}${ld.qual ? ", " + esc(ld.qual) : ""} ${ld.reg ? "· Reg: " + esc(ld.reg) : ""}${s.gstin ? " · GSTIN " + esc(s.gstin) : ""}<br>${esc(cc.addr)}</div></div>
@@ -1811,7 +1811,7 @@ function printPage(id) {
 function shareBarHTML(pageId, contentId, label, srcPage) {
   const L = String(label || "document").replace(/["']/g, "");
   const S = String(srcPage || "").replace(/[^a-z-]/g, "");
-  const b = (act, icon, txt, cls) => `<button class="btn ${cls} btn-xs" onclick="doShare('${act}','${pageId}','${contentId}','${L}','${S}')">${icon} ${txt}</button>`;
+  const b = (act, icon, txt, cls) => `<button class="btn ${cls} btn-xs" data-act="doShare" data-arg="${act}" data-arg2="${pageId}" data-arg3="${contentId}" data-arg4="${L}" data-arg5="${S}">${icon} ${txt}</button>`;
   return `<div class="sharebar no-print">` + (S ? b("back", "\u2039", "Back", "btn-o") : "") + `<span class="sharebar-t">Share:</span>`
     + b("print", "🖨️", "Print", "btn-p") + b("pdf", "📄", "PDF", "btn-o")
     + b("send", "📤", "Send", "btn-o") + b("wa", "🟢", "WhatsApp", "btn-o")
@@ -1959,4 +1959,29 @@ try { // E1: verify the IndexedDB shadow; adopt it only if cutover armed + shado
       } catch (e4) {}
     });
   }
+} catch (e) {}
+
+/* E2b: delegated actions for templates in this file. */
+try {
+  ["startVisit", "openApptModal", "queueOpen", "queueStart", "toggleFold", "dashSearch"].forEach(function (n) { actCall0(n); });
+  actCallN("openVacModal", 2); actCallN("markMs", 3); actCallN("toggleDispense", 3);
+  actRegister("setActiveDash", function (el) { try { setActive(actArg(el)); go("dashboard"); } catch (e) { actReport("setActiveDash", e); } });
+  actRegister("goEnterKey", function (el, ev) { try { if (ev.key === "Enter") go(actArg(el)); } catch (e) { actReport("goEnterKey", e); } });
+  actRegister("dashSearchKey", function (el, ev) { try { dashSearchKey(ev); } catch (e) { actReport("dashSearchKey", e); } });
+} catch (e) {}
+
+/* E2b stragglers. */
+try {
+  actCallN("doShare", 5);
+  actRegister("timelineFilter", function (el) { try { TIMELINE_FILTER = actArg(el); renderTimeline(); } catch (e) { actReport("timelineFilter", e); } });
+} catch (e) {}
+
+/* E2b: generic-regex catches (single-arg globals). */
+try {
+  ["eraseRequest", "deleteExtra", "deleteVisit", "copyDayList", "dashPick"].forEach(function (n) { actCall0(n); });
+} catch (e) {}
+
+/* E2b: template-used modal openers (single-arg flexible). */
+try {
+  ["openExtraModal"].forEach(function (n) { actCall0(n); });
 } catch (e) {}

@@ -522,7 +522,7 @@ async function main() {
   const binfo = { email: "evil@x.com<script>", profile: { sub_status: "active", current_period_end: "2026-11-16T00:00:00Z" }, subscription: { current_end: "2026-11-16T00:00:00Z", paid_count: 3, remaining_count: 9 }, invoices: [{ date: "2026-10-16T00:00:00Z", amount: 999, status: "paid", short_url: "https://rzp.io/x" }, { date: "2026-09-16T00:00:00Z", amount: 999, status: "failed", short_url: "" }] };
   const bh = C._billInfoHTML(binfo, { ok: true, reason: "active" });
   ok(!bh.includes("<script>") && bh.includes("evil@x.com"), "billing escapes account email");
-  ok(bh.includes("3 paid") && bh.includes("9 to go") && bh.includes("Cloud.cancelSub()"), "billing shows sub counts + cancel");
+  ok(bh.includes("3 paid") && bh.includes("9 to go") && bh.includes('data-act="cloudCancelSub"'), "billing shows sub counts + cancel (delegated)");
   ok(bh.includes("b-green") && bh.includes("b-red") && bh.includes("https://rzp.io/x"), "invoices show paid/failed + link");
   ok(C._billInfoHTML({ profile: {} }, { ok: true, reason: "trial", daysLeft: 5 }).includes("Subscribe now"), "trial sees subscribe CTA");
   ok(C._billInfoHTML({ profile: {} }, { ok: true, reason: "cancelled", daysLeft: 5 }).includes("Resubscribe"), "cancelled sees resubscribe CTA");
@@ -645,8 +645,8 @@ async function main() {
   ok(fs.readFileSync(path.join(R, "js/front.js"), "utf8").includes("filterNav(f ? f.value"), "applyRole re-applies filter");
 
   // ---- display exit (kiosk trap fix) ----
-  ok(sb.displayFootHTML().includes("exitDisplay()") && sb.displayFootHTML().includes("Esc to exit"), "display footer has exit + hint");
-  ok(sb.displayFootHTML().includes("toggleDispMute()") && sb.displayFootHTML().includes("dispFullscreen()"), "display footer keeps mute + fullscreen");
+  ok(sb.displayFootHTML().includes('data-act="exitDisplay"') && sb.displayFootHTML().includes("Esc to exit"), "display footer has exit + hint (delegated)");
+  ok(sb.displayFootHTML().includes('data-act="toggleDispMute"') && sb.displayFootHTML().includes('data-act="dispFullscreen"'), "display footer keeps mute + fullscreen (delegated)");
   ok(typeof sb.exitDisplay === "function" && typeof sb.dispFullscreen === "function", "display exit fns exposed");
   sb.document.getElementById("pageTitle").textContent = "SENTINEL";
   sb.exitDisplay();
@@ -863,7 +863,7 @@ async function main() {
   vm.runInContext(`DB.children=[normalizeChild({id:'d1',name:'Dash Kid',sex:'boy',dob:'2024-01-01'})]; DB.activeId='d1';`, sb);
   sb.renderDashboard();
   const dStats = sb.document.getElementById("dashStats").innerHTML;
-  ok(dStats.includes("go('vaccines')") && dStats.includes("go('milestones')") && dStats.includes("go('growth')") && dStats.includes("go('children')"), "stat cards drill into their screens");
+  ok(dStats.includes('data-act="goPage"') && dStats.includes('data-arg="vaccines"') && dStats.includes('data-arg="milestones"') && dStats.includes('data-arg="growth"') && dStats.includes('data-arg="children"'), "stat cards drill into their screens (delegated)");
 
   // ---- v10.11.0: Sunrise home (stats + queue + alerts + search + MRN + lab review) ----
   vm.runInContext(`DB.children=[
@@ -887,7 +887,7 @@ async function main() {
   ok(sb.homeAlertsHTML([]).includes("All clear"), "no alerts shows all-clear");
   ok(sb.homeAlertsHTML(ha).includes("WhatsApp") && sb.homeAlertsHTML(ha).includes("11 children overdue"), "alerts render with honest counts");
   const hstH = sb.homeStatsHTML(hs);
-  ok(hstH.includes("Patients today") && hstH.includes("go('front')") && hstH.includes("go('analytics')"), "stat cards drill down");
+  ok(hstH.includes("Patients today") && hstH.includes('data-arg="front"') && hstH.includes('data-arg="analytics"'), "stat cards drill down (delegated)");
   // dashboard search (pure core; inputs live in JS-rendered hero)
   const dsH = sb.dashSearchHTML("hari", hKids, []);
   ok(dsH.includes("Hari Patel") && dsH.includes("MRN 0007") && !dsH.includes("Ira Patel"), "dash search ranks + shows MRN");
@@ -1231,8 +1231,8 @@ async function main() {
   ok(appM.includes("function previewPage") && psDocs.includes('previewPage("pg-msprint")') && psGrw.includes('previewPage("pg-gsheet")') && psGrc.includes('previewPage("pg-growthprint")'), "canonical reports open a screen preview first (dialog only from the bar)");
   ok(psDocs.includes('shareBarHTML("pg-msprint"') && psGrw.includes('shareBarHTML("pg-gsheet"') && psGrc.includes('shareBarHTML("pg-growthprint"'), "all three canonical previews open with a share bar");
   ok(psCss.includes(".sharebar{"), "share bar styled (screen-only)");
-  ok((sb.shareBarHTML("p", "c", "T").match(/doShare\(/g) || []).length === 6, "share bar offers print + PDF + send + WhatsApp + email + file");
-  ok((sb.shareBarHTML("p", "c", "T", "growth").match(/doShare\(/g) || []).length === 7 && sb.shareBarHTML("p", "c", "T", "growth").includes("Back</button>"), "preview bar adds a Back button to its source page");
+  ok((sb.shareBarHTML("p", "c", "T").match(/data-act="doShare"/g) || []).length === 6, "share bar offers print + PDF + send + WhatsApp + email + file (delegated)");
+  ok((sb.shareBarHTML("p", "c", "T", "growth").match(/data-act="doShare"/g) || []).length === 7 && sb.shareBarHTML("p", "c", "T", "growth").includes("Back</button>"), "preview bar adds a Back button to its source page (delegated)");
   ok(typeof sb.shareTextFor("vacPrint") === "string" && sb.shareTextFor("nope").length > 0, "share text always builds (clinic header fallback)");
   // ---- v10.31.0: permanent motion+glass, reel theme picker ----
   const thCss = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");

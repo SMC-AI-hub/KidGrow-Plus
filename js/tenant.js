@@ -122,8 +122,8 @@ function onboardModal() {
     '<div id="tnErr" style="color:var(--red,#dc2626);font-size:13px;min-height:18px"></div>' +
     '<input id="tnName" placeholder="e.g. City Care Children Hospital">' +
     '<input id="tnPrefix" placeholder="Patient ID prefix (optional, e.g. CC-)">' +
-    '<button class="btn btn-p" style="width:100%;margin-top:8px" onclick="Tenant.create()">Create organization</button>' +
-    '<button class="btn btn-o" style="width:100%;margin-top:8px" onclick="document.getElementById(\'mTenantNew\').remove()">Cancel</button></div></div>';
+    '<button class="btn btn-p" style="width:100%;margin-top:8px" data-act="tenantCreate">Create organization</button>' +
+    '<button class="btn btn-o" style="width:100%;margin-top:8px" data-act="modalRemove" data-arg="mTenantNew">Cancel</button></div></div>';
   r.appendChild(d.firstChild);
   setTimeout(function () { var e = $("tnName"); if (e) e.focus(); }, 60);
 }
@@ -186,9 +186,9 @@ function membersModal() {
       (canAdmin ? "<h3 style='margin-top:12px'>✉️ Invite by email</h3><div class='hint'>They sign up, open your link, and join with this role.</div>" +
         '<input id="invEmail" type="email" placeholder="colleague@hospital.org">' +
         '<select id="invRole"><option>doctor</option><option>nurse</option><option>pharmacist</option><option>lab</option><option>mrd</option><option>billing</option><option>auditor</option><option>readonly</option><option>admin</option></select>' +
-        '<button class="btn btn-p" style="width:100%;margin-top:8px" onclick="Tenant.invite()">Create invite link</button>' +
+        '<button class="btn btn-p" style="width:100%;margin-top:8px" data-act="tenantInvite">Create invite link</button>' +
         '<div id="invOut" style="font-size:12px;margin-top:8px;word-break:break-all"></div>' : "") +
-      '<button class="btn btn-o" style="width:100%;margin-top:10px" onclick="document.getElementById(\'mMembers\').remove()">Close</button></div></div>';
+      '<button class="btn btn-o" style="width:100%;margin-top:10px" data-act="modalRemove" data-arg="mMembers">Close</button></div></div>';
     r.appendChild(d.firstChild);
   }).catch(function (e) { toast(e.message || "Could not load members."); });
 }
@@ -245,9 +245,9 @@ function mfaEnrollModal(fromCard) {
       "<div>" + qr + "</div><div style='font-size:11px;word-break:break-all'>" + esc(f.totp.secret) + "</div>" +
       '<input id="mfaCode" inputmode="numeric" placeholder="123456" style="text-align:center">' +
       '<div id="mfaErr" style="color:var(--red,#dc2626);font-size:13px;min-height:18px"></div>' +
-      '<button class="btn btn-p" style="width:100%" onclick="Tenant._mfaFinish(\'' + f.id + "')\">Verify & enable</button>" +
-      (fromCard ? "" : '<button class="btn btn-o" style="width:100%;margin-top:8px" onclick="Tenant._mfaLater()">Remind me next login</button>') +
-      '<button class="btn btn-o" style="width:100%;margin-top:8px" onclick="document.getElementById(\'mMfa\').remove()">Close</button></div></div>';
+      '<button class="btn btn-p" style="width:100%" data-act="tenantMfaFinish" data-arg="' + f.id + "'>Verify & enable</button>" +
+      (fromCard ? "" : '<button class="btn btn-o" style="width:100%;margin-top:8px" data-act="tenantMfaLater">Remind me next login</button>') +
+      '<button class="btn btn-o" style="width:100%;margin-top:8px" data-act="modalRemove" data-arg="mMfa">Close</button></div></div>';
     ($("cloudRoot") || document.body).appendChild(d.firstChild);
     Tenant._mfaFactor = f.id;
   }).catch(function (e) { toast("MFA setup failed: " + (e.message || "error")); });
@@ -259,7 +259,7 @@ function mfaVerifyModal(factorId) {
     "<h3>🔐 Authenticator code</h3><div class='hint'>Your role needs two-step verification.</div>" +
     '<input id="mfaCode" inputmode="numeric" placeholder="123456" style="text-align:center">' +
     '<div id="mfaErr" style="color:var(--red,#dc2626);font-size:13px;min-height:18px"></div>' +
-    '<button class="btn btn-p" style="width:100%" onclick="Tenant._mfaFinish(\'' + factorId + "')\">Verify</button></div></div>";
+    '<button class="btn btn-p" style="width:100%" data-act="tenantMfaFinish" data-arg="' + factorId + "'>Verify</button></div></div>";
   ($("cloudRoot") || document.body).appendChild(d.firstChild);
   Tenant._mfaFactor = factorId;
 }
@@ -285,8 +285,8 @@ function bgModal() {
     "<h3>🚨 Emergency access</h3><div class='hint'>Grants <b>4 hours</b> of app access for genuine clinical emergencies (e.g. billing lapse mid-shift). It does <b>not</b> bypass hospital isolation — you only ever see your own organization. This is logged and shown to owners.</div>" +
     '<textarea id="bgReason" rows="2" placeholder="Reason (min 8 characters) — e.g. Night duty, subscription renewal pending"></textarea>' +
     '<div id="bgErr" style="color:var(--red,#dc2626);font-size:13px;min-height:18px"></div>' +
-    '<button class="btn btn-d" style="width:100%" onclick="Tenant._bgGo()">Activate 4-hour emergency access</button>' +
-    '<button class="btn btn-o" style="width:100%;margin-top:8px" onclick="document.getElementById(\'mBg\').remove()">Cancel</button></div></div>';
+    '<button class="btn btn-d" style="width:100%" data-act="tenantBgGo">Activate 4-hour emergency access</button>' +
+    '<button class="btn btn-o" style="width:100%;margin-top:8px" data-act="modalRemove" data-arg="mBg">Cancel</button></div></div>';
   ($("cloudRoot") || document.body).appendChild(d.firstChild);
 }
 function ensureTenant() {
@@ -349,7 +349,7 @@ function renderBanners() {
     var g = document.createElement("div");
     g.id = "bgBanner";
     g.style.cssText = "background:#b91c1c;color:#fff;font-size:13px;text-align:center;padding:8px 12px";
-    g.innerHTML = "🚨 EMERGENCY ACCESS (" + mins + " min left · logged) — <a href='#' onclick='Tenant._bgEnd();return false' style='color:#fff;font-weight:700'>End now</a>";
+    g.innerHTML = "🚨 EMERGENCY ACCESS (" + mins + " min left · logged) — <a href='#' data-act='tenantBgEnd' style='color:#fff;font-weight:700'>End now</a>";
     var c0 = document.querySelector(".content");
     if (c0 && c0.parentNode) c0.parentNode.insertBefore(g, c0); else document.body.prepend(g);
   }
@@ -377,7 +377,7 @@ function renderTenantCard() {
   }
   if (!T.current) {
     card.innerHTML = "<h3>🏥 Organization</h3><div class='hint'>No organization yet.</div>" +
-      "<button class='btn btn-p btn-sm' onclick='Tenant.onboard()'>＋ Register hospital / clinic</button> " +
+      "<button class='btn btn-p btn-sm' data-act='tenantOnboard'>＋ Register hospital / clinic</button> " +
       "<span class='hint'>or open the invite link your admin sent.</span>";
     pg.appendChild(card); return;
   }
@@ -386,7 +386,7 @@ function renderTenantCard() {
     return "<option value='" + m.tenant_id + "'" + (m.tenant_id === T.current ? " selected" : "") + ">" + esc((m.tenants && m.tenants.name) || m.tenant_id.slice(0, 8)) + " (" + esc(m.role) + ")</option>";
   }).join("");
   card.innerHTML = "<h3>🏥 Organization</h3>" +
-    "<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap'><select id='tenantSwitch' style='flex:1;min-width:180px' onchange='Tenant.switch(this.value)'>" + opts + "</select>" +
+    "<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap'><select id='tenantSwitch' style='flex:1;min-width:180px' data-onchange='tenantSwitch'>" + opts + "</select>" +
     "<span class='badge b-teal'>" + esc(T.role || "?") + "</span>" +
     "<span class='badge " + (t.status === "active" ? "b-green" : "b-amber") + "'>" + esc(t.status || "?") + " · " + esc(t.plan || "?") + "</span></div>" +
     "<div class='form-grid' style='margin-top:10px'>" +
@@ -397,13 +397,13 @@ function renderTenantCard() {
     "<div><label>Patient ID prefix</label><input id='tPrefix' value='" + esc(s.mrn_prefix || "") + "'></div>" +
     "<div><label>Timezone</label><input id='tTz' value='" + esc(s.timezone || "Asia/Kolkata") + "'></div></div>" +
     "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-top:8px'>" +
-    "<button class='btn btn-p btn-sm' onclick='Tenant.saveBranding()'>💾 Save branding</button>" +
-    "<button class='btn btn-o btn-sm' onclick='Tenant.applyToDevice()'>📲 Apply to this device</button>" +
-    "<button class='btn btn-o btn-sm' onclick='Tenant.members()'>👥 Members & invites</button>" +
-    "<button class='btn btn-o btn-sm' onclick='Tenant.usage()'>📊 Usage</button>" +
-    "<button class='btn btn-o btn-sm' onclick='Tenant.mfa()'>🔐 Authenticator</button>" +
-    ((T.role === "owner" || T.role === "admin" || T.role === "auditor") ? "<button class='btn btn-o btn-sm' onclick='Tenant.auditView()'>🧾 Audit log</button>" : "") +
-    "<button class='btn btn-o btn-sm' onclick='Tenant.onboard()'>＋ New organization</button></div>" +
+    "<button class='btn btn-p btn-sm' data-act='tenantSaveBranding'>💾 Save branding</button>" +
+    "<button class='btn btn-o btn-sm' data-act='tenantApplyToDevice'>📲 Apply to this device</button>" +
+    "<button class='btn btn-o btn-sm' data-act='tenantMembers'>👥 Members & invites</button>" +
+    "<button class='btn btn-o btn-sm' data-act='tenantUsage'>📊 Usage</button>" +
+    "<button class='btn btn-o btn-sm' data-act='tenantMfa'>🔐 Authenticator</button>" +
+    ((T.role === "owner" || T.role === "admin" || T.role === "auditor") ? "<button class='btn btn-o btn-sm' data-act='tenantAuditView'>🧾 Audit log</button>" : "") +
+    "<button class='btn btn-o btn-sm' data-act='tenantOnboard'>＋ New organization</button></div>" +
     "<div class='hint' id='tenantMsg' style='margin-top:8px'></div>";
   pg.appendChild(card);
 }
@@ -434,7 +434,7 @@ function auditView() {
     }).join("") || "<div class='hint'>No server audit rows yet.</div>";
     var d = document.createElement("div");
     d.innerHTML = '<div class="modal-bg open" id="mAudit"><div class="modal" style="max-width:480px"><h3>🧾 Server audit (latest 50)</h3>' + rows +
-      '<button class="btn btn-o" style="width:100%;margin-top:8px" onclick="document.getElementById(\'mAudit\').remove()">Close</button></div></div>';
+      '<button class="btn btn-o" style="width:100%;margin-top:8px" data-act="modalRemove" data-arg="mAudit">Close</button></div></div>';
     ($("cloudRoot") || document.body).appendChild(d.firstChild);
   }).catch(function (e) { toast(e.message || "Audit unavailable."); });
 }
@@ -487,3 +487,22 @@ if (typeof Cloud !== "undefined" && Cloud) {
 }
 
 })();
+
+/* E2b: delegated actions for templates in this file. */
+try {
+  actRegister("modalRemove", function (el) { try { var m = document.getElementById(actArg(el)); if (m) m.remove(); } catch (e) { actReport("modalRemove", e); } });
+  actRegister("tenantInvite", function () { try { Tenant.invite(); } catch (e) { actReport("tenantInvite", e); } });
+  actRegister("tenantCreate", function () { try { Tenant.create(); } catch (e) { actReport("tenantCreate", e); } });
+  actRegister("tenantMfaLater", function () { try { Tenant._mfaLater(); } catch (e) { actReport("tenantMfaLater", e); } });
+  actRegister("tenantMfaFinish", function (el) { try { Tenant._mfaFinish(actArg(el)); } catch (e) { actReport("tenantMfaFinish", e); } });
+  actRegister("tenantBgGo", function () { try { Tenant._bgGo(); } catch (e) { actReport("tenantBgGo", e); } });
+  actRegister("tenantBgEnd", function () { try { Tenant._bgEnd(); } catch (e) { actReport("tenantBgEnd", e); } });
+  actRegister("tenantOnboard", function () { try { Tenant.onboard(); } catch (e) { actReport("tenantOnboard", e); } });
+  actRegister("tenantSaveBranding", function () { try { Tenant.saveBranding(); } catch (e) { actReport("tenantSaveBranding", e); } });
+  actRegister("tenantApplyToDevice", function () { try { Tenant.applyToDevice(); } catch (e) { actReport("tenantApplyToDevice", e); } });
+  actRegister("tenantMembers", function () { try { Tenant.members(); } catch (e) { actReport("tenantMembers", e); } });
+  actRegister("tenantUsage", function () { try { Tenant.usage(); } catch (e) { actReport("tenantUsage", e); } });
+  actRegister("tenantMfa", function () { try { Tenant.mfa(); } catch (e) { actReport("tenantMfa", e); } });
+  actRegister("tenantAuditView", function () { try { Tenant.auditView(); } catch (e) { actReport("tenantAuditView", e); } });
+  actRegister("tenantSwitch", function (el) { try { Tenant.switch(el.value); } catch (e) { actReport("tenantSwitch", e); } });
+} catch (e) {}

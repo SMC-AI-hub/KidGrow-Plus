@@ -144,7 +144,7 @@ async function main() {
   ok(clSrc.includes("Comply.encrypt") && clSrc.includes("Comply.decrypt"), "push/pull call Comply crypto");
   ok(clSrc.includes("Encrypt cloud snapshots") && typeof sb.Cloud.setEnc === "function" && typeof sb.Cloud.forgetPw === "function", "encSync toggle + setters");
   ok(fs.readFileSync(path.join(R, "js/exports.js"), "utf8").includes("dlFhir()") && fs.readFileSync(path.join(R, "js/exports.js"), "utf8").includes("Erased records"), "export page: FHIR + erasure cards");
-  ok(fs.readFileSync(path.join(R, "js/app.js"), "utf8").includes("eraseRequest('${c.id}')"), "children page delete -> eraseRequest");
+  ok(fs.readFileSync(path.join(R, "js/app.js"), "utf8").includes('data-act="eraseRequest" data-arg="${c.id}"'), "children page delete -> eraseRequest (delegated)");
   const sw = fs.readFileSync(path.join(R, "sw.js"), "utf8");
   ok(sw.includes("./js/fhirx.js") && sw.includes("./js/comply.js"), "SW shell caches fhirx + comply");
   const complySrc = fs.readFileSync(path.join(R, "js/comply.js"), "utf8");

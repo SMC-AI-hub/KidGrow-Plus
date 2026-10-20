@@ -40,8 +40,8 @@ function applyRole() {
   const chip = document.getElementById("userChip");
   if (chip) {
     chip.innerHTML = (u && !u.open)
-      ? `👤 <b>${esc(u.name)}</b> <span class="badge b-teal">${esc(u.role)}</span> <button class="btn btn-o btn-xs" onclick="doLogout()">Logout</button>`
-      : ((DB.users || []).length ? "" : `<span style="font-size:12px;color:var(--muted)">🔓 Open mode — <a href="#" onclick="go('users');return false;">set up users & PINs</a></span>`);
+      ? `👤 <b>${esc(u.name)}</b> <span class="badge b-teal">${esc(u.role)}</span> <button class="btn btn-o btn-xs" data-act="doLogout">Logout</button>`
+      : ((DB.users || []).length ? "" : `<span style="font-size:12px;color:var(--muted)">🔓 Open mode — <a href="#" data-act="goPage" data-arg="users">set up users & PINs</a></span>`);
   }
 }
 function enforceLock() {
@@ -308,42 +308,42 @@ function renderFront() {
   <div class="token-banner"><div><div style="font-size:12px;letter-spacing:1px;opacity:.8">NOW SERVING</div>
     <div style="font-size:34px;font-weight:800">${serving ? `#${serving.n} · ${esc(serving.name)}` : "—"}</div>
     <div style="font-size:13px">${waiting.length} waiting${tod.filter((x) => x.status === "done").length ? ` · ${tod.filter((x) => x.status === "done").length} done` : ""}</div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-p" onclick="callNext()">📢 Call next</button>
-    <button class="btn btn-o btn-sm" onclick="clearOldTokens()">🧹 Clear old days</button></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-p" data-act="callNext">📢 Call next</button>
+    <button class="btn btn-o btn-sm" data-act="clearOldTokens">🧹 Clear old days</button></div></div>
   <div style="height:16px"></div>
   <div class="grid g2">
     <div class="card"><h3>🎟️ Token queue — ${fmtDate(t)}</h3>
       <div class="form-grid">
-        <div><label>Child (registered)</label><select id="tkChild" onchange="document.getElementById('tkName').value=''"><option value="">— walk-in —</option>${DB.children.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
+        <div><label>Child (registered)</label><select id="tkChild" data-onchange="tkNameClear"><option value="">— walk-in —</option>${DB.children.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
         <div><label>Or walk-in name</label><input id="tkName" placeholder="e.g. Sara"></div>
         <div class="full"><label>Reason</label><input id="tkReason" placeholder="e.g. Fever / Vaccination / Review"></div>
       </div>
-      <button class="btn btn-p btn-sm" onclick="addToken()">＋ Add token (#${nextTokenNo(t)})</button>
+      <button class="btn btn-p btn-sm" data-act="addToken">＋ Add token (#${nextTokenNo(t)})</button>
       <div style="margin-top:10px">${tod.length ? tod.map((x) => `
         <div class="vac-row" style="${x.status === "in" ? "border-left:4px solid var(--teal)" : ""}${x.status === "done" ? ";opacity:.55" : ""}">
           <div class="grow"><b>#${x.n}</b> ${esc(x.name)} <span class="badge ${x.status === "in" ? "b-teal" : x.status === "waiting" ? "b-amber" : "b-gray"}">${x.status}</span><br>
           <span style="font-size:12px;color:var(--muted)">${esc(x.time || "")} · ${esc(x.reason || "")}</span></div>
-          ${x.status === "waiting" ? `<button class="btn btn-d btn-xs" onclick="setTokenStatus('${x.id}','in')">Call</button>` : ""}
-          ${x.status === "in" ? `<button class="btn btn-d btn-xs" onclick="setTokenStatus('${x.id}','done')">Done</button>` : ""}
-          ${x.status !== "done" ? `<button class="btn btn-o btn-xs" onclick="setTokenStatus('${x.id}','skipped')">Skip</button>` : ""}
-          <button class="btn btn-danger btn-xs" onclick="delToken('${x.id}')">✕</button>
+          ${x.status === "waiting" ? `<button class="btn btn-d btn-xs" data-act="setTokenStatus" data-arg="${x.id}" data-arg2="in">Call</button>` : ""}
+          ${x.status === "in" ? `<button class="btn btn-d btn-xs" data-act="setTokenStatus" data-arg="${x.id}" data-arg2="done">Done</button>` : ""}
+          ${x.status !== "done" ? `<button class="btn btn-o btn-xs" data-act="setTokenStatus" data-arg="${x.id}" data-arg2="skipped">Skip</button>` : ""}
+          <button class="btn btn-danger btn-xs" data-act="delToken" data-arg="${x.id}">✕</button>
         </div>`).join("") : `<div style="font-size:13px;color:var(--muted)">Queue empty — add the first token.</div>`}</div>
     </div>
     <div class="card"><h3>🧾 New bill</h3>
       <div class="form-grid">
-        <div><label>Child</label><select onchange="billDraft().childId=this.value"><option value="">— walk-in —</option>${DB.children.map((c) => `<option value="${c.id}"${dft.childId === c.id ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
-        <div><label>Mode</label><select onchange="billDraft().mode=this.value">${["UPI", "Cash", "Card"].map((m) => `<option${dft.mode === m ? " selected" : ""}>${m}</option>`).join("")}</select></div>
+        <div><label>Child</label><select data-onchange="billChildSel"><option value="">— walk-in —</option>${DB.children.map((c) => `<option value="${c.id}"${dft.childId === c.id ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
+        <div><label>Mode</label><select data-onchange="billModeSel">${["UPI", "Cash", "Card"].map((m) => `<option${dft.mode === m ? " selected" : ""}>${m}</option>`).join("")}</select></div>
       </div>
       <div class="hint">Quick charges (₹ — edit rates below)</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${rKeys.map((k) => `<button class="btn btn-o btn-xs" onclick="billAddRate('${esc(k).replace(/'/g, "&#39;")}')">${esc(k)} ₹${r[k]}</button>`).join("")}</div>
-      <div style="display:flex;gap:6px;margin-bottom:8px"><input id="bDesc" placeholder="Custom charge" style="flex:2"><input id="bAmt" type="number" min="0" placeholder="₹" style="flex:1"><button class="btn btn-o btn-sm" onclick="billAddCustom()">Add</button></div>
-      ${dft.items.length ? dft.items.map((i, n) => `<div class="vac-row"><div class="grow">${esc(i.desc)}</div><b>₹${(+i.amt || 0).toFixed(0)}</b><button class="btn btn-danger btn-xs" onclick="billDelItem(${n})">✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No charges yet — tap a quick charge above or set rates below.</div>`}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${rKeys.map((k) => `<button class="btn btn-o btn-xs" data-act="billAddRate" data-arg="${esc(k).replace(/'/g, "&#39;")}">${esc(k)} ₹${r[k]}</button>`).join("")}</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px"><input id="bDesc" placeholder="Custom charge" style="flex:2"><input id="bAmt" type="number" min="0" placeholder="₹" style="flex:1"><button class="btn btn-o btn-sm" data-act="billAddCustom">Add</button></div>
+      ${dft.items.length ? dft.items.map((i, n) => `<div class="vac-row"><div class="grow">${esc(i.desc)}</div><b>₹${(+i.amt || 0).toFixed(0)}</b><button class="btn btn-danger btn-xs" data-act="billDelItem" data-arg="${n}">✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No charges yet — tap a quick charge above or set rates below.</div>`}
       <div class="form-grid" style="margin-top:8px">
         <div><label>Total (₹)</label><input value="${billTotal()}" disabled></div>
-        <div><label>Paid (₹)</label><input id="bPaid" type="number" min="0" value="${dft.paid}" placeholder="${billTotal()}" oninput="billDraft().paid=this.value"></div>
+        <div><label>Paid (₹)</label><input id="bPaid" type="number" min="0" value="${dft.paid}" placeholder="${billTotal()}" data-oninput="billPaidInput"></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-p btn-sm" onclick="saveBill()" ${dft.items.length ? "" : "disabled"}>💾 Save bill${dft.paid !== "" && +dft.paid !== billTotal() ? ` (bal ₹${billTotal() - (+dft.paid || 0)})` : ""}</button>
-      <button class="btn btn-o btn-sm" onclick="BILL_DRAFT=null;renderFront()">Clear</button></div>
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-p btn-sm" data-act="saveBill" ${dft.items.length ? "" : "disabled"}>💾 Save bill${dft.paid !== "" && +dft.paid !== billTotal() ? ` (bal ₹${billTotal() - (+dft.paid || 0)})` : ""}</button>
+      <button class="btn btn-o btn-sm" data-act="billDraftReset">Clear</button></div>
     </div>
   </div>
   <div style="height:16px"></div>
@@ -352,14 +352,14 @@ function renderFront() {
       ${todayBills.length ? todayBills.map((b) => `<div class="vac-row"><div class="grow"><b>R-${b.id.slice(-6).toUpperCase()}</b> · ${esc(b.name)} · ${esc(b.time || "")}<br>
         <span style="font-size:12.5px;color:var(--muted)">${b.items.map((i) => esc(i.desc)).join(" + ")} · ${esc(b.mode || "")}</span></div>
         <b>₹${b.total.toFixed(0)}</b>
-        <button class="btn btn-o btn-xs" onclick="printBill('${b.id}')">🖨️</button>
-        <button class="btn btn-danger btn-xs" onclick="delBill('${b.id}')">✕</button></div>`).join("")
+        <button class="btn btn-o btn-xs" data-act="printBill" data-arg="${b.id}">🖨️</button>
+        <button class="btn btn-danger btn-xs" data-act="delBill" data-arg="${b.id}">✕</button></div>`).join("")
       : `<div style="font-size:13px;color:var(--muted)">No bills today yet — start one from a token above.</div>`}
-      ${bills.filter((b) => b.date !== t).length ? `<div class="hint" style="margin-top:8px">Earlier (${bills.filter((b) => b.date !== t).length}) — latest:</div>` + bills.filter((b) => b.date !== t).slice(0, 5).map((b) => `<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)">${fmtDate(b.date)} · ${esc(b.name)} · <b>₹${b.total.toFixed(0)}</b> <button class="btn btn-o btn-xs" onclick="printBill('${b.id}')">🖨️</button></div>`).join("") : ""}
+      ${bills.filter((b) => b.date !== t).length ? `<div class="hint" style="margin-top:8px">Earlier (${bills.filter((b) => b.date !== t).length}) — latest:</div>` + bills.filter((b) => b.date !== t).slice(0, 5).map((b) => `<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)">${fmtDate(b.date)} · ${esc(b.name)} · <b>₹${b.total.toFixed(0)}</b> <button class="btn btn-o btn-xs" data-act="printBill" data-arg="${b.id}">🖨️</button></div>`).join("") : ""}
     </div>
     <div class="card"><h3>💰 Charge rates</h3><div class="hint">Doctor can edit · used by quick-charge buttons</div>
       <div class="form-grid">${rKeys.map((k, i) => `<div><label>${esc(k)} (₹)</label><input type="number" min="0" id="rate${i}" value="${r[k]}"></div>`).join("")}</div>
-      <button class="btn btn-o btn-sm" onclick="saveRates()" style="margin-top:8px">Save rates</button>
+      <button class="btn btn-o btn-sm" data-act="saveRates" style="margin-top:8px">Save rates</button>
     </div>
   </div>
   <div style="height:16px"></div>
@@ -382,17 +382,17 @@ function renderUsers() {
         <div><label>Name</label><input id="uName" placeholder="e.g. Dr. Sharma"></div>
         <div><label>Role</label><select id="uRole"><option>Doctor</option><option>Nurse</option><option>Pharmacist</option><option>Frontdesk</option><option>Admin</option></select></div>
         <div><label>PIN (4+ digits)</label><input id="uPin" type="password" inputmode="numeric" placeholder="••••"></div>
-        <div style="align-self:end"><button class="btn btn-p btn-sm" onclick="saveUser()">＋ Save user</button></div>
+        <div style="align-self:end"><button class="btn btn-p btn-sm" data-act="saveUser">＋ Save user</button></div>
       </div>
       <div style="margin-top:10px">${(DB.users || []).map((u) => `<div class="vac-row"><div class="grow">👤 <b>${esc(u.name)}</b> <span class="badge b-teal">${esc(u.role)}</span>
         ${(DB.session || {}).userId === u.id ? ` <span class="badge b-gray">logged in</span>` : ""}</div>
-        <button class="btn btn-o btn-xs" onclick="editUser('${u.id}')">Edit</button>
-        <button class="btn btn-danger btn-xs" onclick="delUser('${u.id}')">✕</button></div>`).join("") || `<div style="font-size:13px;color:var(--muted)">No users yet — add a Doctor user + PIN to enable login.</div>`}</div>
-      <div style="margin-top:10px"><button class="btn btn-o btn-sm" onclick="doLogout()">Logout now</button></div>
+        <button class="btn btn-o btn-xs" data-act="editUser" data-arg="${u.id}">Edit</button>
+        <button class="btn btn-danger btn-xs" data-act="delUser" data-arg="${u.id}">✕</button></div>`).join("") || `<div style="font-size:13px;color:var(--muted)">No users yet — add a Doctor user + PIN to enable login.</div>`}</div>
+      <div style="margin-top:10px"><button class="btn btn-o btn-sm" data-act="doLogout">Logout now</button></div>
     </div>
     <div class="card"><h3>📜 Audit trail <span style="font-size:13px;color:var(--muted)">(latest ${(DB.audit || []).length}, kept 500)</span></h3>
-      <div class="hint">Who did what, when. <button class="btn btn-o btn-xs" onclick="exportAudit()">⬇ Export CSV</button>
-      <button class="btn btn-o btn-xs" onclick="printPage('pg-users')">🖨️ Print</button></div>
+      <div class="hint">Who did what, when. <button class="btn btn-o btn-xs" data-act="exportAudit">⬇ Export CSV</button>
+      <button class="btn btn-o btn-xs" data-act="printPage" data-arg="pg-users">🖨️ Print</button></div>
       <div style="max-height:420px;overflow:auto"><table class="tbl"><tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr>
       ${au.map((a) => `<tr><td style="font-size:11.5px;white-space:nowrap">${esc(a.t.slice(0, 16).replace("T", " "))}</td><td>${esc(a.user)}</td><td><b>${esc(a.action)}</b></td><td style="font-size:12px">${esc(a.detail)}</td></tr>`).join("") || `<tr><td colspan="4" style="color:var(--muted)">No activity yet.</td></tr>`}</table></div>
     </div>
@@ -435,3 +435,14 @@ function delUser(id) {
 /* Boot (scripts run after DOM parse): hide role-blocked buttons + restore collapsed sections. */
 try { applyRole(); } catch (e) {}
 try { if (typeof restoreNavSecs === "function") restoreNavSecs(); } catch (e) {}
+
+/* E2b: delegated actions for templates in this file. */
+try {
+  ["doLogout", "saveUser", "saveRates", "saveBill", "exportAudit", "clearOldTokens", "callNext", "billAddCustom", "addToken", "billDelItem", "billAddRate", "printBill", "editUser", "delUser", "delToken", "delBill"].forEach(function (n) { actCall0(n); });
+  actCallN("setTokenStatus", 2);
+  actRegister("billDraftReset", function () { try { BILL_DRAFT = null; renderFront(); } catch (e) { actReport("billDraftReset", e); } });
+  actRegister("billPaidInput", function (el) { try { billDraft().paid = el.value; } catch (e) { actReport("billPaidInput", e); } });
+  actRegister("tkNameClear", function () { try { document.getElementById("tkName").value = ""; } catch (e) { actReport("tkNameClear", e); } });
+  actRegister("billModeSel", function (el) { try { billDraft().mode = el.value; } catch (e) { actReport("billModeSel", e); } });
+  actRegister("billChildSel", function (el) { try { billDraft().childId = el.value; } catch (e) { actReport("billChildSel", e); } });
+} catch (e) {}

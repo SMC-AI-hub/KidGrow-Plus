@@ -3,12 +3,12 @@
 // E2b/E2c extend CONVERTED as files are migrated. Use: node tests/csp.test.js
 const fs = require("fs"), path = require("path");
 const R = path.join(__dirname, "..");
-const CONVERTED = ["index.html"]; // E2a: static shell. E2b+: js files join.
+const CONVERTED = ["index.html", "js/app.js", "js/front.js", "js/cloud.js", "js/ops.js", "js/tenant.js"]; // E2b joins the top-5 JS files.
 let pass = 0, fail = 0;
 function ok(c, name) { if (c) { pass++; } else { fail++; console.log("FAIL:", name); } }
 const read = (f) => fs.readFileSync(path.join(R, f), "utf8");
 
-const ON_RE = /\son(click|dblclick|change|input|keydown|keyup|keypress|submit|focus|blur|error|load|mouse[a-z]+|touch[a-z]+|paste|copy|cut)\s*=/;
+const ON_RE = /[^.\w-]on(click|dblclick|change|input|keydown|keyup|keypress|submit|focus|blur|error|load|mouse[a-z]+|touch[a-z]+|paste|copy|cut)\s*=/; // (excludes el.onX= props + data-on*)
 for (const f of CONVERTED) {
   const src = read(f);
   ok(!ON_RE.test(src), `${f}: zero inline on* handlers`);
@@ -21,13 +21,17 @@ for (const f of CONVERTED) {
 const used = new Set();
 for (const f of CONVERTED) {
   const src = read(f);
-  for (const m of src.matchAll(/data-(?:act|oninput|onchange|onkey|onfocus|onblur)="([^"]+)"/g)) used.add(m[1]);
+  for (const m of src.matchAll(/data-(?:act|oninput|onchange|onkey|onfocus|onblur|onerror)="([^"]+)"/g)) used.add(m[1]);
+  for (const m of src.matchAll(/data-(?:act|oninput|onchange|onkey|onfocus|onblur)='([^']+)'/g)) used.add(m[1]);
 }
 const registered = new Set();
 for (const f of fs.readdirSync(path.join(R, "js"))) {
   if (!f.endsWith(".js")) continue;
   const src = read("js/" + f);
   for (const m of src.matchAll(/actRegister\("([^"]+)"/g)) registered.add(m[1]);
+  for (const m of src.matchAll(/actCallN\("([^"]+)",\s*\d+\)/g)) registered.add(m[1]);
+  for (const b of src.matchAll(/\[((?:"[a-zA-Z_$][\w$]*",?\s*)+)\]\.forEach\(function \(n\) \{ actCall0\(n\); \}\)/g))
+    for (const n of b[1].matchAll(/"([a-zA-Z_$][\w$]*)"/g)) registered.add(n[1]);
 }
 // actCall0 batch list in delegate.js
 {

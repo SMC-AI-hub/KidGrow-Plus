@@ -40,7 +40,7 @@ ok(html.includes('id="cmdkBtn"') && html.includes('data-act="cmdkOpen"'), "topba
 ok(html.includes("js/cmdk.js"), "script tag present");
 ok(sw.includes("./js/cmdk.js"), "SW shell caches palette");
 ok(html.includes('data-act="openChildModal">+ Register child</button>'), "patients page register entry point (delegated, E2a)");
-ok(app.includes('onclick="openChildModal()">+ Register child</button>'), "dashboard hero register entry point");
+ok(app.includes('data-act="openChildModal">+ Register child</button>'), "dashboard hero register entry point (delegated, E2b)");
 
 console.log(`cmdk: ${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);
