@@ -77,7 +77,7 @@ function renderCalc() {
     "<div><label>Day of life (neonatal)</label><input type='number' id='ccDol' placeholder='e.g. 3'></div>" +
     "<div><label>Feed target (mL/kg/day)</label><input type='number' id='ccFeed' value='160'></div>" +
     "<div><label>Preterm?</label><select id='ccPre'><option value=''>Term</option><option value='1'>Preterm</option></select></div></div>" +
-    "<button class='btn btn-p btn-sm' style='margin-top:8px' onclick='runCalc()'>Calculate</button></div><div id='ccOut'></div>";
+    "<button class='btn btn-p btn-sm' style='margin-top:8px' data-act='runCalc'>Calculate</button></div><div id='ccOut'></div>";
 }
 window.renderCalc = renderCalc;
 
@@ -98,3 +98,8 @@ window.runCalc = function () {
 };
 
 })();
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["runCalc"].forEach(function (n) { actCall0(n); });
+} catch (e) {}

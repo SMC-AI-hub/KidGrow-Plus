@@ -147,37 +147,37 @@ function chronicLogFormsHTML(c, prof) {
     const qs = prof.gina || [];
     return `<div class="card" style="margin-top:12px"><h3>📝 GINA control check (past 4 weeks)</h3>
       ${qs.map((q, i) => `<label style="display:block;font-size:13.5px;margin:4px 0"><input type="checkbox" id="chGina${i}"> ${chronicEsc(q)}</label>`).join("")}
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input type="date" id="chGinaDate" value="${t}" style="max-width:160px"><button class="btn btn-p btn-sm" onclick="chronicSaveGina()">Save check</button></div></div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input type="date" id="chGinaDate" value="${t}" style="max-width:160px"><button class="btn btn-p btn-sm" data-act="chronicSaveGina">Save check</button></div></div>
       <div class="card" style="margin-top:12px"><h3>⚠️ Exacerbation</h3><div class="form-grid">
       <div><label>Date</label><input type="date" id="chExacDate" value="${t}"></div>
       <div><label>Oral steroids?</label><select id="chExacSter"><option value="">No</option><option value="y">Yes</option></select></div>
       <div><label>Hospitalised?</label><select id="chExacAdm"><option value="">No</option><option value="y">Yes</option></select></div>
       <div><label>Note</label><input id="chExacNote" placeholder="trigger, reliever response"></div></div>
-      <button class="btn btn-o btn-sm" style="margin-top:8px" onclick="chronicSaveExac()">+ Log exacerbation</button>
+      <button class="btn btn-o btn-sm" style="margin-top:8px" data-act="chronicSaveExac">+ Log exacerbation</button>
       <div class="hint" style="margin-top:6px">PEF diary lives on the Screening page — its dates flow into this sheet.</div></div>`;
   }
   if (prof.id === "epilepsy") {
     const P = chronicPack();
     const types = ((P && P.seizureTypes) || []).map((x) => `<option>${chronicEsc(x)}</option>`).join("");
-    const aeds = (chronicOf(c).epilepsy.aeds || []).map((a, i) => `<span class="badge b-gray" style="margin:2px">${chronicEsc(a.name)}${a.dose ? " " + chronicEsc(a.dose) : ""} <a href="#" onclick="chronicDelAed(${i});return false">✕</a></span>`).join("") || `<span class="hint">none listed</span>`;
+    const aeds = (chronicOf(c).epilepsy.aeds || []).map((a, i) => `<span class="badge b-gray" style="margin:2px">${chronicEsc(a.name)}${a.dose ? " " + chronicEsc(a.dose) : ""} <a href="#" data-act="chronicDelAed" data-arg="${i}">✕</a></span>`).join("") || `<span class="hint">none listed</span>`;
     return `<div class="card" style="margin-top:12px"><h3>⚡ Seizure diary</h3><div class="form-grid">
       <div><label>Date</label><input type="date" id="chSeizDate" value="${t}"></div>
       <div><label>Type</label><select id="chSeizType">${types}</select></div>
       <div><label>Duration (min)</label><input type="number" step="0.5" id="chSeizDur" placeholder=""></div>
       <div><label>Rescue med used?</label><select id="chSeizRescue"><option value="">No</option><option value="y">Yes</option></select></div></div>
-      <button class="btn btn-p btn-sm" style="margin-top:8px" onclick="chronicSaveSeiz()">+ Log seizure</button></div>
+      <button class="btn btn-p btn-sm" style="margin-top:8px" data-act="chronicSaveSeiz">+ Log seizure</button></div>
       <div class="card" style="margin-top:12px"><h3>💊 Current AEDs</h3><div>${aeds}</div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="chAedName" placeholder="e.g. Levetiracetam" style="max-width:200px"><input id="chAedDose" placeholder="e.g. 250mg BD" style="max-width:160px"><button class="btn btn-o btn-sm" onclick="chronicAddAed()">+ Add</button></div></div>`;
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="chAedName" placeholder="e.g. Levetiracetam" style="max-width:200px"><input id="chAedDose" placeholder="e.g. 250mg BD" style="max-width:160px"><button class="btn btn-o btn-sm" data-act="chronicAddAed">+ Add</button></div></div>`;
   }
   const kinds = (((chronicPack() || {}).gluKinds) || ["hba1c", "fbs", "pp", "rbs", "hypo"]).map((k) => `<option value="${k}">${k === "hba1c" ? "HbA1c %" : k === "hypo" ? "Hypo episode" : k.toUpperCase() + " mg/dL"}</option>`).join("");
   return `<div class="card" style="margin-top:12px"><h3>🩸 Glucose / HbA1c log</h3>
     <div class="hint">ISPAD 2024: HbA1c ≤7.0% standard · ≤6.5% with advanced tech/honeymoon. Hypo = one row per episode.</div>
     <div class="form-grid"><div><label>Date</label><input type="date" id="chReadDate" value="${t}"></div>
-    <div><label>Kind</label><select id="chReadKind" onchange="document.getElementById('chReadVal').style.display=this.value==='hypo'?'none':'';document.getElementById('chReadSev').style.display=this.value==='hypo'?'':'none'">${kinds}</select></div>
+    <div><label>Kind</label><select id="chReadKind" data-onchange="chReadSel">${kinds}</select></div>
     <div><label>Value</label><input id="chReadVal" placeholder="% or mg/dL"><select id="chReadSev" style="display:none"><option value="mild">mild</option><option value="severe">severe</option></select></div></div>
-    <button class="btn btn-p btn-sm" style="margin-top:8px" onclick="chronicSaveReading()">+ Log reading</button></div>
+    <button class="btn btn-p btn-sm" style="margin-top:8px" data-act="chronicSaveReading">+ Log reading</button></div>
     <div class="card" style="margin-top:12px"><h3>💉 Insulin regimen</h3>
-    <input id="chInsulin" value="${chronicEsc((chronicOf(c).t1dm.insulin) || "")}" placeholder="e.g. Glargine 10u nocte + Aspart carb-ratio" oninput="chronicSetInsulin(this.value)"></div>`;
+    <input id="chInsulin" value="${chronicEsc((chronicOf(c).t1dm.insulin) || "")}" placeholder="e.g. Glargine 10u nocte + Aspart carb-ratio" data-oninput="chronicInsulinInput"></div>`;
 }
 function renderChronic() {
   const box = document.getElementById("chronicBox");
@@ -192,7 +192,7 @@ function renderChronic() {
   }
   if (!CHRONIC_TAB || !conds.some((x) => x.id === CHRONIC_TAB)) CHRONIC_TAB = conds[0].id;
   const prof = chronicProfiles().find((p) => p.id === CHRONIC_TAB);
-  const tabs = conds.map((x) => `<button class="btn btn-xs ${x.id === CHRONIC_TAB ? "btn-p" : "btn-o"}" onclick="CHRONIC_TAB='${x.id}';renderChronic()">${chronicEsc(x.label)}</button>`).join("");
+  const tabs = conds.map((x) => `<button class="btn btn-xs ${x.id === CHRONIC_TAB ? "btn-p" : "btn-o"}" data-act="chronicTab" data-arg="${x.id}">${chronicEsc(x.label)}</button>`).join("");
   box.innerHTML = `<div class="toolbar"><span style="font-size:13px;color:var(--muted)">Flowsheet for <b>${chronicEsc(c.name)}</b></span><span class="sp"></span>${tabs}</div>
   <div class="card"><h3>📊 ${chronicEsc(prof.label)} flowsheet</h3>${chronicSheetHTML(c, prof)}</div>
   ${chronicLogFormsHTML(c, prof)}`;
@@ -257,3 +257,11 @@ var Chronic = {
   gina: ginaLevel, a1c: hba1cFlag,
 };
 try { if (typeof window !== "undefined" && window) window.Chronic = Chronic; } catch (e) {}
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["chronicAddAed", "chronicDelAed", "chronicSaveExac", "chronicSaveGina", "chronicSaveReading", "chronicSaveSeiz"].forEach(function (n) { actCall0(n); });
+  actRegister("chronicTab", function (el) { try { CHRONIC_TAB = actArg(el); renderChronic(); } catch (e) { actReport("chronicTab", e); } });
+  actRegister("chReadSel", function (el) { try { document.getElementById("chReadVal").style.display = el.value === "hypo" ? "none" : ""; document.getElementById("chReadSev").style.display = el.value === "hypo" ? "" : "none"; } catch (e) { actReport("chReadSel", e); } });
+  actRegister("chronicInsulinInput", function (el) { try { chronicSetInsulin(el.value); } catch (e) { actReport("chronicInsulinInput", e); } });
+} catch (e) {}

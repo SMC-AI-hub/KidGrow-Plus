@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v44/.test(sw), "SW cache bumped to v44 (E2a: event delegation)");
+  ok(/neokid-v45/.test(sw), "SW cache bumped to v45 (E2c: full CSP extraction)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -1044,7 +1044,7 @@ async function main() {
   const aidsSrc = fs.readFileSync(path.join(R, "js", "aids.js"), "utf8");
   ok(aidsSrc.includes("function xferSeal") && aidsSrc.includes("KG2") && aidsSrc.includes("function scopeTransfer"), "KG2 codec + seal + scope gate exist");
   ok(aidsSrc.includes("BarcodeDetector") && aidsSrc.includes("getUserMedia") && aidsSrc.includes("function openScanModal") && aidsSrc.includes("function previewTransfer"), "QR scanner + receive preview exist (with no-camera fallback)");
-  ok(aidsSrc.includes('onclick="openScanModal()"'), "import box offers Scan");
+  ok(aidsSrc.includes('data-act="openScanModal"'), "import box offers Scan (delegated)");
   const xChild = { name: "Xfer Kid", sex: "girl", dob: "2024-06-01", phone: "999", mother: "M", father: "F",
     vaccines: { BCG: { date: "2024-06-02", brand: "BCGv", mfr: "Serum", batch: "LOT1" } }, extraVac: [],
     measures: [{ date: "2024-06-02", wt: 3.1, ht: 49, hc: 34 }] };

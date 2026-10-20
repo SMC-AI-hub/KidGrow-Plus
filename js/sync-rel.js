@@ -528,9 +528,9 @@ function renderSyncCard() {
     (st.lastFlush ? " · Last push: " + esc(st.lastFlush.slice(0, 16).replace("T", " ")) : "") +
     (st.lastPull ? " · Last pull: " + esc(st.lastPull.slice(0, 16).replace("T", " ")) : "") + "</div>" + fails +
     "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-top:8px'>" +
-    "<button class='btn btn-p btn-sm' onclick='SyncEngine.syncNow()'>↻ Sync now</button>" +
-    (st.conflicts ? "<button class='btn btn-d btn-sm' onclick='SyncEngine.showConflicts()'>⚠️ Resolve conflicts (" + st.conflicts + ")</button>" : "") +
-    (st.failed.length ? "<button class='btn btn-o btn-sm' onclick='SyncEngine.dismissFailed()'>Dismiss failures (local data kept)</button>" : "") +
+    "<button class='btn btn-p btn-sm' data-act='syncSyncNow'>↻ Sync now</button>" +
+    (st.conflicts ? "<button class='btn btn-d btn-sm' data-act='syncShowConflicts'>⚠️ Resolve conflicts (" + st.conflicts + ")</button>" : "") +
+    (st.failed.length ? "<button class='btn btn-o btn-sm' data-act='syncDismissFailed'>Dismiss failures (local data kept)</button>" : "") +
     "</div><div class='hint'>Dual-write: encrypted blob backup + relational rows. Offline edits queue automatically.</div>";
   pg.appendChild(card);
 }
@@ -538,12 +538,12 @@ function showConflicts() {
   var cf = lsGet(CF_KEY, []);
   var rows = cf.map(function (c) {
     return "<div class='card' style='margin-bottom:8px'><b>" + esc(c.table) + " " + esc(c.localId) + "</b><div class='hint'>Yours vs server " + esc(String(c.remoteRev || "").slice(0, 16)) + "</div>" +
-      "<button class='btn btn-p btn-sm' onclick='SyncEngine.resolve(\"" + esc(c.localId) + "\",\"mine\")'>Keep mine</button> " +
-      "<button class='btn btn-o btn-sm' onclick='SyncEngine.resolve(\"" + esc(c.localId) + "\",\"theirs\")'>Take theirs</button></div>";
+      "<button class='btn btn-p btn-sm' data-act='syncResolve' data-arg='" + esc(c.localId) + "' data-arg2='mine'>Keep mine</button> " +
+      "<button class='btn btn-o btn-sm' data-act='syncResolve' data-arg='" + esc(c.localId) + "' data-arg2='theirs'>Take theirs</button></div>";
   }).join("") || "<div class='hint'>No conflicts.</div>";
   var d = document.createElement("div");
   d.innerHTML = '<div class="modal-bg open" id="mConf"><div class="modal" style="max-width:460px"><h3>⚠️ Sync conflicts</h3>' + rows +
-    '<button class="btn btn-o" style="width:100%;margin-top:8px" onclick="document.getElementById(\'mConf\').remove()">Close</button></div></div>';
+    '<button class="btn btn-o" style="width:100%;margin-top:8px" data-act="modalRemove" data-arg="mConf">Close</button></div></div>';
   (document.getElementById("cloudRoot") || document.body).appendChild(d.firstChild);
 }
 
@@ -578,3 +578,11 @@ try {
 } catch (e) {}
 
 })();
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  actRegister("syncSyncNow", function () { try { SyncEngine.syncNow(); } catch (e) { actReport("syncSyncNow", e); } });
+  actRegister("syncShowConflicts", function () { try { SyncEngine.showConflicts(); } catch (e) { actReport("syncShowConflicts", e); } });
+  actRegister("syncDismissFailed", function () { try { SyncEngine.dismissFailed(); } catch (e) { actReport("syncDismissFailed", e); } });
+  actRegister("syncResolve", function (el) { try { SyncEngine.resolve(actArg(el), actArg(el, 2)); } catch (e) { actReport("syncResolve", e); } });
+} catch (e) {}

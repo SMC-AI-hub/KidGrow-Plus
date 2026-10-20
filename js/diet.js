@@ -96,9 +96,9 @@ function renderDiet() {
   $("dietBox").innerHTML = `
   <div class="toolbar"><span style="font-size:13px;color:var(--muted)">ICMR-NIN 2020 based · age band <b>${esc(needs.band)}</b></span>
     <span class="sp"></span>
-    <select id="dietType" onchange="dietOf(child()).type=this.value;save();renderDiet()" style="max-width:150px">
+    <select id="dietType" data-onchange="dietTypeSel" style="max-width:150px">
       ${["veg", "egg", "nonveg"].map((o) => `<option value="${o}"${d.type === o ? " selected" : ""}>${o === "veg" ? "🥬 Veg" : o === "egg" ? "🥚 Eggetarian" : "🍗 Non-veg"}</option>`).join("")}</select>
-    <button class="btn btn-o btn-sm" onclick="printPage('pg-diet')">🖨️ Print chart</button></div>
+    <button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-diet">🖨️ Print chart</button></div>
   <div class="grid g2">
     <div class="card"><h3>🎯 Daily needs</h3>
       <dl class="kv"><dt>Energy</dt><dd><b>${esc(String(needs.kcal))} kcal</b></dd><dt>Protein</dt><dd><b>${esc(String(needs.protein))}</b></dd><dt>Meals</dt><dd>${esc(needs.freq)}</dd></dl>
@@ -120,3 +120,8 @@ function renderDiet() {
     <div class="hint">Water: safe boiled/cooled, freely. Sweets/packets/cola: only sometimes. This chart counsels — it does not replace individual medical advice.</div>
   </div>`;
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  actRegister("dietTypeSel", function (el) { try { dietOf(child()).type = el.value; save(); renderDiet(); } catch (e) { actReport("dietTypeSel", e); } });
+} catch (e) {}

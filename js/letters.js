@@ -71,15 +71,15 @@ function renderLetters() {
     ? letterBuildReferral(c, LET_VIEW) : letterBuildCert(c, LET_VIEW)) : "";
   box.innerHTML = `
   <div class="grid g2 no-print"><div class="card"><h3>✉️ New letter</h3>
-    <div class="toolbar" style="margin-bottom:8px"><button class="btn btn-xs ${LET_KIND === "referral" ? "btn-p" : "btn-o"}" onclick="LET_KIND='referral';LET_VIEW=null;renderLetters()">Referral</button>
-    <button class="btn btn-xs ${LET_KIND === "certificate" ? "btn-p" : "btn-o"}" onclick="LET_KIND='certificate';LET_VIEW=null;renderLetters()">Certificate</button></div>
+    <div class="toolbar" style="margin-bottom:8px"><button class="btn btn-xs ${LET_KIND === "referral" ? "btn-p" : "btn-o"}" data-act="letKind" data-arg="referral">Referral</button>
+    <button class="btn btn-xs ${LET_KIND === "certificate" ? "btn-p" : "btn-o"}" data-act="letKind" data-arg="certificate">Certificate</button></div>
     <div class="form-grid">${form}</div>
-    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-p btn-sm" onclick="letterPreview()">👁️ Preview</button>
-    <button class="btn btn-o btn-sm" onclick="letterSave()">💾 Save</button></div></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-p btn-sm" data-act="letterPreview">👁️ Preview</button>
+    <button class="btn btn-o btn-sm" data-act="letterSave">💾 Save</button></div></div>
   <div class="card"><h3>📁 Saved letters</h3>
     ${rows.length ? rows.map((x) => `<div class="vac-row"><div class="grow"><b>${fmtDate(x.date)}</b> · ${x.kind === "referral" ? "Referral" : "Certificate"}${x.to ? " → " + esc(x.to) : ""}<br><span style="font-size:12.5px;color:var(--muted)">${esc(x.reason || x.certType || "")}</span></div>
-    <button class="btn btn-o btn-xs" onclick='letterOpen("${x.id}")'>View</button>
-    <button class="btn btn-danger btn-xs" onclick='letterDel("${x.id}")'>✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No letters yet — fill the form and tap Preview, then Save.</div>`}
+    <button class="btn btn-o btn-xs" data-act='letterOpen' data-arg='${x.id}'>View</button>
+    <button class="btn btn-danger btn-xs" data-act='letterDel' data-arg='${x.id}'>✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No letters yet — fill the form and tap Preview, then Save.</div>`}
   </div></div>
   ${doc ? `<div class="card" style="margin-top:12px">${shareBarHTML("pg-letters", "letterDoc", "letter", "letters")}<div id="letterDoc">${doc}</div></div>` : ""}`;
 }
@@ -110,3 +110,9 @@ function letterDel(id) {
 }
 var Letters = { referral: letterBuildReferral, cert: letterBuildCert, summary: letterAutoSummary };
 try { if (typeof window !== "undefined" && window) window.Letters = Letters; } catch (e) {}
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["letterPreview", "letterSave", "letterOpen", "letterDel"].forEach(function (n) { actCall0(n); });
+  actRegister("letKind", function (el) { try { LET_KIND = actArg(el); LET_VIEW = null; renderLetters(); } catch (e) { actReport("letKind", e); } });
+} catch (e) {}

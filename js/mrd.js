@@ -57,7 +57,7 @@ function regTable(title, rows, kind) {
   }).join("") || "<tr><td colspan='5' style='color:var(--muted)'>None in range.</td></tr>";
   return "<div class='card'><h3>" + title + " (" + rows.length + ")</h3>" +
     "<table class='tbl'><tr><th>Date</th><th>Name</th><th>Sex</th><th>Ref</th><th>Detail</th></tr>" + body + "</table>" +
-    (rows.length ? "<button class='btn btn-o btn-sm' style='margin-top:6px' onclick='dlMrdCsv(\"" + kind + "\")'>⬇ CSV</button>" : "") + "</div>";
+    (rows.length ? "<button class='btn btn-o btn-sm' style='margin-top:6px' data-act='mrdDlCsv' data-arg='" + kind + "'>⬇ CSV</button>" : "") + "</div>";
 }
 function renderMrd() {
   var box = $("mrdBox"); if (!box) return;
@@ -69,9 +69,9 @@ function renderMrd() {
   box.innerHTML = "<div class='card'><h3>📋 MRD registers</h3>" +
     "<div class='hint'>Derived from local records for the selected range. For filing + audits.</div>" +
     "<div class='print-only'>Register range: <b>" + MRD_FROM + "</b> to <b>" + MRD_TO + "</b></div>" +
-    "<div class='form-grid no-print'><div><label>From</label><input type='date' value='" + MRD_FROM + "' onchange='MRD_FROM=this.value;renderMrd()'></div>" +
-    "<div><label>To</label><input type='date' value='" + MRD_TO + "' onchange='MRD_TO=this.value;renderMrd()'></div></div>" +
-    "<button class='btn btn-o btn-sm' style='margin-top:8px' onclick=\"printPage('pg-mrd')\">🖨️ Print registers</button></div>" +
+    "<div class='form-grid no-print'><div><label>From</label><input type='date' value='" + MRD_FROM + "' data-onchange='mrdFromSel'></div>" +
+    "<div><label>To</label><input type='date' value='" + MRD_TO + "' data-onchange='mrdToSel'></div></div>" +
+    "<button class='btn btn-o btn-sm' style='margin-top:8px' data-act=\"printPage\" data-arg=\"pg-mrd\">🖨️ Print registers</button></div>" +
     regTable("🏥 NICU admissions", R.admissions, "admissions") +
     regTable("✅ Discharges / transfers", R.discharges, "discharges") +
     regTable("👶 Births registered", R.births, "births") +
@@ -90,3 +90,10 @@ window.dlMrdCsv = function (kind) {
 };
 
 })();
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  actRegister("mrdDlCsv", function (el) { try { dlMrdCsv(actArg(el)); } catch (e) { actReport("mrdDlCsv", e); } });
+  actRegister("mrdFromSel", function (el) { try { MRD_FROM = el.value; renderMrd(); } catch (e) { actReport("mrdFromSel", e); } });
+  actRegister("mrdToSel", function (el) { try { MRD_TO = el.value; renderMrd(); } catch (e) { actReport("mrdToSel", e); } });
+} catch (e) {}

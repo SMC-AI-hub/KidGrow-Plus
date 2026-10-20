@@ -98,20 +98,20 @@ function hxSgaBadgeHTML(c) {
 }
 function hxAlgRowsHTML(list) {
   return (list || []).map((a, i) => `<div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:6px;margin-bottom:6px;align-items:end">
-    <div><label>Agent *</label><input value="${hxEsc(a.agent || "")}" placeholder="e.g. Amoxicillin" oninput="Hx.edA(${i},'agent',this.value)"></div>
-    <div><label>Reaction</label><input value="${hxEsc(a.reaction || "")}" placeholder="e.g. Rash, wheeze" oninput="Hx.edA(${i},'reaction',this.value)"></div>
-    <div style="display:flex;gap:6px;align-items:end"><div style="flex:1"><label>Severity</label><select onchange="Hx.edA(${i},'severity',this.value)"><option value="">—</option>${HX_SEV.map((s) => `<option${a.severity === s ? " selected" : ""}>${s}</option>`).join("")}</select></div>
-    <button type="button" class="btn btn-danger btn-xs" onclick="Hx.delA(${i})" title="Remove">✕</button></div></div>`).join("")
+    <div><label>Agent *</label><input value="${hxEsc(a.agent || "")}" placeholder="e.g. Amoxicillin" data-oninput="hxEdA" data-arg="${i}" data-arg2="agent"></div>
+    <div><label>Reaction</label><input value="${hxEsc(a.reaction || "")}" placeholder="e.g. Rash, wheeze" data-oninput="hxEdA" data-arg="${i}" data-arg2="reaction"></div>
+    <div style="display:flex;gap:6px;align-items:end"><div style="flex:1"><label>Severity</label><select data-onchange="hxEdA" data-arg="${i}" data-arg2="severity"><option value="">—</option>${HX_SEV.map((s) => `<option${a.severity === s ? " selected" : ""}>${s}</option>`).join("")}</select></div>
+    <button type="button" class="btn btn-danger btn-xs" data-act="hxDelA" data-arg="${i}" title="Remove">✕</button></div></div>`).join("")
     || `<div class="hint">No structured allergies recorded.</div>`;
 }
 function hxProbRowsHTML(list) {
   return (list || []).map((p, i) => `<div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:6px;margin-bottom:6px;align-items:end">
-    <div><label>Problem *</label><input value="${hxEsc(p.label || "")}" placeholder="e.g. Asthma" oninput="Hx.edP(${i},'label',this.value)"></div>
-    <div><label>ICD-10</label><input value="${hxEsc(p.code || "")}" placeholder="e.g. J45.9" oninput="Hx.edP(${i},'code',this.value)"></div>
-    <div style="display:flex;gap:6px;align-items:end"><div style="flex:1"><label>Since</label><input type="month" value="${hxEsc(p.since || "")}" onchange="Hx.edP(${i},'since',this.value)"></div></div></div>
+    <div><label>Problem *</label><input value="${hxEsc(p.label || "")}" placeholder="e.g. Asthma" data-oninput="hxEdP" data-arg="${i}" data-arg2="label"></div>
+    <div><label>ICD-10</label><input value="${hxEsc(p.code || "")}" placeholder="e.g. J45.9" data-oninput="hxEdP" data-arg="${i}" data-arg2="code"></div>
+    <div style="display:flex;gap:6px;align-items:end"><div style="flex:1"><label>Since</label><input type="month" value="${hxEsc(p.since || "")}" data-onchange="hxEdP" data-arg="${i}" data-arg2="since"></div></div></div>
     <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin:-2px 0 8px;align-items:end">
-      <div><label>Status</label><select onchange="Hx.edP(${i},'status',this.value)">${HX_PSTAT.map(([v, l]) => `<option value="${v}"${(p.status || "active") === v ? " selected" : ""}>${l}</option>`).join("")}</select></div>
-      <button type="button" class="btn btn-danger btn-xs" onclick="Hx.delP(${i})" title="Remove">✕ Remove</button></div>`).join("")
+      <div><label>Status</label><select data-onchange="hxEdP" data-arg="${i}" data-arg2="status">${HX_PSTAT.map(([v, l]) => `<option value="${v}"${(p.status || "active") === v ? " selected" : ""}>${l}</option>`).join("")}</select></div>
+      <button type="button" class="btn btn-danger btn-xs" data-act="hxDelP" data-arg="${i}" title="Remove">✕ Remove</button></div>`).join("")
     || `<div class="hint">No problems on the list — a healthy child is a fine finding.</div>`;
 }
 function hxCardsHTML(c) {
@@ -123,8 +123,8 @@ function hxCardsHTML(c) {
     h += `<div class="card" style="margin:12px 0 0"><h3>🤰 ${hxEsc(hxT("hx.perinatal", "Birth & perinatal"))}</h3><div class="form-grid">${Forms.render(HX_SCH.perinatal, peri, "hxP")}</div><div id="hxSga" style="margin-top:6px">${hxSgaBadgeHTML(c)}</div></div>`;
     h += `<div class="card" style="margin:12px 0 0"><h3>🤱 ${hxEsc(hxT("hx.maternal", "Maternal profile"))}</h3><div class="form-grid">${Forms.render(HX_SCH.maternal, c.maternal, "hxM")}</div></div>`;
     h += `<div class="card" style="margin:12px 0 0"><h3>👨‍👩‍👧 ${hxEsc(hxT("hx.family", "Family & social"))}</h3><div class="form-grid">${Forms.render(HX_SCH.family, c.family, "hxF")}</div></div>`;
-    h += `<div class="card" style="margin:12px 0 0"><h3>⚠️ ${hxEsc(hxT("hx.allergies", "Allergies (structured)"))}</h3><div id="hxAlgRows">${hxAlgRowsHTML(HXB.allergies)}</div><button type="button" class="btn btn-o btn-xs" onclick="Hx.addA()">＋ Add allergy</button></div>`;
-    h += `<div class="card" style="margin:12px 0 0"><h3>📋 ${hxEsc(hxT("hx.problems", "Problem list"))}</h3><div id="hxProbRows">${hxProbRowsHTML(HXB.problems)}</div><button type="button" class="btn btn-o btn-xs" onclick="Hx.addP()">＋ Add problem</button></div>`;
+    h += `<div class="card" style="margin:12px 0 0"><h3>⚠️ ${hxEsc(hxT("hx.allergies", "Allergies (structured)"))}</h3><div id="hxAlgRows">${hxAlgRowsHTML(HXB.allergies)}</div><button type="button" class="btn btn-o btn-xs" data-act="hxAddA">＋ Add allergy</button></div>`;
+    h += `<div class="card" style="margin:12px 0 0"><h3>📋 ${hxEsc(hxT("hx.problems", "Problem list"))}</h3><div id="hxProbRows">${hxProbRowsHTML(HXB.problems)}</div><button type="button" class="btn btn-o btn-xs" data-act="hxAddP">＋ Add problem</button></div>`;
   } catch (e) { h = `<div class="hint">History section unavailable (${hxEsc(e.message || e)}).</div>`; }
   return h;
 }
@@ -225,3 +225,13 @@ var Hx = {
   delP(i) { HXB.problems.splice(i, 1); try { const b = hxEl("hxProbRows"); if (b) b.innerHTML = hxProbRowsHTML(HXB.problems); } catch (e) {} },
 };
 try { if (typeof window !== "undefined" && window) window.Hx = Hx; } catch (e) {}
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  actRegister("hxAddA", function () { try { Hx.addA(); } catch (e) { actReport("hxAddA", e); } });
+  actRegister("hxAddP", function () { try { Hx.addP(); } catch (e) { actReport("hxAddP", e); } });
+  actRegister("hxDelA", function (el) { try { Hx.delA(Number(actArg(el))); } catch (e) { actReport("hxDelA", e); } });
+  actRegister("hxDelP", function (el) { try { Hx.delP(Number(actArg(el))); } catch (e) { actReport("hxDelP", e); } });
+  actRegister("hxEdA", function (el) { try { Hx.edA(Number(actArg(el)), actArg(el, 2), el.value); } catch (e) { actReport("hxEdA", e); } });
+  actRegister("hxEdP", function (el) { try { Hx.edP(Number(actArg(el)), actArg(el, 2), el.value); } catch (e) { actReport("hxEdP", e); } });
+} catch (e) {}

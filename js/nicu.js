@@ -312,7 +312,7 @@ function nicuBoardHTML() {
     var due = !rounds.some(function (r) { return r && r.date === today; });
     var dol = (e.child.dob && today) ? dolOf(e.child.dob, today) : "\u2014";
     var chip = roundRespChip(last) || "\u2014";
-    return "<tr onclick=\"DB.activeId='" + esc(e.child.id) + "';renderAll()\" style='cursor:pointer'><td><b>" + esc(e.adm.bed || "\u2014") + "</b></td><td><b>" + esc(e.child.name) + "</b><br><span style='font-size:12px'>DOL " + dol + "</span></td><td style='font-size:12.5px'>" + esc(chip) + "</td><td>" + (due ? "<b style='color:var(--red)'>round due</b>" : "\u2705") + "</td></tr>";
+    return "<tr data-act=\"hriSetActive\" data-arg=\"'" + esc(e.child.id) + "'\" style='cursor:pointer'><td><b>" + esc(e.adm.bed || "\u2014") + "</b></td><td><b>" + esc(e.child.name) + "</b><br><span style='font-size:12px'>DOL " + dol + "</span></td><td style='font-size:12.5px'>" + esc(chip) + "</td><td>" + (due ? "<b style='color:var(--red)'>round due</b>" : "\u2705") + "</td></tr>";
   }).join("");
   return "<div class='card'><h3>\U0001f6cf\ufe0f Bed board (" + list.length + ")</h3><table class='tbl'><tr><th>Bed</th><th>Baby</th><th>Support</th><th>Status</th></tr>" + rows + "</table></div>";
 }
@@ -331,7 +331,7 @@ function procFormHTML() {
     "<div><label>Procedure</label><select id='npName'>" + opts + "</select></div>" +
     "<div><label>By</label><input id='npBy' placeholder='Dr \u2026'></div>" +
     "<div><label>Note</label><input id='npNote' placeholder='consent taken, no complications'></div></div>" +
-    "<button class='btn btn-o btn-sm' style='margin-top:8px' onclick='saveNicuProc()'>+ Log procedure</button>";
+    "<button class='btn btn-o btn-sm' style='margin-top:8px' data-act='saveNicuProc'>+ Log procedure</button>";
 }
 function bundleItemsHTML(bundleId) {
   var P = nicuPack(); var b = P && P.bundles && P.bundles[bundleId];
@@ -357,11 +357,11 @@ function bundleFormHTML() {
   var ids = (P && P.bundles) ? Object.keys(P.bundles) : [];
   var opts = ids.map(function (id) { return "<option value='" + esc(id) + "'>" + esc(P.bundles[id].title) + "</option>"; }).join("");
   var today = ""; try { today = todayISO(); } catch (e) {}
-  return "<div class='form-grid' style='margin-top:8px'><div><label>Bundle</label><select id='nbBundle' onchange='paintBundleItems()'>" + opts + "</select></div>" +
+  return "<div class='form-grid' style='margin-top:8px'><div><label>Bundle</label><select id='nbBundle' data-onchange='paintBundleItems'>" + opts + "</select></div>" +
     "<div><label>Date</label><input type='date' id='nbDate' value='" + today + "'></div>" +
     "<div><label>Checked by</label><input id='nbBy' placeholder='Dr \u2026'></div></div>" +
     "<div id='nbItems' style='margin-top:6px'>" + bundleItemsHTML(ids[0]) + "</div>" +
-    "<button class='btn btn-o btn-sm' style='margin-top:8px' onclick='saveNicuBundle()'>+ Log bundle check</button>";
+    "<button class='btn btn-o btn-sm' style='margin-top:8px' data-act='saveNicuBundle'>+ Log bundle check</button>";
 }
 function nicuCensusHTML() {
   var list = censusList((typeof DB !== "undefined" && DB.children) || []);
@@ -373,7 +373,7 @@ function nicuCensusHTML() {
       (due ? " · <b style='color:var(--red)'>round due</b>" : " · ✅ rounded") + "</div>";
   }).join("");
   return "<div class='card' style='margin-top:10px'><h3>NICU census (" + list.length + ")</h3>" + rows +
-    "<button class='btn btn-o btn-sm' style='margin-top:6px' onclick=\"go('nicu')\">Open NICU →</button></div>";
+    "<button class='btn btn-o btn-sm' style='margin-top:6px' data-act=\"goPage\" data-arg=\"nicu\">Open NICU →</button></div>";
 }
 function renderNicu() {
   var box = $("nicuBox"); if (!box) return;
@@ -419,12 +419,12 @@ function renderNicu() {
           "<div><label>Seizures today</label><select id='nrSeiz'><option value=''>—</option><option value='no'>none</option><option value='yes'>yes</option></select></div></div>" +
           "<div><label>Events (comma separated)</label><input id='nrEvents' placeholder='apnoea, phototherapy'></div>" +
           "<div><label>Round note</label><input id='nrNote' placeholder='stable, advancing feeds'></div>" +
-          "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap'><button class='btn btn-p btn-sm' onclick='saveNicuRound()'>+ Save round</button>" +
-          "<button class='btn btn-o btn-sm' onclick='showDischarge()'>Discharge…</button></div><div id='disBox'></div>" +
+          "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap'><button class='btn btn-p btn-sm' data-act='saveNicuRound'>+ Save round</button>" +
+          "<button class='btn btn-o btn-sm' data-act='showDischarge'>Discharge…</button></div><div id='disBox'></div>" +
         "<div class='card' style='margin-top:10px'><h3>🩺 Procedures</h3>" + procRowsHTML(a) + procFormHTML() + "</div>" +
         "<div class='card' style='margin-top:10px'><h3>✅ Care bundles</h3>" + bundleRowsHTML(a) + bundleFormHTML() + "</div>"
         : "<div class='hint'>Outcome: " + esc(a.outcome || "—") + " · discharged " + esc(String(a.dischargedAt || "").slice(0, 10)) + "</div>" +
-          "<div style='margin-top:8px'><button class='btn btn-o btn-sm' onclick=\"printNicuSummary('" + a.id + "')\">🖨️ Discharge summary</button></div>") +
+          "<div style='margin-top:8px'><button class='btn btn-o btn-sm' data-act=\"printNicuSummary\" data-arg=\"'" + a.id + "'\">🖨️ Discharge summary</button></div>") +
       "</div>";
   }).join("");
   var dol = c.dob ? dayDiff(c.dob, today) + 1 : 1;
@@ -437,13 +437,13 @@ function renderNicu() {
     ? "<div class='alert a-red no-print'>⚠️ <div><b>NICU tools are NOT case-validated (F25)</b> — confirm every value against your references before acting. Enable “NICU case-validated” in Settings only after sign-off.</div></div>" : "";
   box.innerHTML = nicuBoardHTML() + fence + "<div class='card'><h3>🏥 NICU — " + esc(c.name) + "</h3>" +
     "<div class='hint'>Day of life " + dol + " · feed guide: <b>" + fg.mlPerKg + " mL/kg/day</b> (≈" + fg.totalMl + " mL/day, " + fg.perFeedQ3h + " mL q3h) — " + esc(fg.note) + flLine + "</div>" +
-    "<div style='margin-top:8px'><button class='btn btn-o btn-sm' onclick='printNicuHandover()'>🖨️ Shift handover</button></div></div>" +
+    "<div style='margin-top:8px'><button class='btn btn-o btn-sm' data-act='printNicuHandover'>🖨️ Shift handover</button></div></div>" +
     (act ? "" : "<div class='card'><h3>+ New admission</h3><div class='form-grid'>" +
       "<div><label>Admitted (date/time)</label><input type='datetime-local' id='naAt'></div>" +
       "<div><label>Birth weight (g)</label><input type='number' id='naWt' placeholder='2400'></div>" +
       "<div><label>Gestation (wk)</label><input type='number' id='naGa' placeholder='36'></div>" +
       "<div><label>Indication</label><input id='naInd' placeholder='RDS / sepsis / LBW'></div><div><label>Bed</label><input id='naBed' placeholder='A1'></div></div>" +
-      "<button class='btn btn-p btn-sm' style='margin-top:8px' onclick='saveAdmission()'>Admit to NICU</button></div>") +
+      "<button class='btn btn-p btn-sm' style='margin-top:8px' data-act='saveAdmission'>Admit to NICU</button></div>") +
     hist;
 }
 
@@ -523,7 +523,7 @@ window.showDischarge = function () {
   box.innerHTML = "<div class='form-grid' style='margin-top:8px'><div><label>Discharged (date/time)</label><input type='datetime-local' id='ndAt'></div>" +
     "<div><label>Outcome</label><select id='ndOut'><option value=''>—</option><option>stable</option><option>against advice</option><option>referred</option><option>expired</option></select></div></div>" +
     "<div style='margin-top:6px'><label>Follow-up advice (optional — prints on summary)</label><input id='ndFu' placeholder='review after 3 days; exclusive breastfeeds; warmth'></div>" +
-    "<button class='btn btn-d btn-sm' style='margin-top:8px' onclick='dischargeNicu()'>Confirm discharge</button>";
+    "<button class='btn btn-d btn-sm' style='margin-top:8px' data-act='dischargeNicu'>Confirm discharge</button>";
 };
 window.dischargeNicu = function () {
   var c = child(); if (!c) return;
@@ -590,3 +590,13 @@ window.printNicuHandover = function () {
 };
 
 })();
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["dischargeNicu", "printNicuHandover", "saveAdmission", "saveNicuBundle", "saveNicuProc", "saveNicuRound", "showDischarge", "paintBundleItems"].forEach(function (n) { actCall0(n); });
+} catch (e) {}
+
+/* E2c: backslash-escaped template action. */
+try {
+  ["printNicuSummary"].forEach(function (n) { actCall0(n); });
+} catch (e) {}

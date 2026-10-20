@@ -99,7 +99,7 @@ var CmdK = (function () {
     m.className = "modal-bg";
     m.innerHTML = `<div class="modal" style="max-width:520px;padding:12px" role="dialog" aria-label="Search and commands">` +
       `<input id="cmdkQ" placeholder="Type patient, page, or action…  (esc closes)" autocomplete="off" ` +
-      `style="width:100%;box-sizing:border-box" oninput="CmdK.render()" onkeydown="CmdK.key(event)">` +
+      `style="width:100%;box-sizing:border-box" data-oninput="cmdkRender" data-onkey="cmdkKey">` +
       `<div id="cmdkRes" class="cmdk-res"></div></div>`;
     m.addEventListener("click", (e) => { if (e.target === m) CmdK.close(); });
     document.body.appendChild(m);
@@ -128,7 +128,7 @@ var CmdK = (function () {
       box.innerHTML = items.map((it, i) => {
         const h = it.sec !== lastSec ? `<div class="cmdk-sec">${esc2(it.sec)}</div>` : "";
         lastSec = it.sec;
-        return h + `<div class="cmdk-row${i === sel ? " sel" : ""}" data-i="${i}" onclick="CmdK.pick(${i})">` +
+        return h + `<div class="cmdk-row${i === sel ? " sel" : ""}" data-i="${i}" data-act="cmdPick" data-arg="${i}">` +
           `<span style="width:22px;text-align:center">${esc2(it.icon)}</span><span><b>${esc2(it.label)}</b>` +
           (it.sub ? ` <span style="font-size:12px;color:var(--muted)">${esc2(it.sub)}</span>` : "") + `</span></div>`;
       }).join("") || `<div class="hint">No matches — try a name, MRN, phone, page, or action.</div>`;
@@ -158,3 +158,10 @@ try {
 } catch (e) {}
 try { if (typeof window !== "undefined" && window) window.CmdK = CmdK; } catch (e) {}
 try { if (typeof module !== "undefined" && module.exports) module.exports = { cmdkMatch, cmdkBuild, cmdkActions }; } catch (e2) {}
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  actRegister("cmdPick", function (el) { try { CmdK.pick(Number(actArg(el))); } catch (e) { actReport("cmdPick", e); } });
+  actRegister("cmdkRender", function () { try { CmdK.render(); } catch (e) { actReport("cmdkRender", e); } });
+  actRegister("cmdkKey", function (el, ev) { try { CmdK.key(ev); } catch (e) { actReport("cmdkKey", e); } });
+} catch (e) {}

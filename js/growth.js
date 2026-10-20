@@ -440,7 +440,7 @@ function renderMeasureTable(c) {
       <td><b>${m.wt}</b></td><td><b>${m.ht || "—"}</b> <span style="font-size:11px;color:var(--muted)">${m.ht ? (m.pos === "height" ? "Ht" : m.pos === "length" ? "Len" : "") : ""}</span></td>
       <td>${m.bmi || "—"}</td><td>${m.hc || "—"}</td><td>${m.muac || "—"}</td>
       <td>${m.edema ? `<span class="badge b-red">${esc(m.edema)}</span>` : "—"}</td><td>${esc(m.note || "")}</td>
-      <td style="white-space:nowrap">${m.birth ? '<span style="font-size:11px;color:var(--muted)">profile</span>' : `<button class="btn btn-o btn-xs" onclick="openGrowthModal('${m.id}')">Edit</button> <button class="btn btn-danger btn-xs" onclick="deleteMeasure('${m.id}')">✕</button>`}</td></tr>`; }).join("") ||
+      <td style="white-space:nowrap">${m.birth ? '<span style="font-size:11px;color:var(--muted)">profile</span>' : `<button class="btn btn-o btn-xs" data-act="openGrowthModal" data-arg="${m.id}">Edit</button> <button class="btn btn-danger btn-xs" data-act="deleteMeasure" data-arg="${m.id}">✕</button>`}</td></tr>`; }).join("") ||
     `<tr><td colspan="11" style="text-align:center;color:var(--muted)">No measurements yet — click “Record measurements”.</td></tr>`);
 }
 
@@ -495,7 +495,7 @@ function renderGrowth() {
     if (A.tooEarly) al += `<div class="alert a-blue">👶 <div>PMA ${pmaStr(A.ga.pmaD)} (below term-equivalent): plot on the official Fenton chart in NICU. This app assesses from term-equivalent age using corrected age.</div></div>`;
     (A.biv || []).forEach((f) => (al += `<div class="alert a-red">⚠️ <div><b>Data check:</b> ${esc(f)}</div></div>`));
     A.triage.forEach((t) => (al += `<div class="alert ${t.sev === "red" ? "a-red" : "a-amber"}">${t.sev === "red" ? "🔴" : "🟡"} <div><b>${esc(t.title)}</b><br>${esc(t.body)}</div></div>`));
-    try { const gi = growthInterp(c, lm); al += `<div class="alert ${gi.sev === "red" ? "a-red" : gi.sev === "amber" ? "a-amber" : gi.sev === "gray" ? "a-gray" : "a-green"}">📖 <div><b>What this means:</b> ${esc(gi.pattern)}${gi.diet ? ` <a href="#" onclick="go('diet');return false">Diet →</a>` : ""}</div></div>`; } catch (e) {}
+    try { const gi = growthInterp(c, lm); al += `<div class="alert ${gi.sev === "red" ? "a-red" : gi.sev === "amber" ? "a-amber" : gi.sev === "gray" ? "a-gray" : "a-green"}">📖 <div><b>What this means:</b> ${esc(gi.pattern)}${gi.diet ? ` <a href="#" data-act="goPage" data-arg="diet">Diet →</a>` : ""}</div></div>`; } catch (e) {}
     $("growthAlerts").innerHTML = al;
   }
   const sub = DB.gSub || "charts";
@@ -516,7 +516,7 @@ function renderGAssess(c) {
   const opts = rows.map((r) => `<option value="${r.id}" ${r.id === m.id ? "selected" : ""}>${fmtDate(r.date)} — ${ageStr(ageBetween(c.dob, r.date))}${r.birth ? " (birth)" : ""}</option>`).join("");
   let body = `<div class="card" style="margin-bottom:16px"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
     <h3 style="margin:0">Assessment of ${fmtDate(m.date)}</h3><span class="sp" style="flex:1"></span>
-    <select onchange="DB.gAssessId=this.value;save();renderGAssess(child())" style="width:auto;min-width:230px">${opts}</select></div>`;
+    <select data-onchange="gAssessSel" style="width:auto;min-width:230px">${opts}</select></div>`;
   if (A.tooEarly) {
     body += `<div class="alert a-blue">👶 <div>PMA ${pmaStr(A.ga.pmaD)} — below term-equivalent age. Use the official Fenton chart (NICU) for PMA-based percentiles. Post-discharge, this app assesses on corrected age with exact WHO standards.</div></div></div>`;
     box.innerHTML = body; return;
@@ -656,7 +656,7 @@ function renderGPuberty(c) {
   // proportions from latest measure with sitHt/span
   const ms = [...allMeasures(c)].reverse().find((m) => m.sitHt || m.armSpan);
   let propHtml = "";
-  if (!ms) propHtml = `<div class="empty"><div class="big">🧍</div>No sitting-height / arm-span recorded.<br><button class="btn btn-p btn-sm" onclick="openGrowthModal()">Record now</button></div>`;
+  if (!ms) propHtml = `<div class="empty"><div class="big">🧍</div>No sitting-height / arm-span recorded.<br><button class="btn btn-p btn-sm" data-act="openGrowthModal">Record now</button></div>`;
   else {
     const ga = growthAge(c, ms.date), d = ga.useCorr ? ga.corrD : ga.chronoD;
     let usls = "";
@@ -678,11 +678,11 @@ function renderGPuberty(c) {
   const mphHtml = mph ? `<dl class="kv"><dt>Target (MPH)</dt><dd><b style="font-size:18px">${mph.mph.toFixed(1)} cm</b> · range ${mph.lo.toFixed(0)}–${mph.hi.toFixed(0)} cm (±8.5)</dd><dt>Meaning</dt><dd>Genetic potential from parents' heights. A child tracking far below MPH range (with low velocity) needs evaluation; plotted as a band on the height chart.</dd></dl>`
     : `<span style="font-size:13px;color:var(--muted)">Add both parents' heights in the child profile to compute genetic target height.</span>`;
   box.innerHTML = `
-    <div class="card" style="margin-bottom:16px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><h3 style="margin:0">Puberty staging (Tanner / SMR)</h3><span class="sp" style="flex:1"></span><button class="btn btn-p btn-sm" onclick="openTannerModal()">+ Stage puberty</button></div>
+    <div class="card" style="margin-bottom:16px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><h3 style="margin:0">Puberty staging (Tanner / SMR)</h3><span class="sp" style="flex:1"></span><button class="btn btn-p btn-sm" data-act="openTannerModal">+ Stage puberty</button></div>
     <div class="hint">Examine annually from 8 y · onset = B2 (girls) / testes ≥4 mL or G2 (boys) · always chaperoned, consenting adolescent</div>
     ${interpHtml}
     ${rows.length ? `<div style="overflow:auto"><table class="tbl"><tr><th>Date</th><th>Age</th><th>${c.sex === "boy" ? "G" : "B"}</th><th>PH</th>${c.sex === "boy" ? "<th>Testes (mL)</th>" : "<th>Menarche</th>"}<th>Note</th><th></th></tr>
-    ${rows.map((t) => `<tr><td>${fmtDate(t.date)}</td><td>${ageStr(ageBetween(c.dob, t.date))}</td><td><b>${c.sex === "boy" ? "G" + t.g : "B" + t.b}</b></td><td><b>PH${t.ph}</b></td><td>${c.sex === "boy" ? (t.tvL || t.tvR ? `${esc(t.tvL || "–")} / ${esc(t.tvR || "–")}` : "—") : (t.menarche ? (t.menarche === "yes" ? "Yes" : t.menarche === "no" ? "No" : esc(t.menarche)) : "—")}</td><td>${esc(t.note || "")}</td><td style="white-space:nowrap"><button class="btn btn-o btn-xs" onclick="openTannerModal('${t.id}')">Edit</button> <button class="btn btn-danger btn-xs" onclick="deleteTanner('${t.id}')">✕</button></td></tr>`).join("")}</table></div>` : `<div class="empty"><div class="big">🧍</div>No staging yet — start annual staging at 8 years.</div>`}
+    ${rows.map((t) => `<tr><td>${fmtDate(t.date)}</td><td>${ageStr(ageBetween(c.dob, t.date))}</td><td><b>${c.sex === "boy" ? "G" + t.g : "B" + t.b}</b></td><td><b>PH${t.ph}</b></td><td>${c.sex === "boy" ? (t.tvL || t.tvR ? `${esc(t.tvL || "–")} / ${esc(t.tvR || "–")}` : "—") : (t.menarche ? (t.menarche === "yes" ? "Yes" : t.menarche === "no" ? "No" : esc(t.menarche)) : "—")}</td><td>${esc(t.note || "")}</td><td style="white-space:nowrap"><button class="btn btn-o btn-xs" data-act="openTannerModal" data-arg="${t.id}">Edit</button> <button class="btn btn-danger btn-xs" data-act="deleteTanner" data-arg="${t.id}">✕</button></td></tr>`).join("")}</table></div>` : `<div class="empty"><div class="big">🧍</div>No staging yet — start annual staging at 8 years.</div>`}
     </div>
     <div class="grid g2"><div class="card"><h3>🦴 Body proportions</h3>${propHtml}</div>
     <div class="card"><h3>🧬 Mid-parental height</h3><div class="hint">Target height ≈ (Father + Mother ± 13)/2 cm (+13 boys, −13 girls)</div>${mphHtml}</div></div>`;
@@ -800,5 +800,11 @@ function growthAlertsHTML() {
   });
   if (!rows.length) return "";
   const items = rows.slice(0, 6).map((r) => `<div style='font-size:13px'>${r.a.level === "red" ? "🔴" : "🟡"} <b>${esc(r.name)}</b> — ${esc(r.a.msg)}</div>`).join("");
-  return `<div class='card' style='margin-top:10px'><h3>Growth alerts (${rows.length})</h3>${items}<button class='btn btn-o btn-sm' style='margin-top:6px' onclick="go('growth')">Open growth →</button></div>`;
+  return `<div class='card' style='margin-top:10px'><h3>Growth alerts (${rows.length})</h3>${items}<button class='btn btn-o btn-sm' style='margin-top:6px' data-act="goPage" data-arg="growth">Open growth →</button></div>`;
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["deleteMeasure", "deleteTanner", "openTannerModal"].forEach(function (n) { actCall0(n); });
+  actRegister("gAssessSel", function (el) { try { DB.gAssessId = el.value; save(); renderGAssess(child()); } catch (e) { actReport("gAssessSel", e); } });
+} catch (e) {}

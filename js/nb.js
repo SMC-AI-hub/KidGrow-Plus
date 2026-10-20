@@ -100,29 +100,29 @@ function renderNB() {
   const scrRow = (k, label, hint) => {
     const s = nb.screen[k] || {};
     return `<tr><td><b>${label}</b><br><span style="font-size:11.5px;color:var(--muted)">${hint}</span></td>
-      <td><input type="date" value="${s.date || ""}" onchange="nbSetScreen('${k}','date',this.value)" style="max-width:150px"></td>
-      <td><select onchange="nbSetScreen('${k}','res',this.value)" style="max-width:140px">
+      <td><input type="date" value="${s.date || ""}" data-onchange="nbSetScreen" data-arg="${k}" data-arg2="date" style="max-width:150px"></td>
+      <td><select data-onchange="nbSetScreen" data-arg="${k}" data-arg2="res" style="max-width:140px">
         ${["Pending", "Normal", "Abnormal", "Referred"].map((o) => `<option${(s.res || "Pending") === o ? " selected" : ""}>${o}</option>`).join("")}</select></td></tr>`;
   };
   $("nbBox").innerHTML = `
   <div class="toolbar"><span style="font-size:13px;color:var(--muted)">Birth record for <b>${esc(c.name)}</b> · born ${fmtDate(c.dob)}${c.birthWt ? ` · ${c.birthWt} kg` : ""}${c.gest ? ` · ${c.gest} wk` : ""}</span>
-    <span class="sp"></span><button class="btn btn-o btn-sm" onclick="printPage('pg-nb')">🖨️ Print</button></div>
+    <span class="sp"></span><button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-nb">🖨️ Print</button></div>
   ${flags.map((f) => `<div class="alert ${f.sev === "red" ? "a-red" : "a-amber"}">⚠️ <div>${esc(f.text)}</div></div>`).join("")}
   <div class="card print-only"><h3>🏥 Birth record</h3><dl class="kv"><dt>Place</dt><dd>${esc(nb.place || "—")}</dd><dt>Mode</dt><dd>${esc(nb.mode || "—")}</dd><dt>Cried at birth</dt><dd>${esc(nb.cried || "—")}</dd><dt>Resuscitation</dt><dd>${esc(nb.resus || "—")}</dd><dt>Vitamin K</dt><dd>${esc(nb.vitK || "—")}</dd><dt>Feeds</dt><dd>${esc(nb.feed || "—")}</dd><dt>TSH</dt><dd>${esc(scrT("tsh"))}</dd><dt>ROP</dt><dd>${esc(scrT("rop"))}</dd><dt>Hearing</dt><dd>${esc(scrT("hear"))}</dd><dt>Pulse-ox</dt><dd>${esc(scrT("ox"))}</dd><dt>Bilirubin</dt><dd>${esc(scrT("bili"))}</dd><dt>APGAR 1&prime;</dt><dd>${apT("t1").total === null ? "—" : apT("t1").total + " · " + apT("t1").interp}</dd><dt>APGAR 5&prime;</dt><dd>${apT("t5").total === null ? "—" : apT("t5").total + " · " + apT("t5").interp}</dd><dt>APGAR 10&prime;</dt><dd>${apT("t10").total === null ? "—" : apT("t10").total + " · " + apT("t10").interp}</dd><dt>Ballard</dt><dd>${b.total}${b.complete ? "" : " (incomplete)"} &rarr; ${b.label}</dd></dl></div>
   <div class="grid g2">
     <div class="card no-print"><h3>🏥 Delivery & resuscitation</h3>
       <div class="form-grid">
-        <div><label>Place of birth</label><select onchange="nbSet('place',this.value)">
+        <div><label>Place of birth</label><select data-onchange="nbSet" data-arg="place">
           ${["", "This clinic", "Hospital", "Home", "Other"].map((o) => `<option value="${o}"${(nb.place || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
-        <div><label>Mode of delivery</label><select onchange="nbSet('mode',this.value)">
+        <div><label>Mode of delivery</label><select data-onchange="nbSet" data-arg="mode">
           ${["", "Vaginal", "LSCS", "Forceps", "Vacuum"].map((o) => `<option value="${o}"${(nb.mode || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
-        <div><label>Cried at birth</label><select onchange="nbSet('cried',this.value)">
+        <div><label>Cried at birth</label><select data-onchange="nbSet" data-arg="cried">
           ${["", "Yes — vigorous", "Weak cry", "No"].map((o) => `<option value="${o}"${(nb.cried || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
-        <div><label>Resuscitation</label><select onchange="nbSet('resus',this.value)">
+        <div><label>Resuscitation</label><select data-onchange="nbSet" data-arg="resus">
           ${["", "None needed", "Stimulation / drying", "Bag-mask ventilation", "Intubation", "Chest compressions", "Adrenaline"].map((o) => `<option value="${o}"${(nb.resus || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
-        <div><label>Vitamin K given</label><select onchange="nbSet('vitK',this.value)">
+        <div><label>Vitamin K given</label><select data-onchange="nbSet" data-arg="vitK">
           ${["", "Yes", "No"].map((o) => `<option value="${o}"${(nb.vitK || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
-        <div><label>Feeds</label><select onchange="nbSet('feed',this.value)">
+        <div><label>Feeds</label><select data-onchange="nbSet" data-arg="feed">
           ${["", "Exclusive breastfeeds", "Mixed", "Formula", "IV fluids / NPO"].map((o) => `<option value="${o}"${(nb.feed || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
       </div>
       <h3 style="margin-top:14px">🔬 Screening checklist</h3>
@@ -133,18 +133,18 @@ function renderNB() {
       ${scrRow("ox", "Pulse-ox (CCHD)", "After 24 h, before discharge")}
       ${scrRow("bili", "Bilirubin", "If jaundiced · plot on hour-specific chart")}</table>
     </div>
-    <div class="card no-print" data-fold="nb-apgar"><h3 onclick="toggleFold('nb-apgar')" title="Tap to collapse / expand" style="cursor:pointer">📟 APGAR score</h3>
+    <div class="card no-print" data-fold="nb-apgar"><h3 data-act="toggleFold" data-arg="nb-apgar" title="Tap to collapse / expand" style="cursor:pointer">📟 APGAR score</h3>
       <div class="hint">Record only — never delay resuscitation to assign scores</div>
       <table class="tbl"><tr><th>Sign</th>${tps.map(([k, l]) => `<th>${l}<br><span id="apgarT${k}" style="font-weight:400"></span></th>`).join("")}</tr>
       ${APGAR_ITEMS.map((it, idx) => `<tr><td><b>${it.name}</b><br><span style="font-size:11px;color:var(--muted)">${it.opts.join(" · ")}</span></td>
-        ${tps.map(([k]) => `<td><select onchange="nbSetApgar('${k}',${idx},this.value)" style="max-width:64px">
+        ${tps.map(([k]) => `<td><select data-onchange="nbSetApgar" data-arg="${k}" data-arg2="${idx}" style="max-width:64px">
           <option value="">—</option>${[0, 1, 2].map((v) => `<option value="${v}"${String((nb.apgar[k] || [])[idx]) === String(v) ? " selected" : ""}>${v}</option>`).join("")}</select></td>`).join("")}</tr>`).join("")}</table>
       </div>
-      <div class="card no-print" data-fold="nb-ballard"><h3 onclick="toggleFold('nb-ballard')" title="Tap to collapse / expand" style="cursor:pointer">🧮 New Ballard Score</h3>
+      <div class="card no-print" data-fold="nb-ballard"><h3 data-act="toggleFold" data-arg="nb-ballard" title="Tap to collapse / expand" style="cursor:pointer">🧮 New Ballard Score</h3>
       <div class="hint">Score each sign per the NBS chart (−10…50 ≈ 20…44 wk)</div>
       ${BALLARD_ITEMS.map((it) => {
         const btns = [];
-        for (let v = it.min; v <= it.max; v++) btns.push(`<button class="btn ${String(nb.ballard[it.k]) === String(v) ? "btn-p" : "btn-o"} btn-xs" onclick="nbSetBallard('${it.k}',${v})">${v}</button>`);
+        for (let v = it.min; v <= it.max; v++) btns.push(`<button class="btn ${String(nb.ballard[it.k]) === String(v) ? "btn-p" : "btn-o"} btn-xs" data-act="nbSetBallard" data-arg="${it.k}" data-arg2="${v}">${v}</button>`);
         return `<div style="padding:6px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">${it.name}</b> <span style="font-size:11.5px;color:var(--muted)">${esc(it.guide)}</span><br><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${btns.join("")}</div></div>`;
       }).join("")}
       <div class="alert ${b.complete ? "a-green" : "a-amber"}" style="margin:10px 0 0">🧮 <div>Ballard total <b>${b.total}</b>${b.complete ? "" : " (incomplete)"} → maturity <b>${b.label}</b> (${b.weeks.toFixed(1)} wk)
@@ -164,3 +164,11 @@ function renderNB() {
     if (el) el.innerHTML = r.total === null ? "—" : `<b>${r.total}</b> <span style="font-size:12px">${esc(r.interp)}</span>`;
   });
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  actCallN("nbSetBallard", 2);
+  actRegister("nbSet", function (el) { try { nbSet(actArg(el), el.value); } catch (e) { actReport("nbSet", e); } });
+  actRegister("nbSetApgar", function (el) { try { nbSetApgar(actArg(el), Number(actArg(el, 2)), el.value); } catch (e) { actReport("nbSetApgar", e); } });
+  actRegister("nbSetScreen", function (el) { try { nbSetScreen(actArg(el), actArg(el, 2), el.value); } catch (e) { actReport("nbSetScreen", e); } });
+} catch (e) {}

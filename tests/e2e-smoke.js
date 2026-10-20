@@ -62,6 +62,8 @@ async function main() {
     await pg.waitForTimeout(400);
     ok(await pg.evaluate("[...document.querySelectorAll('#cmdkRes .cmdk-row')].some(r=>r.innerText.includes('Smoke Baby'))"), "palette finds patient");
     await pg.keyboard.press("Escape");
+    // 4b. delegation registry alive across load order (first + last scripts)
+    ok(await pg.evaluate("typeof Act==='object' && typeof Act.openTannerModal==='function' && typeof Act.dlFhir==='function' && Object.keys(Act).length>200"), "action registry complete (E2)");
     // 5. timeline renders events for the child
     await pg.evaluate("go('timeline')");
     await pg.waitForTimeout(600);

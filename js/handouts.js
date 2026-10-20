@@ -283,9 +283,9 @@ function renderHand() {
   const exp = h.expect ? handSec(HAND_SECLBL.expect[L], "#b45309", esc(h.expect[L]), "#fffbeb") : "";
   $("handBox").innerHTML = `
   <div class="toolbar no-print">
-    <select onchange="HAND_SEL.h=this.value;renderHand()" style="max-width:260px"><optgroup label="${HAND_GRP_LBL.care}">${HANDOUTS.filter((x) => !x.grp).map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</optgroup>${HANDOUTS.some((x) => x.grp === "hb") ? `<optgroup label="${HAND_GRP_LBL.hb}">${HANDOUTS.filter((x) => x.grp === "hb").map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</optgroup>` : ""}</select>
-    <select onchange="HAND_SEL.lang=this.value;renderHand()" style="max-width:140px">${Object.keys(HAND_LANGS).map((k) => `<option value="${k}"${k === L ? " selected" : ""}>${HAND_LANGS[k]}</option>`).join("")}</select>
-    <span class="sp"></span><a class="btn btn-o btn-sm" target="_blank" rel="noopener" href="handbook/booklet-${h.id}-${L}.html">${esc(HAND_BOOKLET_TXT[L])}</a> <button class="btn btn-o btn-sm" onclick="printPage('pg-hand')">🖨️ Print handout</button>
+    <select data-onchange="handSel" style="max-width:260px"><optgroup label="${HAND_GRP_LBL.care}">${HANDOUTS.filter((x) => !x.grp).map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</optgroup>${HANDOUTS.some((x) => x.grp === "hb") ? `<optgroup label="${HAND_GRP_LBL.hb}">${HANDOUTS.filter((x) => x.grp === "hb").map((x) => `<option value="${x.id}"${x.id === h.id ? " selected" : ""}>${x.icon} ${esc(x.title.en)}</option>`).join("")}</optgroup>` : ""}</select>
+    <select data-onchange="handLangSel" style="max-width:140px">${Object.keys(HAND_LANGS).map((k) => `<option value="${k}"${k === L ? " selected" : ""}>${HAND_LANGS[k]}</option>`).join("")}</select>
+    <span class="sp"></span><a class="btn btn-o btn-sm" target="_blank" rel="noopener" href="handbook/booklet-${h.id}-${L}.html">${esc(HAND_BOOKLET_TXT[L])}</a> <button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-hand">🖨️ Print handout</button>
   </div>
   <div class="vaxcard" style="max-width:680px;margin:0 auto">
     ${handLetterhead(c)}
@@ -296,3 +296,9 @@ function renderHand() {
     <div style="font-size:11.5px;color:var(--muted);margin-top:10px;border-top:1px dashed var(--line);padding-top:6px">${esc(HAND_SECLBL.foot[L])}</div>
   </div>`;
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  actRegister("handSel", function (el) { try { HAND_SEL.h = el.value; renderHand(); } catch (e) { actReport("handSel", e); } });
+  actRegister("handLangSel", function (el) { try { HAND_SEL.lang = el.value; renderHand(); } catch (e) { actReport("handLangSel", e); } });
+} catch (e) {}

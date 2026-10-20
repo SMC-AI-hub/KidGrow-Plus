@@ -39,35 +39,35 @@ function renderRx() {
     <div class="card"><h3>🧮 Dose calculator</h3>
       <div class="hint">Weight defaults to latest measurement · dose packs PENDING clinician validation (F1) — verify every dose against CIMS/IAP before filing</div>
       <div class="form-grid">
-        <div><label>Weight (kg)</label><input type="number" step="0.1" min="1" value="${RXB.wt}" oninput="RXB.wt=this.value;renderRxCalc()"></div>
-        <div><label>Drug</label><select onchange="RXB.drugId=this.value;RXB.stIdx=0;RXB.days='';renderRx()">
+        <div><label>Weight (kg)</label><input type="number" step="0.1" min="1" value="${RXB.wt}" data-oninput="rxbWtInput"></div>
+        <div><label>Drug</label><select data-onchange="rxbDrugSel">
           ${cats.map((g) => `<optgroup label="${esc(g)}">${DRUGS.filter((x) => x.cat === g).map((x) => `<option value="${x.id}"${x.id === d.id ? " selected" : ""}>${esc(x.name)}${(typeof formularyStatus === "function" && formularyStatus(x.id) === "pending") ? " ⚠️" : ""}</option>`).join("")}</optgroup>`).join("")}
         </select></div>
-        ${(d.strengths || []).length ? `<div><label>Strength</label><select onchange="RXB.stIdx=+this.value;renderRx()">${d.strengths.map((s, i) => `<option value="${i}"${i === RXB.stIdx ? " selected" : ""}>${esc(s.label)}</option>`).join("")}</select></div>` : ""}
-        <div><label>Frequency</label><select onchange="RXB.freq=this.value;renderRxCalc()">${d.freqs.map((f) => `<option${f === RXB.freq ? " selected" : ""}>${f}</option>`).join("")}</select></div>
-        <div><label>Days</label><input type="number" min="1" max="90" value="${RXB.days}" oninput="RXB.days=+this.value||'';renderRxCalc()"></div>
-        <div><label>Instruction (optional)</label><input value="${esc(RXB.instr)}" placeholder="e.g. After food / SOS fever" oninput="RXB.instr=this.value"></div>
+        ${(d.strengths || []).length ? `<div><label>Strength</label><select data-onchange="rxbStIdxSel">${d.strengths.map((s, i) => `<option value="${i}"${i === RXB.stIdx ? " selected" : ""}>${esc(s.label)}</option>`).join("")}</select></div>` : ""}
+        <div><label>Frequency</label><select data-onchange="rxbFreqSel">${d.freqs.map((f) => `<option${f === RXB.freq ? " selected" : ""}>${f}</option>`).join("")}</select></div>
+        <div><label>Days</label><input type="number" min="1" max="90" value="${RXB.days}" data-oninput="rxbDaysInput"></div>
+        <div><label>Instruction (optional)</label><input value="${esc(RXB.instr)}" placeholder="e.g. After food / SOS fever" data-oninput="rxbInstrInput"></div>
       </div>
       <div id="rxCalc"></div>
       ${(() => { try { return (typeof Dose !== "undefined" && Dose.checksHTML) ? Dose.checksHTML(dxChecks) : (al.hit ? `<div class="alert a-red">⚠️ <div><b>ALLERGY ALERT:</b> ${esc(d.name)} matches recorded allergy.</div></div>` : ""); } catch (e) { return ""; } })()}
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn btn-p btn-sm" onclick="rxAddItem(${al.hit})" ${calc.ok && !dxChecks.hard ? "" : "disabled"} title="${dxChecks.hard ? "Blocked by safety check" : "Add to prescription"}">＋ Add to prescription</button>
+        <button class="btn btn-p btn-sm" data-act="rxAddItem" data-arg="${al.hit}" ${calc.ok && !dxChecks.hard ? "" : "disabled"} title="${dxChecks.hard ? "Blocked by safety check" : "Add to prescription"}">＋ Add to prescription</button>
       </div>
       ${d.notes ? `<div class="hint" style="margin-top:8px">ℹ️ ${esc(d.notes)}</div>` : ""}
     </div>
     <div class="card"><h3>📝 Current prescription</h3>
       <div class="form-grid">
-        <div class="full"><label>Diagnosis</label><input id="rxDx" value="${esc(dft.dx)}" placeholder="e.g. Acute URI with fever" oninput="rxDraft().dx=this.value"></div>
+        <div class="full"><label>Diagnosis</label><input id="rxDx" value="${esc(dft.dx)}" placeholder="e.g. Acute URI with fever" data-oninput="rxDxInput"></div>
       </div>
       <div id="rxItems" style="margin:8px 0"></div>
       <div class="form-grid">
-        <div class="full"><label>Advice</label><input id="rxAdv" value="${esc(dft.advice)}" placeholder="e.g. Fluids, saline drops, red-flag review" oninput="rxDraft().advice=this.value"></div>
-        <div><label>Review on</label><input type="date" id="rxRev" value="${dft.review}" onchange="rxDraft().review=this.value"></div>
-        <div><label>Prescribed by</label><input id="rxBy" value="${esc(dft.by || (DB.settings.doctor || ""))}" oninput="rxDraft().by=this.value"></div>
+        <div class="full"><label>Advice</label><input id="rxAdv" value="${esc(dft.advice)}" placeholder="e.g. Fluids, saline drops, red-flag review" data-oninput="rxAdviceInput"></div>
+        <div><label>Review on</label><input type="date" id="rxRev" value="${dft.review}" data-onchange="rxReviewSel"></div>
+        <div><label>Prescribed by</label><input id="rxBy" value="${esc(dft.by || (DB.settings.doctor || ""))}" data-oninput="rxByInput"></div>
       </div>
       <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btn-p btn-sm" onclick="saveRx()" ${dft.items.length ? "" : "disabled"}>💾 Save prescription</button>
-        <button class="btn btn-o btn-sm" onclick="RX_DRAFT=null;renderRx()">Clear draft</button>
+        <button class="btn btn-p btn-sm" data-act="saveRx" ${dft.items.length ? "" : "disabled"}>💾 Save prescription</button>
+        <button class="btn btn-o btn-sm" data-act="rxDraftReset">Clear draft</button>
       </div>
     </div>
   </div>
@@ -76,8 +76,8 @@ function renderRx() {
     ${prev.length ? prev.map((r) => `<div class="vac-row"><div class="grow"><b>${fmtDate(r.date)}</b> · ${esc(r.dx || "—")}
       ${r.allergyFlag ? ` <span class="badge" style="background:var(--red);color:#fff">⚠️ allergy flag</span>` : ""}<br>
       <span style="font-size:12.5px;color:var(--muted)">${(r.items || []).map((i) => esc(i.drug) + " " + esc(i.take || "")).join(" · ")}</span></div>
-      <button class="btn btn-o btn-xs" onclick="printRx('${r.id}')">🖨️ Print</button>
-      <button class="btn btn-danger btn-xs" onclick="delRx('${r.id}')">✕</button></div>`).join("")
+      <button class="btn btn-o btn-xs" data-act="printRx" data-arg="${r.id}">🖨️ Print</button>
+      <button class="btn btn-danger btn-xs" data-act="delRx" data-arg="${r.id}">✕</button></div>`).join("")
     : `<div style="font-size:13px;color:var(--muted)">No prescriptions yet — calculate a dose on the left, then Add.</div>`}</div>`;
   renderRxCalc(); renderRxItems();
 }
@@ -97,7 +97,7 @@ function renderRxItems() {
   box.innerHTML = dft.items.length ? dft.items.map((i, n) => `<div class="vac-row"><div class="grow"><b>${n + 1}. ${esc(i.drug)}</b> ${esc(i.strength || "")}<br>
     <span style="font-size:13px">${esc(i.take || "")} · ${esc(i.freq)} × ${esc(String(i.days))} days${i.instr ? ` · <i>${esc(i.instr)}</i>` : ""}</span><br>
     <span style="font-size:12px;color:var(--muted)">${esc(i.qty || "")}</span></div>
-    <button class="btn btn-danger btn-xs" onclick="RX_DRAFT.items.splice(${n},1);renderRx()">✕</button></div>`).join("")
+    <button class="btn btn-danger btn-xs" data-act="rxDraftDelItem" data-arg="${n}">✕</button></div>`).join("")
     : `<div style="font-size:13px;color:var(--muted)">No medicines yet — calculate on the left, then Add.</div>`;
 }
 function rxAddItem(isAllergy) {
@@ -148,3 +148,21 @@ function printRx(id) {
     <div style="display:flex;justify-content:flex-end;margin-top:36px"><div style="text-align:center;font-size:13px">For ${esc(DB.settings.clinic || "")}<br><br><b>${esc(r.by || DB.settings.doctor || "")}</b><br><span style="color:var(--muted)">Signature & seal</span></div></div>`;
   printPage("pg-rxprint");
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["delRx", "printRx", "saveRx"].forEach(function (n) { actCall0(n); });
+  actRegister("rxAddItem", function (el) { try { rxAddItem(actArg(el) === "true"); } catch (e) { actReport("rxAddItem", e); } });
+  actRegister("rxbDrugSel", function (el) { try { RXB.drugId = el.value; RXB.stIdx = 0; RXB.days = ""; renderRx(); } catch (e) { actReport("rxbDrugSel", e); } });
+  actRegister("rxbFreqSel", function (el) { try { RXB.freq = el.value; renderRxCalc(); } catch (e) { actReport("rxbFreqSel", e); } });
+  actRegister("rxbStIdxSel", function (el) { try { RXB.stIdx = +el.value; renderRx(); } catch (e) { actReport("rxbStIdxSel", e); } });
+  actRegister("rxReviewSel", function (el) { try { rxDraft().review = el.value; } catch (e) { actReport("rxReviewSel", e); } });
+  actRegister("rxDraftDelItem", function (el) { try { RX_DRAFT.items.splice(Number(actArg(el)), 1); renderRx(); } catch (e) { actReport("rxDraftDelItem", e); } });
+  actRegister("rxDraftReset", function () { try { RX_DRAFT = null; renderRx(); } catch (e) { actReport("rxDraftReset", e); } });
+  actRegister("rxbDaysInput", function (el) { try { RXB.days = +el.value || ""; renderRxCalc(); } catch (e) { actReport("rxbDaysInput", e); } });
+  actRegister("rxbInstrInput", function (el) { try { RXB.instr = el.value; } catch (e) { actReport("rxbInstrInput", e); } });
+  actRegister("rxbWtInput", function (el) { try { RXB.wt = el.value; renderRxCalc(); } catch (e) { actReport("rxbWtInput", e); } });
+  actRegister("rxAdviceInput", function (el) { try { rxDraft().advice = el.value; } catch (e) { actReport("rxAdviceInput", e); } });
+  actRegister("rxByInput", function (el) { try { rxDraft().by = el.value; } catch (e) { actReport("rxByInput", e); } });
+  actRegister("rxDxInput", function (el) { try { rxDraft().dx = el.value; } catch (e) { actReport("rxDxInput", e); } });
+} catch (e) {}

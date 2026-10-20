@@ -42,27 +42,27 @@ function asthmaPlanHTML(c) {
   const rows = [...a.pef].sort((x, y) => (x.date || "").localeCompare(y.date || "")).slice(-14);
   return `
   <div class="form-grid no-print">
-    <div><label>Severity</label><select onchange="astSet('sev',this.value)">${["", "Intermittent", "Mild persistent", "Moderate persistent", "Severe persistent"].map((o) => `<option value="${o}"${(a.sev || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
-    <div><label>Personal best PEF (L/min)</label><input type="number" value="${a.best || ""}" placeholder="auto from diary" onchange="astSet('best',this.value);renderScreen()"></div>
-    <div><label>Controller (daily)</label><input value="${esc(a.controller || "")}" placeholder="e.g. Budesonide 100 MDI 2 puff BD + spacer" onchange="astSet('controller',this.value)"></div>
-    <div><label>Reliever</label><input value="${esc(a.reliever || "")}" placeholder="e.g. Salbutamol MDI 2–4 puff SOS" onchange="astSet('reliever',this.value)"></div>
+    <div><label>Severity</label><select data-onchange="astSet" data-arg="sev">${["", "Intermittent", "Mild persistent", "Moderate persistent", "Severe persistent"].map((o) => `<option value="${o}"${(a.sev || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></div>
+    <div><label>Personal best PEF (L/min)</label><input type="number" value="${a.best || ""}" placeholder="auto from diary" data-onchange="astSetBest"></div>
+    <div><label>Controller (daily)</label><input value="${esc(a.controller || "")}" placeholder="e.g. Budesonide 100 MDI 2 puff BD + spacer" data-onchange="astSet" data-arg="controller"></div>
+    <div><label>Reliever</label><input value="${esc(a.reliever || "")}" placeholder="e.g. Salbutamol MDI 2–4 puff SOS" data-onchange="astSet" data-arg="reliever"></div>
   </div>
   <div class="no-print"><div class="hint">Triggers</div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${["Dust", "Smoke", "Viral cold", "Exercise", "Weather change", "Pets", "Strong smells", "Cockroach"].map((t) => `<label class="sib" style="font-size:12.5px"><input type="checkbox" ${a.triggers.includes(t) ? "checked" : ""} onchange="astToggleTrigger('${t}')"> ${t}</label>`).join("")}</div></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${["Dust", "Smoke", "Viral cold", "Exercise", "Weather change", "Pets", "Strong smells", "Cockroach"].map((t) => `<label class="sib" style="font-size:12.5px"><input type="checkbox" ${a.triggers.includes(t) ? "checked" : ""} data-onchange="astToggleTrigger" data-arg="${t}"> ${t}</label>`).join("")}</div></div>
   <div class="print-only"><dl class="kv"><dt>Severity</dt><dd>${esc(a.sev || "—")}</dd><dt>Personal best</dt><dd>${best ? best + " L/min" : "—"}</dd><dt>Controller</dt><dd>${esc(a.controller || "—")}</dd><dt>Reliever</dt><dd>${esc(a.reliever || "—")}</dd><dt>Triggers</dt><dd>${esc((a.triggers || []).join(", ") || "None recorded")}</dd><dt>🟢 Green</dt><dd>${esc(a.green || "Continue controller daily.")}</dd><dt>🟡 Yellow</dt><dd>${esc(a.yellow || "—")}</dd><dt>🔴 Red</dt><dd>${esc(a.red || "—")}</dd></dl></div>
   <div class="form-grid no-print">
-    <div class="full"><label>🟢 Green — doing well (PEF ≥80% best${best ? `, ≥${Math.round(best * 0.8)}` : ""})</label><input value="${esc(a.green || "Continue controller daily.")}" onchange="astSet('green',this.value)"></div>
-    <div class="full"><label>🟡 Yellow — getting worse (PEF 50–80%)</label><input value="${esc(a.yellow || "Double reliever via spacer, start oral steroids per doctor, review within 24–48 h.")}" onchange="astSet('yellow',this.value)"></div>
-    <div class="full"><label>🔴 Red — emergency (PEF <50%, can't talk/walk, ribs pulling)</label><input value="${esc(a.red || "Reliever now + rush to hospital / call doctor immediately.")}" onchange="astSet('red',this.value)"></div>
+    <div class="full"><label>🟢 Green — doing well (PEF ≥80% best${best ? `, ≥${Math.round(best * 0.8)}` : ""})</label><input value="${esc(a.green || "Continue controller daily.")}" data-onchange="astSet" data-arg="green"></div>
+    <div class="full"><label>🟡 Yellow — getting worse (PEF 50–80%)</label><input value="${esc(a.yellow || "Double reliever via spacer, start oral steroids per doctor, review within 24–48 h.")}" data-onchange="astSet" data-arg="yellow"></div>
+    <div class="full"><label>🔴 Red — emergency (PEF <50%, can't talk/walk, ribs pulling)</label><input value="${esc(a.red || "Reliever now + rush to hospital / call doctor immediately.")}" data-onchange="astSet" data-arg="red"></div>
   </div>
   <h3 style="margin-top:12px">📓 PEF diary ${best ? `(best ${best} L/min)` : ""}</h3>
   <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
     <input type="date" id="pefDate" value="${todayISO()}" style="max-width:150px">
     <input type="number" id="pefAM" placeholder="Morning" style="max-width:110px">
     <input type="number" id="pefPM" placeholder="Evening" style="max-width:110px">
-    <button class="btn btn-p btn-sm" onclick="pefAdd()">＋ Add</button>
+    <button class="btn btn-p btn-sm" data-act="pefAdd">＋ Add</button>
   </div>
-  ${rows.length ? `<table class="tbl"><tr><th>Date</th><th>AM</th><th>PM</th><th></th></tr>${rows.map((p) => `<tr><td>${fmtDate(p.date)}</td><td>${p.am ? zoneDot(pefZone(best, p.am)) + " " + p.am : "—"}</td><td>${p.pm ? zoneDot(pefZone(best, p.pm)) + " " + p.pm : "—"}</td><td><button class="btn btn-danger btn-xs" onclick="pefDel('${p.id}')">✕</button></td></tr>`).join("")}</table>`
+  ${rows.length ? `<table class="tbl"><tr><th>Date</th><th>AM</th><th>PM</th><th></th></tr>${rows.map((p) => `<tr><td>${fmtDate(p.date)}</td><td>${p.am ? zoneDot(pefZone(best, p.am)) + " " + p.am : "—"}</td><td>${p.pm ? zoneDot(pefZone(best, p.pm)) + " " + p.pm : "—"}</td><td><button class="btn btn-danger btn-xs" data-act="pefDel" data-arg="${p.id}">✕</button></td></tr>`).join("")}</table>`
   : `<div style="font-size:13px;color:var(--muted)">No readings yet — 2 weeks of twice-daily blows sets the personal best.</div>`}`;
 }
 /* ---------------- dental ---------------- */
@@ -95,7 +95,7 @@ function dentalHTML(c) {
     const s = (c.dental[t] || {}).st || "";
     const bg = s === "e" ? "var(--green)" : s === "g" ? "var(--amber)" : s === "x" ? "#94a3b8" : "#fff";
     const fg = s ? "#fff" : "var(--navy)";
-    return `<button onclick="toothToggle('${t}')" title="${t} · ${TOOTH_REF[t] || ""} · ${TOOTH_LBL[s]}" style="width:44px;height:52px;border:2px solid ${s ? bg : "#cbd5e1"};border-radius:10px;background:${bg};color:${fg};font-weight:800;font-size:13px;cursor:pointer">${t}<div style="font-size:9px;font-weight:600">${s === "e" ? "✓" : s === "g" ? "~" : s === "x" ? "✕" : "·"}</div></button>`;
+    return `<button data-act="toothToggle" data-arg="${t}" title="${t} · ${TOOTH_REF[t] || ""} · ${TOOTH_LBL[s]}" style="width:44px;height:52px;border:2px solid ${s ? bg : "#cbd5e1"};border-radius:10px;background:${bg};color:${fg};font-weight:800;font-size:13px;cursor:pointer">${t}<div style="font-size:9px;font-weight:600">${s === "e" ? "✓" : s === "g" ? "~" : s === "x" ? "✕" : "·"}</div></button>`;
   };
   return `<div class="hint no-print">Tap a tooth to cycle: blank → erupting (~) → erupted (✓) → lost (✕). Primary teeth in white rows; 16/26/36/46 are first permanent molars (~6 y).</div>
   ${flag ? `<div class="alert a-amber">🦷 <div>${esc(flag)}</div></div>` : ""}
@@ -118,16 +118,16 @@ function rbskHTML(c) {
   const r = rbskOf(c);
   const refs = Object.keys(r.items).filter((k) => r.items[k] === "ref");
   return `<div class="print-only" style="font-size:13.5px;margin-bottom:6px">Screened on <b>${esc(r.date || "—")}</b> by <b>${esc(r.by || "—")}</b>${r.refTo ? ` · Refer to: <b>${esc(r.refTo)}</b>` : ""}</div><div class="form-grid no-print">
-    <div><label>Screened on</label><input type="date" value="${r.date || ""}" onchange="rbskMeta('date',this.value)"></div>
-    <div><label>Screened by</label><input value="${esc(r.by || "")}" placeholder="Name" onchange="rbskMeta('by',this.value)"></div>
-    <div class="full"><label>Refer to (if any)</label><input value="${esc(r.refTo || "")}" placeholder="e.g. DEIC, District Hospital" onchange="rbskMeta('refTo',this.value)"></div>
+    <div><label>Screened on</label><input type="date" value="${r.date || ""}" data-onchange="rbskMeta" data-arg="date"></div>
+    <div><label>Screened by</label><input value="${esc(r.by || "")}" placeholder="Name" data-onchange="rbskMeta" data-arg="by"></div>
+    <div class="full"><label>Refer to (if any)</label><input value="${esc(r.refTo || "")}" placeholder="e.g. DEIC, District Hospital" data-onchange="rbskMeta" data-arg="refTo"></div>
   </div>
   ${refs.length ? `<div class="alert a-red">🏥 <div><b>${refs.length} condition(s) flagged for referral:</b> ${refs.map(esc).join(" · ")}${r.refTo ? ` → ${esc(r.refTo)}` : ""}. Print this page as the referral slip.</div></div>` : ""}
   ${RBSK.map((sec) => `<h3 style="margin-top:10px;font-size:14px">${esc(sec.g)}</h3>
     ${sec.items.map((it) => { const v = r.items[it] || ""; return `<div class="vac-row"><div class="grow" style="font-size:13.5px">${v === "ref" ? "🔴" : v === "ok" ? "🟢" : "⚪"} ${esc(it)}</div>
-      <button class="btn ${v === "ok" ? "btn-p" : "btn-o"} btn-xs" onclick="rbskSet('${esc(it).replace(/'/g, "\\'")}','ok')">Normal</button>
-      <button class="btn ${v === "ref" ? "btn-danger" : "btn-o"} btn-xs" onclick="rbskSet('${esc(it).replace(/'/g, "\\'")}','ref')">Refer</button>
-      ${v ? `<button class="btn btn-o btn-xs" onclick="rbskSet('${esc(it).replace(/'/g, "\\'")}','')">↩</button>` : ""}</div>`; }).join("")}`).join("")}`;
+      <button class="btn ${v === "ok" ? "btn-p" : "btn-o"} btn-xs" data-act="rbskSet" data-arg="${esc(it).replace(/'/g, "\\'")}" data-arg2="ok">Normal</button>
+      <button class="btn ${v === "ref" ? "btn-danger" : "btn-o"} btn-xs" data-act="rbskSet" data-arg="${esc(it).replace(/'/g, "\\'")}" data-arg2="ref">Refer</button>
+      ${v ? `<button class="btn btn-o btn-xs" data-act="rbskSet" data-arg="${esc(it).replace(/'/g, "\\'")}" data-arg2="">↩</button>` : ""}</div>`; }).join("")}`).join("")}`;
 }
 /* ---------------- screening calculators (Phase 5: Scores registry) ---------------- */
 function screenCalcsHTML(c) {
@@ -142,7 +142,7 @@ function screenCalcsHTML(c) {
         <div><label>Birth wt (kg)</label><input type="number" step="0.1" id="scRopBw" value="${bw}"></div>
         <div><label>Unstable course</label><select id="scRopUn"><option value="">No</option><option value="y">Yes</option></select></div>
       </div>
-      <button class="btn btn-o btn-sm" style="margin-top:6px" onclick="runRopCalc()">Calculate</button>
+      <button class="btn btn-o btn-sm" style="margin-top:6px" data-act="runRopCalc">Calculate</button>
       <div id="scRopOut" style="margin-top:6px;font-size:13.5px"></div>
     </div>
     <div>
@@ -152,7 +152,7 @@ function screenCalcsHTML(c) {
         <div><label>Foot %</label><input type="number" id="scCchdFoot" placeholder="96"></div>
         <div><label>Screen</label><select id="scCchdAtt"><option value="1">First</option><option value="2">Repeat (1h)</option></select></div>
       </div>
-      <button class="btn btn-o btn-sm" style="margin-top:6px" onclick="runCchdCalc()">Interpret</button>
+      <button class="btn btn-o btn-sm" style="margin-top:6px" data-act="runCchdCalc">Interpret</button>
       <div id="scCchdOut" style="margin-top:6px;font-size:13.5px"></div>
     </div>
   </div>`;
@@ -182,7 +182,7 @@ function renderScreen() {
   if (!c) { $("screenBox").innerHTML = `<div class="empty">No child selected.</div>`; return; }
   $("screenBox").innerHTML = `
   <div class="toolbar no-print"><span style="font-size:13px;color:var(--muted)">Screening suite for <b>${esc(c.name)}</b></span>
-    <span class="sp"></span><button class="btn btn-o btn-sm" onclick="auditSafe('Screening printed','${esc(c.name)}');printPage('pg-screen')">🖨️ Print all</button></div>
+    <span class="sp"></span><button class="btn btn-o btn-sm" data-act="screenPrintAudit" data-arg="${esc(c.name)}">🖨️ Print all</button></div>
   <div class="card"><h3>🫁 Asthma action plan + PEF diary</h3>${asthmaPlanHTML(c)}</div>
   <div style="height:16px"></div>
   <div class="card"><h3>🦷 Dental eruption chart</h3>${dentalHTML(c)}</div>
@@ -191,3 +191,13 @@ function renderScreen() {
   <div style="height:16px"></div>
   <div class="card"><h3>🏥 RBSK 4Ds checklist</h3><div class="hint">Rashtriya Bal Swasthya Karyakram — 0–18 y screening: Defects, Deficiencies, Diseases, Developmental delays</div>${rbskHTML(c)}</div>`;
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["pefAdd", "pefDel", "runCchdCalc", "runRopCalc", "toothToggle", "astToggleTrigger"].forEach(function (n) { actCall0(n); });
+  actCallN("rbskSet", 2);
+  actRegister("astSet", function (el) { try { astSet(actArg(el), el.value); } catch (e) { actReport("astSet", e); } });
+  actRegister("astSetBest", function (el) { try { astSet("best", el.value); renderScreen(); } catch (e) { actReport("astSetBest", e); } });
+  actRegister("rbskMeta", function (el) { try { rbskMeta(actArg(el), el.value); } catch (e) { actReport("rbskMeta", e); } });
+  actRegister("screenPrintAudit", function (el) { try { auditSafe("Screening printed", actArg(el)); printPage("pg-screen"); } catch (e) { actReport("screenPrintAudit", e); } });
+} catch (e) {}

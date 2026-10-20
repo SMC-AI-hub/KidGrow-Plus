@@ -214,8 +214,8 @@ function hriDefaulterHTML() {
   const rows = list.map((e) => {
     const od = e.overdue.map((v) => `${hriEsc(v.label)} (${hriEsc(v.date)})`).join("; ");
     return `<tr><td><b>${hriEsc(e.child.name)}</b></td><td style="font-size:12.5px;color:var(--red)">${od}</td>` +
-      `<td style="white-space:nowrap"><button class="btn btn-o btn-xs" onclick="DB.activeId='${hriEsc(e.child.id)}';renderAll()">Open</button> ` +
-      `<button class="btn btn-p btn-xs" onclick="hriBook('${hriEsc(e.child.id)}','${hriEsc(e.overdue[0].date)}','HRI: ${hriEsc(e.overdue[0].label)}')">📅 Book</button></td></tr>`;
+      `<td style="white-space:nowrap"><button class="btn btn-o btn-xs" data-act="hriSetActive" data-arg="${hriEsc(e.child.id)}">Open</button> ` +
+      `<button class="btn btn-p btn-xs" data-act="hriBook" data-arg="${hriEsc(e.child.id)}" data-arg2="${hriEsc(e.overdue[0].date)}" data-arg3="HRI: ${hriEsc(e.overdue[0].label)}">📅 Book</button></td></tr>`;
   }).join("");
   return `<div class="card"><h3>📋 Defaulter list (${list.length})</h3><table class="tbl"><tr><th>Baby</th><th>Overdue</th><th></th></tr>${rows}</table></div>`;
 }
@@ -235,15 +235,15 @@ function renderHri() {
     const risks = (P && P.riskFactors) || [];
     body = `<div class="card"><h3>🍼 Enroll ${hriEsc(c.name)} in HRI follow-up</h3>
       <div class="hint">High-risk infant programme — corrected-age visits to 24 months. GA ${d.ga !== null ? d.ga + " wk" : "—"} · EDD ${d.edd || "—"}.</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">${risks.map((r, i) => `<label class="sib" style="font-size:12.5px"><input type="checkbox" ${h.risks.includes(r) ? "checked" : ""} onchange="hriToggleRisk(${i})"> ${hriEsc(r)}</label>`).join("")}</div>
-      <div><label>Note (optional)</label><input id="hriNote" value="${hriEsc(h.note || "")}" placeholder="e.g. HIE-II, cooled 72h" oninput="hriSetNote(this.value)"></div>
-      <button class="btn btn-p btn-sm" style="margin-top:8px" onclick="hriEnroll()">Enroll</button></div>`;
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">${risks.map((r, i) => `<label class="sib" style="font-size:12.5px"><input type="checkbox" ${h.risks.includes(r) ? "checked" : ""} data-onchange="hriToggleRisk" data-arg="${i}"> ${hriEsc(r)}</label>`).join("")}</div>
+      <div><label>Note (optional)</label><input id="hriNote" value="${hriEsc(h.note || "")}" placeholder="e.g. HIE-II, cooled 72h" data-oninput="hriSetNoteInput"></div>
+      <button class="btn btn-p btn-sm" style="margin-top:8px" data-act="hriEnroll">Enroll</button></div>`;
   } else {
     const dot = (s) => s === "done" ? "✅" : s === "overdue" ? "🔴" : s === "due" ? "🟡" : "⚪";
     const rows = d.visits.map((v) => `<tr><td><b>${hriEsc(v.label)}</b><br><span style="font-size:11.5px;color:var(--muted)">${v.focus.map(hriEsc).join(" · ")}</span></td><td>${hriEsc(v.date)}</td><td>${dot(v.status)} ${v.status}</td>
       <td style="white-space:nowrap">${v.status === "done"
-        ? `<button class="btn btn-o btn-xs" onclick="hriUndone('${v.id}')">↩</button>`
-        : `<button class="btn btn-p btn-xs" onclick="hriDone('${v.id}')">✓ Done</button> <button class="btn btn-o btn-xs" onclick="hriBook('${hriEsc(c.id)}','${hriEsc(v.date)}','HRI: ${hriEsc(v.label)}')">📅</button>`}</td></tr>`).join("");
+        ? `<button class="btn btn-o btn-xs" data-act="hriUndone" data-arg="${v.id}">↩</button>`
+        : `<button class="btn btn-p btn-xs" data-act="hriDone" data-arg="${v.id}">✓ Done</button> <button class="btn btn-o btn-xs" data-act="hriBook" data-arg="${hriEsc(c.id)}" data-arg2="${hriEsc(v.date)}" data-arg3="HRI: ${hriEsc(v.label)}">📅</button>`}</td></tr>`).join("");
     const rop = hriRopLine(c);
     let ropBanner = "";
     if (rop) {
@@ -255,7 +255,7 @@ function renderHri() {
       ${d.overdue.length ? `<div class="alert a-red" style="margin-top:8px">🔴 <div><b>${d.overdue.length} overdue:</b> ${d.overdue.map((v) => hriEsc(v.label)).join("; ")} — book + recall.</div></div>` : ""}
       ${ropBanner}
       <table class="tbl" style="margin-top:8px"><tr><th>Visit</th><th>Due</th><th>Status</th><th></th></tr>${rows}</table>
-      <button class="btn btn-o btn-sm" style="margin-top:8px" onclick="hriDischarge()">Discharge from HRI</button></div>`;
+      <button class="btn btn-o btn-sm" style="margin-top:8px" data-act="hriDischarge">Discharge from HRI</button></div>`;
   }
   box.innerHTML = hriDefaulterHTML() + body;
 }
@@ -326,3 +326,12 @@ var Hri = {
   enrollValid: hriEnrollValid, dueFor: hriDueFor, defaulters: hriDefaulters, ropLine: hriRopLine,
 };
 try { if (typeof window !== "undefined" && window) window.Hri = Hri; } catch (e) {}
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["hriDischarge", "hriDone", "hriEnroll", "hriUndone"].forEach(function (n) { actCall0(n); });
+  actCallN("hriBook", 3);
+  actRegister("hriSetActive", function (el) { try { DB.activeId = actArg(el); renderAll(); } catch (e) { actReport("hriSetActive", e); } });
+  actRegister("hriSetNoteInput", function (el) { try { hriSetNote(el.value); } catch (e) { actReport("hriSetNoteInput", e); } });
+  actRegister("hriToggleRisk", function (el) { try { hriToggleRisk(Number(actArg(el))); } catch (e) { actReport("hriToggleRisk", e); } });
+} catch (e) {}

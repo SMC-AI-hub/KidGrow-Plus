@@ -274,7 +274,7 @@ function renderGrowthOverview() {
   const box = $("gs-overview"); if (!box) return;
   const c = child(); if (!c) { box.innerHTML = `<div class="empty">No child selected.</div>`; return; }
   box.innerHTML = `<div class="toolbar no-print"><span style="font-size:13px;color:var(--muted)">All six parameters · ${esc(c.name)} · ${(DB.gLines || "pct") === "z" ? "Z-score lines" : "Percentile lines"}</span>
-    <span class="sp"></span><button class="btn btn-o btn-sm" onclick="printGrowthFull()">🖨️ Full growth report</button></div>
+    <span class="sp"></span><button class="btn btn-o btn-sm" data-act="printGrowthFull">🖨️ Full growth report</button></div>
     <div class="grid g2">${GCHART_ORDER.map((ind) => `<div class="card"><h3>${GCHART_META[ind].title}</h3>
       <canvas class="chart mini" id="gAll-${ind}" width="900" height="360"></canvas></div>`).join("")}</div>`;
   GCHART_ORDER.forEach((ind) => drawGrowthChartInto(document.getElementById("gAll-" + ind), ind));

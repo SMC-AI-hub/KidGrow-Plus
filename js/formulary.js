@@ -78,7 +78,7 @@ function renderFormulary() {
     "<div><label>Reviewer</label><input id='frBy' placeholder='pharmacist name'></div>" +
     "<div><label>Verdict</label><select id='frVerdict'><option value='approved'>Approved</option><option value='flagged'>Flagged (needs fix)</option></select></div>" +
     "<div><label>Note</label><input id='frNote' placeholder='optional'></div></div>" +
-    "<button class='btn btn-p btn-sm' style='margin-top:8px' onclick='saveFormularyReview()'>Save review</button></div>" +
+    "<button class='btn btn-p btn-sm' style='margin-top:8px' data-act='saveFormularyReview'>Save review</button></div>" +
     "<div class='card'><table class='tbl'><tr><th>Drug</th><th>Status</th><th>Review</th></tr>" + rows + "</table></div>";
 }
 window.renderFormulary = renderFormulary;
@@ -99,3 +99,8 @@ window.saveFormularyReview = function () {
 };
 
 })();
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["saveFormularyReview"].forEach(function (n) { actCall0(n); });
+} catch (e) {}

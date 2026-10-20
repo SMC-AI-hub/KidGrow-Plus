@@ -103,8 +103,8 @@ function exExamHTML(ex) {
   return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">` + EX_SYSTEMS.map(([k, label]) => {
     const s = ex[k] || {};
     return `<div style="display:flex;gap:6px;align-items:center"><span style="font-size:12.5px;min-width:64px">${label}</span>`
-      + `<select style="max-width:104px" onchange="Ex.edE('${k}','st',this.value)">${EX_ST.map(([val, l]) => `<option value="${val}"${(s.st || "") === val ? " selected" : ""}>${l}</option>`).join("")}</select>`
-      + `<input value="${exEsc(s.note || "")}" placeholder="note" oninput="Ex.edE('${k}','note',this.value)" style="flex:1;min-width:0"></div>`;
+      + `<select style="max-width:104px" data-onchange="exEdE" data-arg="${k}" data-arg2="st">${EX_ST.map(([val, l]) => `<option value="${val}"${(s.st || "") === val ? " selected" : ""}>${l}</option>`).join("")}</select>`
+      + `<input value="${exEsc(s.note || "")}" placeholder="note" data-oninput="exEdE" data-arg="${k}" data-arg2="note" style="flex:1;min-width:0"></div>`;
   }).join("") + `</div>`;
 }
 function exTemplates() { try { return (exPack("templates") || {}).templates || []; } catch (e) { return []; } }
@@ -137,7 +137,7 @@ function exTplButtonsHTML(tpl) {
   return `<span style="font-size:12px;color:var(--muted)">Suggested codes: </span>` + tpl.suggestIcd.map((code) => {
     let label = "";
     try { const e = (typeof Terms !== "undefined" && Terms.get) ? Terms.get(code) : null; label = e ? e.label : ""; } catch (e2) {}
-    return `<button type="button" class="btn btn-o btn-xs" style="margin:2px 4px 2px 0" onclick="Ex.addSuggest('${exEsc(code)}')">${exEsc(code)}${label ? " · " + exEsc(label) : ""}</button>`;
+    return `<button type="button" class="btn btn-o btn-xs" style="margin:2px 4px 2px 0" data-act="exAddSuggest" data-arg="${exEsc(code)}">${exEsc(code)}${label ? " · " + exEsc(label) : ""}</button>`;
   }).join("");
 }
 function exApplyTemplate(id) {
@@ -245,3 +245,9 @@ var Ex = {
   edE(sys, k, val) { try { EXB.exam[sys] = EXB.exam[sys] || {}; EXB.exam[sys][k] = val; } catch (e) {} },
 };
 try { if (typeof window !== "undefined" && window) window.Ex = Ex; } catch (e) {}
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  actRegister("exAddSuggest", function (el) { try { Ex.addSuggest(actArg(el)); } catch (e) { actReport("exAddSuggest", e); } });
+  actRegister("exEdE", function (el) { try { Ex.edE(actArg(el), actArg(el, 2), el.value); } catch (e) { actReport("exEdE", e); } });
+} catch (e) {}
