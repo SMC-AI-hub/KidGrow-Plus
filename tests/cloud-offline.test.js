@@ -422,21 +422,27 @@ async function main() {
 
   // ---- unified timeline ----
   const tlc = { id: "tl1", name: "Timeline Kid", dob: "2024-01-01", sex: "boy",
-    visits: [{ id: "v1", date: "2026-03-01", type: "Follow-up", subj: "Fever<x>", obj: "", plan: "Review" }],
+    problems: [{ label: "Asthma", status: "active" }], allergy: "Penicillin",
+    visits: [{ id: "v1", date: "2026-03-01", type: "Follow-up", subj: "Fever<x>", obj: "", plan: "Review", vitals: { t: "38.5", hr: "140" } }],
     rx: [{ id: "r1", date: "2026-05-01", dx: "Cold", items: [{ drug: "Paracetamol<script>" }], advice: "", review: "", by: "Dr" }],
     vaccines: { BCG: { date: "2024-01-02", brand: "Serum", batch: "B9", by: "Nurse" } },
     extraVac: [{ id: "x1", name: "Flu shot", date: "2026-01-10", brand: "Vax" }],
-    measures: [{ date: "2026-04-01", wt: 12, ht: 85 }],
+    measures: [{ date: "2026-04-01", wt: 12, ht: 85 }, { date: "2026-04-15", wt: 12.5, ht: 86 }],
     labs: [{ id: "l1", date: "2026-02-01", hb: "11.2", note: "" }],
     aefi: [{ id: "a1", date: "2024-01-03", code: "BCG", vacLabel: "BCG", severity: "Mild", outcome: "Recovered", reported: "No" }] };
   const tev = sb.timelineEvents(tlc);
-  ok(tev.length === 7, "timeline collects all 7 kinds, got " + tev.length);
-  ok(tev[0].date === "2026-05-01" && tev[6].date === "2024-01-02", "timeline sorts newest-first");
+  ok(tev.length === 8, "timeline collects all kinds, got " + tev.length);
+  ok(tev[0].date === "2026-05-01" && tev[7].date === "2024-01-02", "timeline sorts newest-first");
   ok(tev.filter((e) => e.kind === "vax").length === 2, "scheduled + extra vaccines both included");
   ok(sb.timelineEvents(null).length === 0, "timeline empty with no child");
   const tlh = sb.timelineHTML(tlc, "all");
   ok(!tlh.includes("<script>") && !tlh.includes("<x>") && tlh.includes("Paracetamol"), "timeline escapes clinical text");
   ok(tlh.includes("BCG") && tlh.includes("Hb 11.2") && tlh.includes("Mild"), "timeline shows vax+lab+aefi detail");
+  ok(tlh.includes("Case at a glance") && tlh.includes("Asthma") && tlh.includes("Penicillin") && tlh.includes("12.5 kg"), "snapshot: problems + allergy + growth");
+  ok(tlh.includes("May 2026") && tlh.includes("January 2024"), "month-year group headers");
+  ok(tlh.includes("age 2y 3m"), "age-at-event on cards");
+  ok(tlh.includes("+0.5 kg") && tlh.includes("ctx-flag") && !tlh.includes("ctx-flag-red"), "growth-delta flag, no false red");
+  ok(tlh.includes("38.5") && tlh.includes("HR 140"), "visit vitals inline");
   ok(sb.timelineHTML(tlc, "rx").includes("Paracetamol") && !sb.timelineHTML(tlc, "rx").includes("Hb 11.2"), "timeline filter isolates kinds");
   ok(sb.timelineHTML({ ...tlc, rx: [], visits: [], vaccines: {}, extraVac: [], measures: [], labs: [], aefi: [] }, "all").includes("No records yet"), "timeline empty state");
   ok(sb.vaxLabel("NOPE-99") === "NOPE-99", "unknown vax code falls back to code");

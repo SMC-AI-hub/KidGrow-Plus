@@ -670,27 +670,99 @@ function vaxLabel(code) {
   } catch (e) {}
   return code;
 }
+function timelineAgeAt(dob, date) {
+  try {
+    if (!dob || !date) return "";
+    const d0 = new Date(dob + "T00:00:00"), d1 = new Date(String(date).slice(0, 10) + "T00:00:00");
+    if (isNaN(d0) || isNaN(d1)) return "";
+    const days = Math.round((d1 - d0) / 86400000);
+    if (days < 0) return "";
+    if (days < 60) return days + "d";
+    const m = Math.floor(days / 30.44);
+    if (m < 24) return m + "m";
+    return Math.floor(m / 12) + "y " + (m % 12) + "m";
+  } catch (e) { return ""; }
+}
+function timelineVitals(v) {
+  try {
+    const x = (v && v.vitals) || {}, p = [];
+    if (x.t) p.push("T " + x.t + "\u00B0");
+    if (x.hr) p.push("HR " + x.hr);
+    if (x.rr) p.push("RR " + x.rr);
+    if (x.spo2) p.push("SpO2 " + x.spo2);
+    if (x.sys || x.dia) p.push("BP " + (x.sys || "?") + "/" + (x.dia || "?"));
+    return p.join(" \u00B7 ");
+  } catch (e) { return ""; }
+}
+function timelineGrowthFlag(measures, m) {
+  try {
+    const ms = [...(measures || [])].filter((x) => x && x.date).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const i = ms.indexOf(m);
+    const p = i > 0 ? ms[i - 1] : null;
+    if (!p || !(m.wt > 0) || !(p.wt > 0)) return null;
+    const d = +((+m.wt) - (+p.wt)).toFixed(1);
+    return { flag: (d > 0 ? "+" + d : d < 0 ? String(d) : "\u00B10") + " kg", flagCls: d < 0 ? "ctx-flag-red" : "" };
+  } catch (e) { return null; }
+}
+/* Case-at-a-glance strip: problems, allergy, last visit, latest Rx, vaccines, growth. */
+function timelineSnapshot(c) {
+  if (!c) return "";
+  const parts = [];
+  let probs = [], alg = "";
+  try { probs = (c.problems || []).filter((p) => p && (!p.status || p.status === "active")); } catch (e) {}
+  try { alg = (typeof Hx !== "undefined" && Hx.allergyText) ? Hx.allergyText(c) : (c.allergy || ""); } catch (e) { alg = c.allergy || ""; }
+  parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Active</span> ` +
+    (probs.length ? probs.slice(0, 4).map((p) => `<span class="badge b-teal">${esc(p.label || p.code || "Problem")}</span>`).join(" ") + (probs.length > 4 ? ` <span style="font-size:12px">+${probs.length - 4}</span>` : "") : `<span style="font-size:13px;color:var(--muted)">No active problems</span>`) +
+    (alg ? ` <span class="badge b-red">\u26A0\uFE0F ${esc(alg)}</span>` : "") + `</div>`);
+  let lv = null, lr = null;
+  try { lv = [...(c.visits || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)))[0] || null; } catch (e) {}
+  try { lr = [...(c.rx || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)))[0] || null; } catch (e) {}
+  parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Last visit</span> <span style="font-size:13px">${lv ? esc(fmtDate(lv.date)) + " \u00B7 " + esc(lv.type || "Visit") : "\u2014"}</span></div>`);
+  if (lr) parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Latest Rx</span> <span style="font-size:13px">${esc(lr.dx || "Rx")} \u00B7 ${(lr.items || []).slice(0, 3).map((i) => esc(i.drug || i.name || "")).filter(Boolean).join(", ") || "\u2014"}${(lr.items || []).length > 3 ? " +" + ((lr.items || []).length - 3) : ""}</span></div>`);
+  try {
+    if (typeof vaccineSummary === "function") {
+      const vs = vaccineSummary(c);
+      if (vs.overdue > 0) parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Vaccines</span> <span class="badge b-red">${vs.overdue} overdue</span> <span style="font-size:13px">${vs.done}/${vs.total} given</span></div>`);
+      else if (vs.next) {
+        const names = (vs.next.v.vaccines || []).filter((vx) => !(c.vaccines || {})[vx.code]).map((vx) => vx.name || vx.code);
+        parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Next vax</span> <span style="font-size:13px">${esc(names.slice(0, 3).join(", "))} \u00B7 due ${esc(fmtDate(vs.next.due))}</span></div>`);
+      } else parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Vaccines</span> <span style="font-size:13px">Complete \u2713</span></div>`);
+    }
+  } catch (e) {}
+  try {
+    const ms = [...(c.measures || [])].filter((m) => m && m.date).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (ms.length) {
+      const l = ms[ms.length - 1], p = ms[ms.length - 2];
+      let d = "";
+      if (p && l.wt > 0 && p.wt > 0) { const dd = +((+l.wt) - (+p.wt)).toFixed(1); d = dd > 0 ? ` (+${dd} kg)` : dd < 0 ? ` (${dd} kg)` : ""; }
+      parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Growth</span> <span style="font-size:13px">${l.wt > 0 ? l.wt + " kg" : "\u2014"}${l.ht > 0 ? " \u00B7 " + l.ht + " cm" : ""} \u00B7 ${esc(fmtDate(l.date))}${esc(d)}</span></div>`);
+    }
+  } catch (e) {}
+  return parts.join("");
+}
 function timelineEvents(c) {
   if (!c) return [];
   const ev = [];
   const ts = (d) => (d || "").slice(0, 10);
-  (c.visits || []).forEach((v) => ev.push({ date: ts(v.date), kind: "visit", icon: "🩺", title: v.type || "Visit",
-    sub: [v.subj && ("S: " + v.subj), v.obj && ("O: " + v.obj), v.plan && ("A/P: " + v.plan)].filter(Boolean).join(" · ") }));
+  (c.visits || []).forEach((v) => { const vit = timelineVitals(v); ev.push({ date: ts(v.date), kind: "visit", icon: "🩺", title: v.type || "Visit",
+    sub: [v.subj && ("S: " + v.subj), v.obj && ("O: " + v.obj), v.plan && ("A/P: " + v.plan), vit].filter(Boolean).join(" · ") }); });
   (c.rx || []).forEach((r) => ev.push({ date: ts(r.date), kind: "rx", icon: "💊", title: "Rx" + (r.dx ? " — " + r.dx : ""),
     sub: (r.items || []).map((i) => i.drug).filter(Boolean).join(", ") + (r.allergyFlag ? " ⚠️ allergy flag" : "") }));
   Object.entries(c.vaccines || {}).forEach(([code, r]) => ev.push({ date: ts(r.date), kind: "vax", icon: "💉",
     title: vaxLabel(code), sub: [r.brand, r.batch && ("batch " + r.batch), r.by && ("by " + r.by)].filter(Boolean).join(" · ") }));
   (c.extraVac || []).forEach((x) => ev.push({ date: ts(x.date), kind: "vax", icon: "➕", title: x.name || "Vaccine",
     sub: [x.brand, x.batch && ("batch " + x.batch)].filter(Boolean).join(" · ") }));
-  (c.measures || []).forEach((m) => ev.push({ date: ts(m.date), kind: "growth", icon: "📏", title: "Growth",
-    sub: [m.wt > 0 && (`${m.wt} kg`), m.ht > 0 && (`${m.ht} cm`), m.hc > 0 && (`HC ${m.hc}`), m.muac > 0 && (`MUAC ${m.muac}`)].filter(Boolean).join(" · ") }));
+  (c.measures || []).forEach((m) => { const gf = timelineGrowthFlag(c.measures, m); ev.push({ date: ts(m.date), kind: "growth", icon: "📏", title: "Growth",
+    sub: [m.wt > 0 && (`${m.wt} kg`), m.ht > 0 && (`${m.ht} cm`), m.hc > 0 && (`HC ${m.hc}`), m.muac > 0 && (`MUAC ${m.muac}`)].filter(Boolean).join(" · "),
+    flag: gf ? gf.flag : "", flagCls: gf ? gf.flagCls : "" }); });
   (c.labs || []).forEach((l) => {
     const p = ["mcv", "ferritin", "crp", "b12", "vitD"].map((k) => l[k] ? `${k} ${l[k]}` : "").filter(Boolean);
     if (l.note) p.push(l.note);
     ev.push({ date: ts(l.date), kind: "labs", icon: "🩸", title: "Lab" + (l.hb ? ` — Hb ${l.hb}` : ""), sub: p.join(" · ") });
   });
-  (c.aefi || []).forEach((e) => ev.push({ date: ts(e.date), kind: "aefi", icon: "⚠️", title: `AEFI — ${e.vacLabel || e.code || ""}`,
-    sub: [e.severity, e.outcome && ("Outcome: " + e.outcome), e.reported === "Yes" && "Reported"].filter(Boolean).join(" · ") }));
+  (c.aefi || []).forEach((e) => { const sev = e.severity || ""; ev.push({ date: ts(e.date), kind: "aefi", icon: "⚠️", title: `AEFI — ${e.vacLabel || e.code || ""}`,
+    sub: [e.severity, e.outcome && ("Outcome: " + e.outcome), e.reported === "Yes" && "Reported"].filter(Boolean).join(" · "),
+    flag: (sev === "Serious" || sev === "Severe") ? sev : "", flagCls: "ctx-flag-red" }); });
   const ko = { visit: 0, rx: 1, vax: 2, growth: 3, labs: 4, aefi: 5 };
   ev.sort((a, b) => (b.date || "").localeCompare(a.date || "") || ((ko[a.kind] ?? 9) - (ko[b.kind] ?? 9)));
   return ev;
@@ -703,8 +775,27 @@ function timelineHTML(c, filter) {
     const n = k === "all" ? all.length : all.filter((e) => e.kind === k).length;
     return `<button class="btn btn-xs ${k === f ? "btn-p" : "btn-o"}" onclick="TIMELINE_FILTER='${k}';renderTimeline()">${esc(l)} (${n})</button>`;
   }).join("");
-  const rows = list.slice(0, 200).map((e) => `<div class="vac-row"><div class="grow"><span style="font-size:12px;color:var(--muted)">${esc(fmtDate(e.date))}</span> ${e.icon} <b>${esc(e.title)}</b><br>${e.sub ? `<span style="font-size:13px">${esc(e.sub.length > 160 ? e.sub.slice(0, 160) + "…" : e.sub)}</span>` : ""}</div></div>`).join("");
-  return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${chips}</div>` +
+  let snap = "";
+  try { snap = timelineSnapshot(c); } catch (e) { snap = ""; }
+  const MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  let rows = "", lastG = "~~~";
+  list.slice(0, 200).forEach((e) => {
+    const g = (e.date || "").slice(0, 7);
+    if (g !== lastG) {
+      lastG = g;
+      const yy = g.slice(0, 4), mm = +g.slice(5, 7);
+      rows += `<div class="ctx-group">${(g && MON[mm - 1]) ? MON[mm - 1] + " " + yy : "Undated"}</div>`;
+    }
+    let age = "";
+    try { age = timelineAgeAt(c && c.dob, e.date); } catch (e2) {}
+    rows += `<div class="ctx-item"><div class="ctx-rail"><div class="ctx-dot ctx-${e.kind}"></div></div>` +
+      `<div class="ctx-card ctx-${e.kind}"><div class="ctx-head">${e.icon} <b>${esc(e.title)}</b>` +
+      (e.flag ? ` <span class="ctx-flag ${e.flagCls || ""}">${esc(e.flag)}</span>` : "") +
+      `<br><span class="ctx-date">${esc(fmtDate(e.date))}${age ? " · age " + esc(age) : ""}</span></div>` +
+      (e.sub ? `<div class="ctx-sub">${esc(e.sub.length > 220 ? e.sub.slice(0, 220) + "…" : e.sub)}</div>` : "") + `</div></div>`;
+  });
+  return (snap ? `<div class="card ctx-snap"><h3>🧭 Case at a glance</h3>${snap}</div>` : "") +
+    `<div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${chips}</div>` +
     (rows || `<div class="hint">No ${f === "all" ? "" : f + " "}records yet for this child.</div>`) +
     (list.length > 200 ? `<div class="hint">Showing latest 200 of ${list.length}.</div>` : "");
 }
