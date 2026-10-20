@@ -36,10 +36,10 @@ ok(src.includes('e.key === "k"') && src.includes("e.ctrlKey || e.metaKey"), "Ctr
 ok(src.includes('"mCmdK"') && src.includes('role="dialog"'), "accessible modal shell");
 ok(src.includes("matchChildren") && src.includes("getRecentIds"), "reuses ranked patient search (recents first)");
 ok(src.includes("roleBlock"), "palette respects role gating");
-ok(html.includes('id="cmdkBtn"') && html.includes("CmdK.open()"), "topbar trigger button");
+ok(html.includes('id="cmdkBtn"') && html.includes('data-act="cmdkOpen"'), "topbar trigger button (delegated, E2a)");
 ok(html.includes("js/cmdk.js"), "script tag present");
 ok(sw.includes("./js/cmdk.js"), "SW shell caches palette");
-ok(html.includes('onclick="openChildModal()">+ Register child</button>'), "patients page register entry point");
+ok(html.includes('data-act="openChildModal">+ Register child</button>'), "patients page register entry point (delegated, E2a)");
 ok(app.includes('onclick="openChildModal()">+ Register child</button>'), "dashboard hero register entry point");
 
 console.log(`cmdk: ${pass} pass, ${fail} fail`);

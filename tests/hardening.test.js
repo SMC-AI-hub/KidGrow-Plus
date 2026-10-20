@@ -91,7 +91,7 @@ for (const f of fs.readdirSync(path.join(R, "js")).filter((f) => f.endsWith(".js
   const n = (read("js/" + f).match(/console\.error/g) || []).length;
   if (n) errSites.push("js/" + f + "x" + n);
 }
-ok(errSites.length <= 2, "console.error only at known render-fault sites (" + (errSites.join(", ") || "none") + ")");
+ok(errSites.length <= 3 && errSites.every((s) => /js\/(app|ops|delegate)\.jsx\d/.test(s)), "console.error only at known fault sites (" + (errSites.join(", ") || "none") + ")");
 ok(/LOGGING POLICY/.test(read("js/app.js")), "logging policy documented at the call site");
 
 // 10. CI runs the suites on every push

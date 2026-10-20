@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v43/.test(sw), "SW cache bumped to v43 (E1: IndexedDB shadow)");
+  ok(/neokid-v44/.test(sw), "SW cache bumped to v44 (E2a: event delegation)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -1239,7 +1239,7 @@ async function main() {
   ok(["ember","violet","forest","clay","lagoon","midnight","berry"].every((x) => appM.includes('"' + x + '"')), "all seven reel themes registered");
   ok(appM.includes("function setTheme") && appM.includes("prefers-reduced-motion") && thCss.includes('[data-theme="ember"]') && thCss.includes('[data-theme="berry"]'), "theme picker engine + theme styles exist");
   ok(["ember","violet","forest","clay","lagoon","midnight","berry"].every((x) => thCss.includes('[data-theme="' + x + '"] .sidebar') && thCss.includes('[data-theme="' + x + '"] .btn-p')), "every reel theme restyles sidebar + primary buttons");
-  ok(psIdx.includes("Appearance") && psIdx.includes("setTheme(") && psIdx.includes('data-theme="midnight"'), "settings carries the appearance picker");
+  ok(psIdx.includes("Appearance") && psIdx.includes('data-act="setTheme"') && psIdx.includes('data-theme="midnight"'), "settings carries the appearance picker (delegated, E2a)");
   ok(sb.applyMotion() === true, "motion is permanently on");
   ok(sb.applyGlass() === true, "glass is permanently on");
   ok(sb.setTheme("ember") === true && sb.setTheme("bogus") === false, "setTheme accepts known themes, rejects the rest");
