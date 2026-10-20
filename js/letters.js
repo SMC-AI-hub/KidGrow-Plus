@@ -70,7 +70,7 @@ function renderLetters() {
   const doc = LET_VIEW ? (LET_VIEW.kind === "referral"
     ? letterBuildReferral(c, LET_VIEW) : letterBuildCert(c, LET_VIEW)) : "";
   box.innerHTML = `
-  <div class="grid g2"><div class="card"><h3>✉️ New letter</h3>
+  <div class="grid g2 no-print"><div class="card"><h3>✉️ New letter</h3>
     <div class="toolbar" style="margin-bottom:8px"><button class="btn btn-xs ${LET_KIND === "referral" ? "btn-p" : "btn-o"}" onclick="LET_KIND='referral';LET_VIEW=null;renderLetters()">Referral</button>
     <button class="btn btn-xs ${LET_KIND === "certificate" ? "btn-p" : "btn-o"}" onclick="LET_KIND='certificate';LET_VIEW=null;renderLetters()">Certificate</button></div>
     <div class="form-grid">${form}</div>

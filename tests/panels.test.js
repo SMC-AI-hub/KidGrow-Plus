@@ -166,6 +166,10 @@ async function main() {
   ok(fs.readFileSync(path.join(R, "sw.js"), "utf8").includes("./js/letters.js"), "SW shell caches letters.js");
   ok(fs.readFileSync(path.join(R, "js/app.js"), "utf8").includes('letters: "renderLetters"'), "RENDER_FOR has letters");
   ok(typeof sb.renderLetters === "function", "renderLetters global present");
+  const syLetters = fs.readFileSync(path.join(R, "js", "letters.js"), "utf8");
+  ok(syLetters.includes('<div class="grid g2 no-print">'), "letters form + saved list hidden on paper (no-print)");
+  ok(html.includes('<div id="ph-letters" class="no-print">'), "letters page title hidden on paper");
+  ok(syLetters.includes('<div class="card" style="margin-top:12px">${shareBarHTML'), "certificate card itself still prints");
 
   console.log(`panels: ${pass} pass, ${fail} fail`);
   process.exit(fail ? 1 : 0);
