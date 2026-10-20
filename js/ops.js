@@ -663,6 +663,16 @@ function snoozeBackup() {
     if (typeof toast === "function") toast("Reminder snoozed until tomorrow.");
   } catch (e) {}
 }
+function storageLine() {
+  try {
+    let bytes = 0;
+    try { bytes = (localStorage.getItem((typeof LS_KEY !== "undefined" && LS_KEY) || "kidgrow_pro_v1") || "").length; } catch (e) {}
+    const mb = bytes / 1048576, pct = Math.round((mb / 5) * 100);
+    if (mb > 3.5) return `⚠️ Local data is ${mb.toFixed(1)} MB of ~5 MB (${pct}%) — export a backup and contact support about the server store (F4).`;
+    if (mb > 2) return `Local data: ${mb.toFixed(1)} MB of ~5 MB (${pct}%) — healthy, backups current recommended.`;
+    return `Local data: ${mb < 0.1 ? Math.round(bytes / 1024) + " KB" : mb.toFixed(1) + " MB"} of ~5 MB on this device.`;
+  } catch (e) { return ""; }
+}
 function backupAgeLine() {
   if (!DB.lastBackup) return "Never backed up — export one today.";
   const d = dayDiff(DB.lastBackup, todayISO());

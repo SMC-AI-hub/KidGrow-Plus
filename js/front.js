@@ -153,10 +153,16 @@ try {
 } catch (e) {}
 
 /* ---------------- audit ---------------- */
+const AUDIT_MIRROR = { "Login": 1, "Login failed": 1, "Logout": 1, "Auto-lock": 1, "PIN security upgraded": 1, "User saved": 1, "User removed": 1, "Patients merged": 1, "Record purged": 1, "Record restored": 1, "Export": 1, "Import": 1, "Bill deleted": 1, "Visit deleted": 1, "Prescription deleted": 1, "Vaccine deleted": 1, "Rates updated": 1, "Break-glass": 1 };
 function log(action, detail) {
   DB.audit = DB.audit || [];
   DB.audit.unshift({ t: new Date().toISOString(), cid: (typeof DB !== "undefined" && DB.activeId) || "", user: (currentUser() || {}).name || "?", action: action || "", detail: detail || "" });
   if (DB.audit.length > 500) DB.audit.length = 500;
+  try { // F6: best-effort server mirror for security-relevant events (no-op offline/unsigned)
+    if (AUDIT_MIRROR[action] && typeof Tenant !== "undefined" && Tenant && typeof Tenant.mirror === "function") {
+      Tenant.mirror("device." + String(action).toLowerCase().replace(/[^a-z0-9]+/g, "."), "device_log", "", String(detail || "").slice(0, 120));
+    }
+  } catch (e) {}
 }
 function exportAudit() {
   if (!need(3, "export audit")) return;

@@ -2,6 +2,7 @@
    Env needed: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY,
    RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_PLAN_ID */
 const RZP = "https://api.razorpay.com/v1";
+const G = require("./_guard");
 
 async function rzp(path, body) {
   const r = await fetch(RZP + path, {
@@ -19,9 +20,10 @@ async function rzp(path, body) {
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+  if (G.limited(req, res, { prefix: "sub", max: 20 })) return;
   try {
     const token = (req.headers.authorization || "").replace(/^Bearer /i, "");
-    if (!token) return res.status(401).json({ error: "Sign in first." });
+    if (!G.isTokenShape(token)) return res.status(401).json({ error: "Sign in first." });
     // Verify Supabase JWT -> user
     const me = await fetch(process.env.SUPABASE_URL + "/auth/v1/user", {
       headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: "Bearer " + token },

@@ -445,7 +445,7 @@ var Tenant = {
   members: membersModal, invite: inviteCreate, switch: tenantSwitch, usage: usageView,
   mfa: function () { mfaEnrollModal(true); }, _mfaFinish: mfaFinish,
   _mfaLater: function () { var m = $("mMfa"); if (m) m.remove(); },
-  requestBreakGlass: bgModal, _bgGo: bgGo, _bgEnd: bgEnd, auditView: auditView,
+  requestBreakGlass: bgModal, _bgGo: bgGo, _bgEnd: bgEnd, auditView: auditView, mirror: audit, // F6: device log() mirrors here
   current: function () { return T.current; }, role: function () { return T.role; },
   _brand: function () { try { var s = T.settings || {}, t = T.tenant || {}; return { name: s.display_name || t.name || "", prefix: s.mrn_prefix || "" }; } catch (e) { return { name: "", prefix: "" }; } },
   boot: function () {

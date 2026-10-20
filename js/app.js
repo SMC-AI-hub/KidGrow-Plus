@@ -41,6 +41,19 @@ function save() {
   try { localStorage.setItem(LS_KEY + "_auto", json); } catch (_) {}
   try { if (typeof CloudSchedulePush === "function") CloudSchedulePush(); } catch (_) {}
 }
+let _saveSoonT = null;
+function saveSoon() {
+  try {
+    if (_saveSoonT) return; // coalesce bursts: one write per 250ms window
+    _saveSoonT = setTimeout(() => { _saveSoonT = null; try { save(); } catch (e) {} }, 250);
+  } catch (e) { try { save(); } catch (e2) {} }
+}
+try {
+  if (typeof document !== "undefined" && document.addEventListener) {
+    document.addEventListener("visibilitychange", () => { try { if (document.visibilityState === "hidden" && _saveSoonT) { clearTimeout(_saveSoonT); _saveSoonT = null; save(); } } catch (e) {} });
+    window.addEventListener("pagehide", () => { try { if (_saveSoonT) { clearTimeout(_saveSoonT); _saveSoonT = null; save(); } } catch (e) {} });
+  }
+} catch (e) {}
 function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function parseDB(raw) {
   if (!raw) return null;
@@ -1887,5 +1900,22 @@ function applyRefVersions() {
   try { document.querySelectorAll("[data-vaxver]").forEach((el) => { el.textContent = VAX_SCHEDULE_VERSION; n++; }); } catch (e) {}
   return n;
 }
+function errBeaconSend(page, msg) {
+  try {
+    const payload = JSON.stringify({ page: String(page || "").slice(0, 64), msg: String(msg || "").slice(0, 200), ver: (typeof APP_VER !== "undefined" && APP_VER) || "" });
+    if (navigator.sendBeacon) { try { navigator.sendBeacon("/api/err", payload); return; } catch (e) {} }
+    fetch("/api/err", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, keepalive: true }).catch(() => {});
+  } catch (e) {}
+}
+try { // F17: no-PHI error beacon (page + message only)
+  if (typeof window !== "undefined" && window.addEventListener) {
+    window.addEventListener("error", (ev) => {
+      try {
+        const pg = (document.querySelector(".page.active") || {}).id || (location.hash || "").slice(0, 32) || "?";
+        errBeaconSend(pg, (ev && ev.message) || "window.onerror");
+      } catch (e) {}
+    });
+  }
+} catch (e) {}
 load(); loadSettings(); syncChildPicker(); applyTheme(); applyGlass(); applyMotion(); applyPrintMode(); applyNavMini(); renderBrand(); applyRefVersions(); renderAll();
 try { if (typeof backupWatch === "function") setTimeout(backupWatch, 2500); } catch (e) {}

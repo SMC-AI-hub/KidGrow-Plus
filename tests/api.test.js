@@ -121,14 +121,14 @@ async function main() {
   ok(rB405._s === 405, "billing-info GET only");
   global.fetch = billFetch(fullProfile);
   const rB = mkRes();
-  await billInfo({ method: "GET", headers: { authorization: "Bearer USER_JWT" } }, rB);
+  await billInfo({ method: "GET", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rB);
   global.fetch = realFetch;
   ok(rB._s === 200 && rB._b.sub_status === "active" && rB._b.subscription.status === "active", "billing-info returns status + subscription");
   ok(rB._b.invoices.length === 2 && rB._b.invoices[0].amount === 499 && rB._b.invoices[0].short_url === "https://rzp.io/i/one", "billing-info lists invoices with links");
   ok(!/MARKER/.test(JSON.stringify(rB._b)), "billing-info leaks no key material (marker scan)");
   global.fetch = billFetch({ sub_status: "trialing", razorpay_sub_id: "" });
   const rBT = mkRes();
-  await billInfo({ method: "GET", headers: { authorization: "Bearer USER_JWT" } }, rBT);
+  await billInfo({ method: "GET", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rBT);
   global.fetch = realFetch;
   ok(rBT._s === 200 && rBT._b.subscription === null && rBT._b.invoices.length === 0, "billing-info trial has no subscription");
   global.fetch = async (url) => (String(url).includes("/auth/v1/user") ? J401() : J({}));
@@ -144,12 +144,12 @@ async function main() {
   ok(rC405._s === 405, "cancel POST only");
   global.fetch = billFetch(fullProfile);
   const rC = mkRes();
-  await billCancel({ method: "POST", headers: { authorization: "Bearer USER_JWT" } }, rC);
+  await billCancel({ method: "POST", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rC);
   global.fetch = realFetch;
   ok(rC._s === 200 && rC._b.ok === true && rC._b.cancel_at_cycle_end === true, "cancel at cycle end ok");
   global.fetch = billFetch({ sub_status: "trialing", razorpay_sub_id: "" });
   const rCN = mkRes();
-  await billCancel({ method: "POST", headers: { authorization: "Bearer USER_JWT" } }, rCN);
+  await billCancel({ method: "POST", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rCN);
   global.fetch = realFetch;
   ok(rCN._s === 400, "cancel with no subscription rejected");
 
@@ -217,10 +217,51 @@ async function main() {
   await createSub({ method: "POST", headers: {} }, rS401);
   ok(rS401._s === 401, "create-subscription needs session");
   const rS = mkRes();
-  await createSub({ method: "POST", headers: { authorization: "Bearer USER_JWT" } }, rS);
+  await createSub({ method: "POST", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rS);
   global.fetch = realFetch;
   ok(rS._s === 200 && rS._b.subscription_id === "sub_new", "create-subscription provisions sub");
   ok(!/MARKER_SECRET/.test(JSON.stringify(rS._b)), "create-subscription leaks no secret");
+
+  // ---- F11 guard: rate limit + validators + bounded reads ----
+  const G = require("../api/_guard");
+  G._resetForTests();
+  const mkGReq = (ip) => ({ headers: { "x-forwarded-for": ip || "9.9.9.9" }, socket: {} });
+  let trips = 0;
+  for (let i = 0; i < 61; i++) { if (!G.rateLimit(mkGReq(), { prefix: "t", max: 60 }).ok) trips++; }
+  ok(trips === 1, "rate limit trips on 61st request in window");
+  ok(G.rateLimit(mkGReq("8.8.8.8"), { prefix: "t", max: 60 }).ok, "rate limit is per-IP");
+  ok(!G.isTokenShape("") && !G.isTokenShape("short") && G.isTokenShape("USER_JWT_0123456789abcdef"), "token shape check");
+  ok(G.isUuid("11111111-1111-1111-1111-111111111111") && !G.isUuid("nope"), "uuid check");
+  ok(G.isEmail("doc@clinic.in") && !G.isEmail("a@b"), "email check");
+  ok(G.cleanStr("x".repeat(300), 64).length === 64, "cleanStr truncates");
+  const mkGStream = (bufs) => ({ _h: {}, on(ev, fn) { (this._h[ev] = this._h[ev] || []).push(fn); return this; }, go() { (bufs || []).forEach((b) => this._h.data.forEach((f) => f(b))); this._h.end.forEach((f) => f()); } });
+  const gS1 = mkGStream([Buffer.from("a".repeat(100))]);
+  const gP1 = G.readRawCapped(gS1, 64).then(() => "resolved", () => "rejected");
+  gS1.go();
+  ok((await gP1) === "rejected", "bounded read rejects oversized body");
+  const gS2 = mkGStream([Buffer.from("ok")]);
+  const gP2 = G.readRawCapped(gS2, 64).then((b) => b.toString(), () => "X");
+  gS2.go();
+  ok((await gP2) === "ok", "bounded read passes small body");
+  G._resetForTests();
+
+  // ---- F17 error beacon ----
+  const errBeacon = require("../api/err.js");
+  const rE405 = mkRes();
+  await errBeacon({ method: "GET", headers: {} }, rE405);
+  ok(rE405._s === 405, "beacon POST only");
+  const rE400 = mkRes();
+  await errBeacon({ method: "POST", headers: {}, body: { page: "", msg: "" } }, rE400);
+  ok(rE400._s === 400, "beacon rejects shapeless body");
+  const rE = mkRes();
+  await errBeacon({ method: "POST", headers: {}, body: { page: "pg-rx", msg: "TypeError: x is null", ver: "v10.46" } }, rE);
+  ok(rE._s === 204, "beacon accepts shaped error");
+  G._resetForTests();
+  for (let i = 0; i < 31; i++) await errBeacon({ method: "POST", headers: {}, body: { page: "p", msg: "m" } }, mkRes());
+  const rEL = mkRes();
+  await errBeacon({ method: "POST", headers: {}, body: { page: "p", msg: "m" } }, rEL);
+  ok(rEL._s === 429, "beacon rate-limited past 30/min");
+  G._resetForTests();
 
   for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
   Object.assign(process.env, saved);

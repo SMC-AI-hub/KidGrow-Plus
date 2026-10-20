@@ -183,6 +183,10 @@ ok(cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PROD
   ok(read("index.html").includes('id="mBackupWatch"') && read("js/ops.js").includes("snoozeBackup") && read("js/app.js").includes("backupWatch"), "backup watchdog modal + boot hook (F20)");
   ok(read("index.html").includes('id="mMerge"') && read("js/app.js").includes("confirmMerge") && read("sw.js").includes("./js/merge.js"), "merge tool UI wired + cached (F16)");
   ok(/owner: 3/.test(read("js/front.js")), "owner role has gate rank (access fix)");
+  ok(read("js/tenant.js").includes("mirror: audit") && read("js/front.js").includes("AUDIT_MIRROR") && read("js/front.js").includes("Tenant.mirror"), "server audit mirror wired for security events (F6)");
+  ok(read("api/create-subscription.js").includes("G.limited") && read("api/razorpay-webhook.js").includes("readRawCapped") && read("api/fhir/[[...slug]].js").includes("G.limited"), "API guards: rate limits + bounded reads (F11)");
+  ok(read("api/err.js").includes("kidgrow-err") && read("js/app.js").includes("errBeaconSend"), "no-PHI error beacon end to end (F17)");
+  ok(read("js/app.js").includes("saveSoon") && read("js/ops.js").includes("storageLine"), "coalesced saves + quota monitor (F22/F4)");
 }
 
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
