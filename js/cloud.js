@@ -18,7 +18,7 @@ var TRIAL_DAYS = CFG.TRIAL_DAYS || 14;
 var GRACE_MS = (CFG.OFFLINE_GRACE_DAYS || 7) * 864e5;
 var STATUS_KEY = "kidgrow_cloud_status", HASH_KEY = "kidgrow_last_push_hash", SEEN_KEY = "kidgrow_cloud_seen";
 var LATEST_KEY = "kidgrow_cloud_latest"; // "id|created_at" of newest cloud row this device has seen
-var APP_VER = "v10.46";
+var APP_VER = "v10.47";
 try { if (typeof window !== "undefined") window.APP_VER = APP_VER; } catch (e) {}
 
 var sb = null, session = null, profile = null;
@@ -149,8 +149,8 @@ function renderCloudCard() {
     "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-top:8px'>" +
     (session
       ? "<button class='btn btn-p btn-sm' onclick='Cloud.syncNow()'>↻ Sync now</button>" +
-        "<button class='btn btn-o btn-sm' onclick='Cloud.pushNow(true)'>⬆ Upload this device</button>" +
-        "<button class='btn btn-o btn-sm' onclick='Cloud.pullNow()'>⬇ Download from cloud</button>" +
+        "<button class='btn btn-o btn-sm' id='cloudUpBtn' onclick='Cloud.pushNow(true)'>⬆ Upload this device</button>" +
+        "<button class='btn btn-o btn-sm' id='cloudDownBtn' onclick='Cloud.pullNow()'>⬇ Download from cloud</button>" +
         (a.ok && a.reason !== "active" ? "<button class='btn btn-d btn-sm' onclick='Cloud.subscribe()'>💎 Subscribe</button>" : "") +
         "<button class='btn btn-o btn-sm' onclick='Cloud.logout()'>Logout</button>"
       : "<button class='btn btn-p btn-sm' onclick='Cloud.showAuth(\"login\")'>Sign in / Sign up</button>") +
@@ -289,16 +289,24 @@ function pushNow(manual, force) {
       return goMerge(cloudData);
     }
     return pushInsert(manual);
-  }).catch(function (e) { syncLine("Sync failed \u2014 will retry."); if (manual) toast("Upload check failed: " + (e.message || "network error")); });
+  }).catch(function (e) { syncLine("Cloud unreachable — data safe on this device, retrying…"); if (manual) toast("Upload check failed: " + (e.message || "network error")); });
+}
+function syncBtn(which, busy) {
+  try {
+    const b = document.getElementById(which === "up" ? "cloudUpBtn" : "cloudDownBtn");
+    if (!b) return;
+    if (busy) { if (!b.dataset.label) b.dataset.label = b.innerHTML; b.disabled = true; b.innerHTML = "⏳ Working…"; }
+    else { b.disabled = false; if (b.dataset.label) b.innerHTML = b.dataset.label; }
+  } catch (e) {}
 }
 function syncBusy(which) {
   try {
     const k = which === "up" ? "_upBusy" : "_downBusy", now = Date.now();
     if (Cloud[k] && now - Cloud[k] < 30000) return true;
-    Cloud[k] = now; return false;
+    Cloud[k] = now; syncBtn(which, true); return false;
   } catch (e) { return false; }
 }
-function syncFree(which) { try { Cloud[which === "up" ? "_upBusy" : "_downBusy"] = 0; } catch (e) {} }
+function syncFree(which) { try { Cloud[which === "up" ? "_upBusy" : "_downBusy"] = 0; } catch (e) {} try { syncBtn(which, false); } catch (e2) {} }
 function pushInsert(manual, dataOverride) {
   if (!Cloud.enabled) return Promise.resolve();
   if (!session) { if (manual) toast("Sign in first (Settings → Cloud)."); return Promise.resolve(); }
@@ -339,7 +347,7 @@ function pushInsert(manual, dataOverride) {
         return sb.from("clinic_snapshots").delete().in("id", old);
       }
     });
-  }).then(function () { syncFree("up"); }).catch(function (e) { syncFree("up"); syncLine("Sync failed — will retry."); if (manual) toast("Upload failed: " + (e.message || "network error")); });
+  }).then(function () { syncFree("up"); }).catch(function (e) { syncFree("up"); syncLine("Cloud unreachable — data safe on this device, retrying…"); if (manual) toast("Upload failed: " + (e.message || "network error")); });
 }
 function autoSyncOn() { try { return ((typeof DB !== "undefined" && DB.settings) || {}).autoSync !== false; } catch (e) { return true; } }
 function encSyncOn() { try { return !!(((typeof DB !== "undefined" && DB.settings) || {}).encSync); } catch (e) { return false; } }
@@ -624,6 +632,7 @@ var Cloud = {
   syncNow: function () { fetchStatus().then(function () { pullNow(); }); },
   pushNow: pushNow,
   pullNow: pullNow,
+  _syncBtn: function (w, b) { try { syncBtn(w, b); } catch (e) {} },
   setAuto: function (on) { try { if (typeof DB !== "undefined") { DB.settings = Object.assign({}, DB.settings, { autoSync: !!on }); if (typeof save === "function") save(); } } catch (e) {} try { renderCloudCard(); } catch (e) {} if (on) { try { autoPullTick(); } catch (e) {} } },
   setEnc: function (on) {
     try {

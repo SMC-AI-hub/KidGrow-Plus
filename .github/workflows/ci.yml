@@ -16,3 +16,15 @@ jobs:
       - run: npm test
       # Enforced: lockfile pins make this deterministic; fix or waive before merge.
       - run: npm audit --audit-level=high
+  smoke:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/e2e-smoke.js

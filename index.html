@@ -109,15 +109,15 @@
   <!-- ============ MAIN ============ -->
   <div class="main">
     <div class="topbar">
-      <button class="icon-btn" id="navToggle" onclick="toggleNav()" title="Collapse / expand menu">☰</button>
+      <button class="icon-btn" id="navToggle" onclick="toggleNav()" title="Collapse / expand menu" aria-label="Collapse or expand menu">☰</button>
       <div><h2 id="pageTitle">Dashboard</h2><div class="sub" id="clinicLine">—</div></div>
       <span id="netBadge" class="badge b-green" title="Connection status">● Online</span>
-      <button class="icon-btn" id="cmdkBtn" onclick="CmdK.open()" title="Search / commands (Ctrl+K)">🔍</button>
-      <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Theme: light (tap to change)">🌙</button>
-      <button class="icon-btn" id="settingsGear" onclick="go('settings')" title="Settings — clinic profile, logo, doctors">⚙️</button>
+      <button class="icon-btn" id="cmdkBtn" onclick="CmdK.open()" title="Search / commands (Ctrl+K)" aria-label="Search and commands">🔍</button>
+      <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Theme: light (tap to change)" aria-label="Change theme">🌙</button>
+      <button class="icon-btn" id="settingsGear" onclick="go('settings')" title="Settings — clinic profile, logo, doctors" aria-label="Settings">⚙️</button>
       <div class="child-picker">
         <div class="avatar" id="childAvatar">–</div>
-        <div><select id="childSelect" title="Active child"></select>
+        <div class="search-wrap"><input id="childPick" class="search" style="max-width:230px" placeholder="🔍 Active child — type to switch" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="childPickRes" aria-label="Active child — type to switch" oninput="pickFilter()" onkeydown="pickKey(event)" onfocus="pickFilter()" onblur="setTimeout(()=>{const r=document.getElementById('childPickRes');if(r)r.style.display='none'},180)"><div id="childPickRes" class="search-res" role="listbox" style="display:none"></div><select id="childSelect" title="Active child" style="display:none" tabindex="-1" aria-hidden="true"></select>
         <div class="sub" id="childAgeLine" style="font-size:11.5px"></div></div>
         <button class="btn btn-p btn-sm" onclick="openChildModal()">+ New</button>
       </div>

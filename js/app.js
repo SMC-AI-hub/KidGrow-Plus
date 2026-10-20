@@ -468,6 +468,25 @@ function restoreNavSecs() {
 }
 
 /* ---------------- Child picker / CRUD ---------------- */
+function pickFilter() {
+  try {
+    const q = ($("childPick").value || ""), box = $("childPickRes");
+    const hits = (typeof matchChildren === "function" ? matchChildren(q, DB.children, (typeof getRecentIds === "function") ? getRecentIds() : []) : (DB.children || []).map((c) => ({ c }))).filter((h) => h.c && !h.c._deleted).slice(0, 8);
+    $("childPick").setAttribute("aria-expanded", "true");
+    box.style.display = hits.length ? "" : "none";
+    box.innerHTML = hits.map((h, i) => { const c = h.c; let age = ""; try { age = ageStr(ageBetween(c.dob)); } catch (e) {} return `<button class="sr-row" role="option" data-i="${i}" data-id="${c.id}"><b>${esc(c.name)}</b><span style="font-size:12px;color:var(--muted)">${esc(age)}${c.mrn ? " · " + esc(c.mrn) : ""}</span></button>`; }).join("");
+    box.querySelectorAll(".sr-row").forEach((r) => { r.addEventListener("mousedown", (e) => { e.preventDefault(); try { setActive(r.dataset.id); } catch (e2) {} box.style.display = "none"; }); });
+    box._pickIds = hits.map((h) => h.c.id);
+  } catch (e) {}
+}
+function pickKey(e) {
+  try {
+    const box = $("childPickRes"), ids = (box && box._pickIds) || [];
+    if (e.key === "Escape") { box.style.display = "none"; $("childPick").blur(); }
+    else if (e.key === "Enter" && ids.length) { e.preventDefault(); box.style.display = "none"; setActive(ids[0]); }
+    else if (e.key === "ArrowDown" && ids.length) { e.preventDefault(); box.style.display = "none"; setActive(ids[0]); }
+  } catch (e2) {}
+}
 function syncChildPicker() {
   const sel = $("childSelect"); sel.innerHTML = "";
   if (!DB.children.length) { sel.innerHTML = "<option>No children</option>"; return; }
@@ -477,6 +496,7 @@ function syncChildPicker() {
     if (c.id === DB.activeId) o.selected = true; sel.appendChild(o);
   });
   const c = child();
+  try { const pk = $("childPick"); if (pk && document.activeElement !== pk) pk.value = c ? c.name : ""; } catch (e) {}
   if (c) {
     $("childAvatar").textContent = c.name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
     $("childAgeLine").textContent = ageStr(ageBetween(c.dob)) + " old";
@@ -1744,7 +1764,10 @@ function factoryReset() {
 }
 
 /* ---------------- Modals / print / render ---------------- */
-function openModal(id) { $(id).classList.add("open"); }
+function openModal(id) {
+  $(id).classList.add("open");
+  try { const f = $(id).querySelector("input, select, textarea, button"); if (f) setTimeout(() => { try { f.focus({ preventScroll: true }); } catch (e) {} }, 40); } catch (e2) {}
+}
 function closeModal(id) { $(id).classList.remove("open"); }
 document.querySelectorAll(".modal-bg").forEach((m) => m.addEventListener("click", (e) => { if (e.target === m) m.classList.remove("open"); }));
 /* Direct browser-print support (Ctrl+P / phone Print menu): mark the visible

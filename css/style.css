@@ -616,3 +616,7 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
 .cmdk-sec{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:8px 2px 3px}
 .cmdk-row{display:flex;gap:8px;align-items:center;padding:7px 9px;border-radius:9px;font-size:13.5px;cursor:pointer}
 .cmdk-row.sel{background:var(--card2);outline:1.5px solid var(--teal)}
+/* F21: visible keyboard focus everywhere */
+:focus-visible{outline:2.5px solid var(--teal);outline-offset:2px;border-radius:6px}
+.sr-row:focus-visible{outline-offset:-2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

@@ -73,8 +73,8 @@ function birthCsv(children) {
 function abhaJson(c) {
   const codes = schedCodes();
   return {
-    record: "KidGrowPro-Child-Health-Record", version: 2, abdmReady: true,
-    note: "Links to ABHA ID for ABDM HIP/MHR upload via a registered integrator.",
+    record: "KidGrowPro-Child-Health-Record", version: 2, abdmReady: false,
+    note: "ABHA ID recorded manually — ABDM HIP/MHR upload is NOT built (see docs/F12-ABDM-POSITION.md).",
     profile: { name: c.name, dob: c.dob, sex: c.sex, blood: c.blood || "", phone: c.phone || "", father: c.father || "", mother: c.mother || "", abhaId: c.abha || "", address: (DB.settings || {}).addr || "" },
     allergies: ((typeof Hx !== "undefined" && Hx.allergyText) ? Hx.allergyText(c) : (c.allergy || "")),
     structuredAllergies: c.allergies || [],
@@ -126,7 +126,7 @@ function renderExport() {
     <div class="hint">${(typeof backupAgeLine === "function") ? backupAgeLine() : ""}</div>
     <div class="hint">${(typeof storageLine === "function") ? storageLine() : ""}</div>
     <div class="hint">${(typeof undoImportLine === "function") ? undoImportLine() : ""}</div></div>
-  <div class="hint" style="margin-top:8px">ABDM gateway upload itself needs a registered Health Information Provider + patient consent — these files are integration-ready for that step.</div>`;
+  <div class="hint" style="margin-top:8px">ABDM upload is not built — ABHA numbers here are manual records only, not a gateway connection.</div>`;
 }
 function dlFhir() {
   const c = child();

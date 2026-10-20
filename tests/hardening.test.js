@@ -187,6 +187,13 @@ ok(cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PROD
   ok(read("api/create-subscription.js").includes("G.limited") && read("api/razorpay-webhook.js").includes("readRawCapped") && read("api/fhir/[[...slug]].js").includes("G.limited"), "API guards: rate limits + bounded reads (F11)");
   ok(read("api/err.js").includes("kidgrow-err") && read("js/app.js").includes("errBeaconSend"), "no-PHI error beacon end to end (F17)");
   ok(read("js/app.js").includes("saveSoon") && read("js/ops.js").includes("storageLine"), "coalesced saves + quota monitor (F22/F4)");
+  ok(read("index.html").includes('id="childPick"') && read("js/app.js").includes("pickFilter"), "type-ahead patient picker (F14)");
+  ok(read("js/cloud.js").includes("syncBtn") && read("js/cloud.js").includes("cloudUpBtn"), "sync buttons show loading state");
+  ok(read("js/cloud.js").includes("data safe on this device, retrying"), "sync-failure microcopy states data safety");
+  ok(read("index.html").includes('aria-label="Search and commands"') && read("css/style.css").includes("focus-visible"), "a11y: labelled controls + focus styles (F21)");
+  ok(read("js/app.js").includes("f.focus({ preventScroll: true })"), "modals autofocus first control (F21)");
+  ok(read("js/exports.js").includes("abdmReady: false"), "ABDM disclaimed to manual-recording-only (E3)");
+  ok(read(".github/workflows/ci.yml").includes("tests/e2e-smoke.js"), "CI runs e2e smoke (F23)");
 }
 
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);

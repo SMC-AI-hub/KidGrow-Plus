@@ -1,6 +1,6 @@
 {
   "name": "neokid-care",
-  "version": "10.46.0",
+  "version": "10.47.0",
   "private": true,
   "description": "NeoKid Care — offline-first neonatal & pediatric clinic PWA with cloud sync",
   "scripts": {
@@ -22,10 +22,12 @@
     "test:cmdk": "node tests/cmdk.test.js",
     "test:validate": "node tests/validate.test.js",
     "test:merge": "node tests/merge.test.js",
-    "test:load": "node tests/load.test.js"
+    "test:load": "node tests/load.test.js",
+    "test:smoke": "node tests/e2e-smoke.js"
   },
   "devDependencies": {
     "embedded-postgres": "17.10.0-beta.17",
-    "pg": "8.13.1"
+    "pg": "8.13.1",
+    "playwright": "^1.63.0"
   }
 }
