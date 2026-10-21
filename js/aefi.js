@@ -25,11 +25,11 @@ function renderAefi() {
   $("aefiBox").innerHTML = `
   <div class="toolbar"><span style="font-size:13px;color:var(--muted)">${rows.length} event(s) · ${serious.length} serious</span>
     <span class="sp"></span>
-    <button class="btn btn-o btn-sm" onclick="pullAefiFromNotes()">⬇ Pull from vaccine notes</button>
-    <button class="btn btn-o btn-sm" onclick="printPage('pg-aefi')">🖨️ Print register</button></div>
+    <button class="btn btn-o btn-sm" data-act="pullAefiFromNotes">⬇ Pull from vaccine notes</button>
+    <button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-aefi">🖨️ Print register</button></div>
   ${serious.length ? `<div class="alert a-red">🚨 <div><b>${serious.length} serious AEFI.</b> India guidelines: report serious AEFI to the Medical Officer / DIO <b>within 24 hours</b> (AEFI register / HMIS), hospitalise & investigate; do not wait for causality proof.</div></div>` : ""}
   <div class="grid g2">
-    <div class="card"><h3>📝 Record event</h3>
+    <div class="card no-print"><h3>📝 Record event</h3>
       <div class="form-grid">
         <div><label>Event date *</label><input type="date" id="aeDate" value="${todayISO()}"></div>
         <div><label>Vaccine</label><select id="aeVac">${aefiVaccineOptions().map((o) => `<option value="${o.code}">${esc(o.label)}</option>`).join("")}<option value="OTHER">Other / extra</option></select></div>
@@ -42,7 +42,7 @@ function renderAefi() {
       </div>
       <div class="hint">Symptoms (tick all that apply)</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${AEFI_SYMPTOMS.map((s) => `<label class="sib" style="font-size:12.5px"><input type="checkbox" class="aeSym" value="${esc(s)}"> ${esc(s)}</label>`).join("")}</div>
-      <button class="btn btn-p btn-sm" onclick="saveAefi()">＋ Save event</button>
+      <button class="btn btn-p btn-sm" data-act="saveAefi">＋ Save event</button>
       <div class="hint" style="margin-top:8px">Minor (fever, local swelling) → reassure + document · Severe/serious → manage + report + follow up. Anaphylaxis: adrenaline IM 0.01 mg/kg — see 🚨 Emergency.</div>
     </div>
     <div class="card"><h3>📋 Events</h3>
@@ -51,7 +51,7 @@ function renderAefi() {
         <span class="badge ${ser ? "b-red" : "b-gray"}">${esc(e.severity || "")}</span><br>
         <span style="font-size:12.5px">${(e.symptoms || []).map(esc).join(", ")}</span><br>
         <span style="font-size:12px;color:var(--muted)">${e.batch ? "Batch " + esc(e.batch) + " · " : ""}Outcome: ${esc(e.outcome || "—")} · Reported: ${esc(e.reported || "No")}${e.note ? " · " + esc(e.note) : ""}</span></div>
-        <button class="btn btn-danger btn-xs" onclick="delAefi('${e.id}')">✕</button></div>`; }).join("") : `<div style="font-size:13px;color:var(--muted)">No events recorded — good!</div>`}
+        <button class="btn btn-danger btn-xs" data-act="delAefi" data-arg="${e.id}">✕</button></div>`; }).join("") : `<div style="font-size:13px;color:var(--muted)">No events recorded — good!</div>`}
     </div>
   </div>`;
 }
@@ -89,3 +89,8 @@ function pullAefiFromNotes() {
   if (n) { auditSafe("AEFI pulled", `${n} from notes — ${c.name}`); save(); renderAll(); }
   else alert("No unlinked AEFI notes found in the vaccination record.");
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["delAefi", "pullAefiFromNotes", "saveAefi"].forEach(function (n) { actCall0(n); });
+} catch (e) {}

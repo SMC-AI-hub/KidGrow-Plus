@@ -59,11 +59,11 @@ function renderLabs() {
   const mx = Math.max(1, ...rows.map((r) => +r.hb || 0));
   $("labsBox").innerHTML = `
   <div class="toolbar"><span style="font-size:13px;color:var(--muted)">WHO/IAP cutoffs · age ${ageM} mo</span>
-    <span class="sp"></span><button class="btn btn-o btn-sm" onclick="printPage('pg-labs')">🖨️ Print</button></div>
+    <span class="sp"></span><button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-labs">🖨️ Print</button></div>
   ${labRc.length ? `<div class="alert a-amber">⏰ <div><b>Recheck due:</b> ${esc(labRc[0].note)}</div></div>` : ""}
   ${latest && hb && hb.band === "severe" ? `<div class="alert a-red">🚨 <div><b>Severe anaemia (Hb ${esc(String(latest.hb))}).</b> ${esc(hbProtocol("severe"))}</div></div>` : ""}
   <div class="grid g2">
-    <div class="card"><h3>🧪 Add lab report</h3>
+    <div class="card"><div class="no-print"><h3>🧪 Add lab report</h3>
       <div class="form-grid">
         <div><label>Date *</label><input type="date" id="lbDate" value="${todayISO()}"></div>
         <div><label>Hb (g/dL)</label><input type="number" step="0.1" id="lbHb" placeholder="e.g. 10.2"></div>
@@ -83,7 +83,7 @@ function renderLabs() {
         <div><label>Urine ketones</label><select id="lbUKet"><option>Negative</option><option>Trace</option><option>1+</option><option>2+</option><option>3+</option></select></div>
         <div><label>Note</label><input id="lbNote" placeholder="e.g. Post-URI, on iron"></div>
       </div>
-      <button class="btn btn-p btn-sm" onclick="saveLab()" style="margin-top:8px">＋ Save report</button>
+      <button class="btn btn-p btn-sm" data-act="saveLab" style="margin-top:8px">＋ Save report</button></div>
       <h3 style="margin-top:14px">📈 Hb trend</h3>
       ${rows.filter((r) => +r.hb > 0).length ? `<div style="display:flex;gap:8px;align-items:flex-end;height:110px;margin-top:6px">${rows.filter((r) => +r.hb > 0).slice(-8).map((r) => {
         const cl = hbClass(ageM, +r.hb);
@@ -108,15 +108,15 @@ function renderLabs() {
           ${(() => { try { const us = LabX.urine(latest); return us.map((u) => `<dt>Urine ${esc(u.test)}${u.grade ? " " + esc(u.grade) : ""}</dt><dd>${sevBadge(u.sev)} ${esc(u.note)}</dd>`).join(""); } catch (e) { return ""; } })()}
         </dl>
         ${hb ? `<div class="alert ${hb.sev === "green" ? "a-green" : hb.sev === "red" ? "a-red" : "a-amber"}" style="margin-top:10px">📋 <div><b>Protocol:</b> ${esc(hbProtocol(hb.band))}</div></div>` : ""}
-        ${hb && hb.band !== "normal" && hb.band !== "infant" ? `<button class="btn btn-p btn-sm" onclick="ironToRx()">💊 Send iron to prescription →</button>` : ""}`;
+        ${hb && hb.band !== "normal" && hb.band !== "infant" ? `<button class="btn btn-p btn-sm" data-act="ironToRx">💊 Send iron to prescription →</button>` : ""}`;
       })() : `<div class="empty">No reports yet.</div>`}
       <h3 style="margin-top:14px">🗂️ History</h3>
       ${rows.length ? [...rows].reverse().map((r) => {
         const cl = hbClass(ageM, +r.hb);
         return `<div class="vac-row"><div class="grow"><b>${fmtDate(r.date)}</b> · Hb ${esc(String(r.hb || "—"))} ${cl ? sevBadge(cl.sev) + " " + esc(cl.label) : ""}
         <br><span style="font-size:12px;color:var(--muted)">${[r.ferritin ? "Ferr " + r.ferritin : "", r.b12 ? "B12 " + r.b12 : "", r.vitD ? "D " + r.vitD : "", r.note ? esc(r.note) : ""].filter(Boolean).join(" · ")}</span></div>
-        ${r.rev ? `<span class="badge b-green" title="Reviewed ${esc(r.rev)}">✓ reviewed</span>` : `<button class="btn btn-o btn-xs" onclick="toggleLabRev('${r.id}')">Mark reviewed</button>`}
-        <button class="btn btn-danger btn-xs" onclick="delLab('${r.id}')">✕</button></div>`; }).join("") : `<div style="font-size:13px;color:var(--muted)">—</div>`}
+        ${r.rev ? `<span class="badge b-green" title="Reviewed ${esc(r.rev)}">✓ reviewed</span>` : `<button class="btn btn-o btn-xs" data-act="toggleLabRev" data-arg="${r.id}">Mark reviewed</button>`}
+        <button class="btn btn-danger btn-xs" data-act="delLab" data-arg="${r.id}">✕</button></div>`; }).join("") : `<div style="font-size:13px;color:var(--muted)">—</div>`}
     </div>
   </div>`;
 }
@@ -161,3 +161,8 @@ function ironToRx() {
   } catch (e) {}
   go("rx");
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["delLab", "ironToRx", "saveLab", "toggleLabRev"].forEach(function (n) { actCall0(n); });
+} catch (e) {}

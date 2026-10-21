@@ -22,14 +22,14 @@ function vaxNameFor(code) {
 /* ================= A. APPOINTMENT REMINDERS ================= */
 function apptMsgBtns(a) {
   if (!a || a.done) return "";
-  return `<button class="btn btn-wa btn-xs" onclick="waAppt('${a.id}')">💬</button> <button class="btn btn-o btn-xs" onclick="copyAppt('${a.id}')">⧉</button> `;
+  return `<button class="btn btn-wa btn-xs" data-act="waAppt" data-arg="${a.id}">💬</button> <button class="btn btn-o btn-xs" data-act="copyAppt" data-arg="${a.id}">⧉</button> `;
 }
 function remindedBadge(id) {
   const r = remindedOn(id);
   return r ? ` <span class="badge b-green">✓ ${fmtDate(r)}</span>` : "";
 }
 function stockPulseBit(n) {
-  return n ? `<span>⚠️ <b>${n}</b> stock alert${n === 1 ? "" : "s"}</span> <button class="btn btn-o btn-sm" onclick="go('stock')">Stock →</button>` : "";
+  return n ? `<span>⚠️ <b>${n}</b> stock alert${n === 1 ? "" : "s"}</span> <button class="btn btn-o btn-sm" data-act="goPage" data-arg="stock">Stock →</button>` : "";
 }
 function apptMsg(a, S, lang) {
   S = S || {};
@@ -112,11 +112,11 @@ function renderDayClose() {
   const modes = Object.keys(d.byMode), users = Object.keys(d.byUser);
   box.innerHTML = `<div class="card"><h3>🌙 Day close — collections</h3>
     <div class="hint">Reconcile cash before leaving · bills stay editable in the list above</div>
-    <div class="toolbar" style="margin-bottom:10px"><input type="date" value="${OPS.day}" onchange="OPS.day=this.value;renderDayClose()" style="max-width:170px">
+    <div class="toolbar" style="margin-bottom:10px"><input type="date" value="${OPS.day}" data-onchange="dayCloseSel" style="max-width:170px">
     <span class="sp"></span>
-    <button class="btn btn-o btn-sm" onclick="copyDayClose()">⧉ Copy summary</button>
-    <button class="btn btn-o btn-sm" onclick="exportDayCloseCSV()">⬇ CSV</button>
-    <button class="btn btn-p btn-sm" onclick="printDayClose()">🖨️ Print day-close</button></div>
+    <button class="btn btn-o btn-sm" data-act="copyDayClose">⧉ Copy summary</button>
+    <button class="btn btn-o btn-sm" data-act="exportDayCloseCSV">⬇ CSV</button>
+    <button class="btn btn-p btn-sm" data-act="printDayClose">🖨️ Print day-close</button></div>
     <div class="grid g4" style="margin-bottom:10px">
       <div class="stat" style="--ac:var(--navy)"><div><div class="n">₹${d.billed.toFixed(0)}</div><div class="l">Billed (${d.n})</div></div></div>
       <div class="stat" style="--ac:var(--teal)"><div><div class="n">₹${d.collected.toFixed(0)}</div><div class="l">Collected</div></div></div>
@@ -157,7 +157,7 @@ function exportDayCloseCSV() {
   const d = dayCloseData(OPS.day);
   const q = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
   const L = [["Date", "Receipt", "Patient", "Particulars", "Mode", "Staff", "Total", "Paid"].map(q).join(",")];
-  d.bills.forEach((b) => L.push([d.date, "R-" + b.id.slice(-6).toUpperCase(), b.name, b.items.map((i) => i.desc).join(" + "), b.mode || "", b.by || "", b.total, b.paid].map(q).join(",")));
+  d.bills.forEach((b) => L.push([d.date, (typeof receiptRef === "function" ? receiptRef(b) : b.invNo || ("R-" + String(b.id || "").slice(-6).toUpperCase())), b.name, b.items.map((i) => i.desc).join(" + "), b.mode || "", b.by || "", b.total, b.paid].map(q).join(",")));
   const blob = new Blob([L.join("\n")], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = `dayclose-${d.date}.csv`; a.click();
@@ -275,9 +275,9 @@ function renderStock() {
   box.innerHTML = `
   <div class="toolbar"><span style="font-size:13px;color:var(--muted)">Fridge register · auto-deducts when doses are recorded</span>
     <span class="sp"></span>
-    <button class="btn btn-o btn-sm" onclick="exportStockCSV()">⬇ CSV</button>
-    <button class="btn btn-o btn-sm" onclick="printPage('pg-stock')">🖨️ Print register</button>
-    <button class="btn btn-p btn-sm" onclick="openStockModal()">+ Add stock</button></div>
+    <button class="btn btn-o btn-sm" data-act="exportStockCSV">⬇ CSV</button>
+    <button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-stock">🖨️ Print register</button>
+    <button class="btn btn-p btn-sm" data-act="openStockModal">+ Add stock</button></div>
   ${nCrit ? `<div class="alert a-red">⚠️ <div><b>${nCrit} alert(s):</b> ${A.expired.length ? `${A.expired.length} expired · ` : ""}${A.out.length ? `${A.out.length} out of stock · ` : ""}${A.low.length ? `${A.low.length} below reorder level` : ""}${A.expiring.length ? ` · ${A.expiring.length} expiring ≤60d` : ""}. Check rows below.</div></div>`
     : `<div class="alert a-green">✅ <div>Stock healthy — ${lots.length} lot(s) on hand${A.expiring.length ? ` · ${A.expiring.length} expiring within 60 days (use first)` : ""}.</div></div>`}
   <div class="card"><div style="overflow:auto"><table class="tbl"><thead><tr><th>Vaccine</th><th>Brand</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>Min</th><th>Status</th><th class="no-print">Adjust</th></tr></thead>
@@ -287,17 +287,17 @@ function renderStock() {
     <td>${l.expiry ? dmy(l.expiry) : "—"}</td>
     <td><b style="font-size:16px">${+l.qty || 0}</b></td><td>${+l.min || 0}</td><td>${badge(l)}</td>
     <td class="no-print" style="white-space:nowrap">
-      <button class="btn btn-o btn-xs" onclick="stockStep('${l.id}',1)" title="Add 1">+1</button>
-      <button class="btn btn-o btn-xs" onclick="stockStep('${l.id}',-1)" title="Use 1">−1</button>
-      <button class="btn btn-o btn-xs" onclick="stockSetQty('${l.id}')" title="Set exact count">#</button>
-      <button class="btn btn-o btn-xs" onclick="openStockModal('${l.id}')">Edit</button>
-      <button class="btn btn-danger btn-xs" onclick="delStock('${l.id}')">✕</button></td></tr>`).join("")
+      <button class="btn btn-o btn-xs" data-act="stockStep" data-arg="${l.id}" data-arg2="1" title="Add 1">+1</button>
+      <button class="btn btn-o btn-xs" data-act="stockStep" data-arg="${l.id}" data-arg2="-1" title="Use 1">−1</button>
+      <button class="btn btn-o btn-xs" data-act="stockSetQty" data-arg="${l.id}" title="Set exact count">#</button>
+      <button class="btn btn-o btn-xs" data-act="openStockModal" data-arg="${l.id}">Edit</button>
+      <button class="btn btn-danger btn-xs" data-act="delStock" data-arg="${l.id}">✕</button></td></tr>`).join("")
     : `<tr><td colspan="8" style="color:var(--muted)">No lots yet — click <b>+ Add stock</b> to open your fridge register.</td></tr>`}</table></div></div>
   <div style="height:14px"></div>
   <div class="card"><h3>📒 Recent movements</h3><div class="hint">Auto-deducts + manual adjustments (last 12)</div>
   ${log.length ? log.map((m) => `<div style="font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><b>${fmtDate(m.date)}</b> · ${esc(m.lot)} ·
     <b style="color:${m.change < 0 ? "var(--red)" : "var(--teal-d)"}">${m.change > 0 ? "+" : ""}${m.change}</b>
-    <span style="color:var(--muted)">· ${esc(m.why)}</span></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No movements yet.</div>`}</div>`;
+    <span style="color:var(--muted)">· ${esc(m.why)}</span></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No movements yet — movements appear here when stock is added or doses are given.</div>`}</div>`;
 }
 function openStockModal(id) {
   const lots = stockLots();
@@ -442,9 +442,9 @@ function renderDisplay() {
 /* Footer is a pure builder (tested) so the exit path can't silently regress. */
 function displayFootHTML() {
   return `<div class="disp-foot no-print">
-      <button class="btn btn-o btn-sm" onclick="exitDisplay()">← Exit display</button>
-      <button class="btn btn-o btn-sm" onclick="toggleDispMute()">${OPS.mute ? "🔇 Unmute bell" : "🔔 Mute bell"}</button>
-      <button class="btn btn-o btn-sm" onclick="dispFullscreen()">⛶ Full screen</button>
+      <button class="btn btn-o btn-sm" data-act="exitDisplay">← Exit display</button>
+      <button class="btn btn-o btn-sm" data-act="toggleDispMute">${OPS.mute ? "🔇 Unmute bell" : "🔔 Mute bell"}</button>
+      <button class="btn btn-o btn-sm" data-act="dispFullscreen">⛶ Full screen</button>
       <span style="font-size:12px;opacity:.7">Auto-refreshes · press Esc to exit</span>
     </div>`;
 }
@@ -501,18 +501,18 @@ function renderDoctors() {
   ensureDoctors();
   const S = DB.settings || {};
   box.innerHTML = `${(DB.doctors || []).map((d) => `
-    <div class="vac-row"><input type="radio" name="letterDoc" ${S.docId === d.id ? "checked" : ""} onchange="setLetterDoc('${d.id}')" title="Use on letterhead" style="width:18px;flex-shrink:0">
+    <div class="vac-row"><input type="radio" name="letterDoc" ${S.docId === d.id ? "checked" : ""} data-onchange="setLetterDoc" data-arg="${d.id}" title="Use on letterhead" style="width:18px;flex-shrink:0">
       <div class="grow"><b>${esc(d.name) || "—"}</b>${d.qual ? `, ${esc(d.qual)}` : ""}${d.reg ? `<br><span style="font-size:12px;color:var(--muted)">Reg: ${esc(d.reg)}</span>` : ""}</div>
-      <button class="btn btn-o btn-xs" onclick="editDoctor('${d.id}')">Edit</button>
-      <button class="btn btn-danger btn-xs" onclick="delDoctor('${d.id}')">✕</button></div>`).join("") || `<div style="font-size:13px;color:var(--muted)">No doctors yet.</div>`}
+      <button class="btn btn-o btn-xs" data-act="editDoctor" data-arg="${d.id}">Edit</button>
+      <button class="btn btn-danger btn-xs" data-act="delDoctor" data-arg="${d.id}">✕</button></div>`).join("") || `<div style="font-size:13px;color:var(--muted)">No doctors yet.</div>`}
     <div class="form-grid" style="margin-top:8px">
       <div><label>Name *</label><input id="dName" placeholder="Dr. A. Sharma"></div>
       <div><label>Qualification</label><input id="dQual" placeholder="MD (Paeds)"></div>
       <div class="full"><label>Registration no.</label><input id="dReg" placeholder="MCI / State reg."></div>
     </div>
     <input type="hidden" id="dId" value="">
-    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-p btn-sm" onclick="saveDoctor()">💾 Save doctor</button>
-    <button class="btn btn-o btn-sm" onclick="clearDoctorForm()">Clear</button></div>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-p btn-sm" data-act="saveDoctor">💾 Save doctor</button>
+    <button class="btn btn-o btn-sm" data-act="clearDoctorForm">Clear</button></div>
     <div class="hint">● Selected doctor prints on every letterhead + signature block.</div>`;
 }
 function clearDoctorForm() { $("dId").value = ""; $("dName").value = ""; $("dQual").value = ""; $("dReg").value = ""; }
@@ -639,6 +639,47 @@ function copyParentSummary() {
 }
 
 /* ================= G. ENCRYPTED BACKUPS (cloud-safe files) ================= */
+let _backupWatchShown = false;
+function backupWatch() {
+  try {
+    if (_backupWatchShown) return false;
+    if ((DB.settings || {}).backupWatchOff) return false;
+    if ((DB.users || []).length && !((DB.session || {}).userId)) return false; // locked: wait for login
+    const stale = !DB.lastBackup || (typeof dayDiff === "function" && dayDiff(DB.lastBackup, todayISO()) > 7);
+    if (!stale) return false;
+    if (DB._backupSnooze && DB._backupSnooze === todayISO()) return false;
+    _backupWatchShown = true;
+    const line = document.getElementById("backupWatchLine");
+    if (line) line.textContent = (typeof backupAgeLine === "function" ? backupAgeLine() : "Backup overdue.") + " Your data lives only on this device until you back it up.";
+    if (typeof openModal === "function") openModal("mBackupWatch");
+    return true;
+  } catch (e) { return false; }
+}
+function snoozeBackup() {
+  try {
+    DB._backupSnooze = todayISO(); save();
+    if (typeof auditSafe === "function") auditSafe("Backup reminder snoozed", "until tomorrow");
+    if (typeof closeModal === "function") closeModal("mBackupWatch");
+    if (typeof toast === "function") toast("Reminder snoozed until tomorrow.");
+  } catch (e) {}
+}
+function storageLine() {
+  try {
+    let bytes = 0;
+    try { bytes = (localStorage.getItem((typeof LS_KEY !== "undefined" && LS_KEY) || "kidgrow_pro_v1") || "").length; } catch (e) {}
+    const mb = bytes / 1048576, pct = Math.round((mb / 5) * 100);
+    if (mb > 3.5) return `⚠️ Local data is ${mb.toFixed(1)} MB of ~5 MB (${pct}%) — export a backup and contact support about the server store (F4).`;
+    if (mb > 2) return `Local data: ${mb.toFixed(1)} MB of ~5 MB (${pct}%) — healthy, backups current recommended.`;
+    let tail = `Local data: ${mb < 0.1 ? Math.round(bytes / 1024) + " KB" : mb.toFixed(1) + " MB"} of ~5 MB on this device.`;
+    try {
+      const st = (typeof IDB !== "undefined" && IDB && typeof IDB.status === "function") ? IDB.status() : null;
+      if (st && st.error === "unavailable") tail += " IndexedDB mirror: unavailable on this browser.";
+      else if (st && st.match === true) tail += ` IndexedDB mirror: in sync (${(st.idbBytes / 1048576).toFixed(1)} MB).`;
+      else if (st && st.match === false) tail += " IndexedDB mirror: differed at last check — will re-mirror on next save.";
+    } catch (e) {}
+    return tail;
+  } catch (e) { return ""; }
+}
 function backupAgeLine() {
   if (!DB.lastBackup) return "Never backed up — export one today.";
   const d = dayDiff(DB.lastBackup, todayISO());
@@ -814,3 +855,15 @@ if (typeof renderAll === "function") { try { renderAll(); } catch (e) { if (type
 try { let _h = (location.hash || "").replace("#", ""); if (typeof ROUTE_ALIASES !== "undefined" && ROUTE_ALIASES[_h]) _h = ROUTE_ALIASES[_h]; if (_h && typeof TITLES !== "undefined" && TITLES[_h] && typeof go === "function" && !(typeof roleBlock === "function" && roleBlock(_h))) go(_h); } catch (e) {}
 /* Cloud (Supabase auth/sync + subscriptions) — no-op unless js/config.js has keys. */
 try { if (typeof Cloud !== "undefined" && Cloud.init) Cloud.init(); } catch (e) {}
+
+/* E2b: delegated actions for templates in this file. */
+try {
+  ["waAppt", "copyAppt", "toggleDispMute", "stockSetQty", "saveDoctor", "printDayClose", "exportStockCSV", "exportDayCloseCSV", "exitDisplay", "editDoctor", "dispFullscreen", "delStock", "delDoctor", "clearDoctorForm", "setLetterDoc"].forEach(function (n) { actCall0(n); });
+  actRegister("stockStep", function (el) { try { stockStep(actArg(el), Number(actArg(el, 2))); } catch (e) { actReport("stockStep", e); } });
+  actRegister("dayCloseSel", function (el) { try { OPS.day = el.value; renderDayClose(); } catch (e) { actReport("dayCloseSel", e); } });
+} catch (e) {}
+
+/* E2b: template-used actions (single-arg flexible / zero-arg). */
+try {
+  ["openStockModal", "copyDayClose"].forEach(function (n) { actCall0(n); });
+} catch (e) {}

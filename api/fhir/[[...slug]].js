@@ -3,6 +3,7 @@
 // Tenant scoping: ?tenant=<uuid> is REQUIRED and always applied upstream.
 // No service keys, no writes, no PHI in error messages. Mappers exported for tests.
 "use strict";
+const G = require("../_guard");
 
 const TABLES = {
   Patient: "patients",
@@ -103,6 +104,7 @@ function metadata() {
 
 async function handler(req, res) {
   if ((req.method || "GET") !== "GET") { res.status(405).json({ resourceType: "OperationOutcome", issue: [{ severity: "error", code: "not-supported", diagnostics: "FHIR facade is read-only" }] }); return; }
+  if (G.limited(req, res, { prefix: "fhir", max: 120 })) return;
   let u;
   try { u = new URL(req.url || "/api/fhir/metadata", "http://x"); } catch (e) { res.status(400).json({ error: "bad request" }); return; }
   const slug = req.query && req.query.slug;
@@ -120,9 +122,9 @@ async function handler(req, res) {
   if (!base || !key) { res.status(500).json({ error: "server not configured" }); return; }
   const count = Math.min(100, Math.max(1, parseInt(u.searchParams.get("_count") || "50", 10) || 50));
   const q = new URLSearchParams({ tenant_id: "eq." + tenant, deleted_at: "is.null", select: "*", order: "client_rev.desc", limit: String(count) });
-  const id = u.searchParams.get("id") || u.searchParams.get("_id");
+  const id = G.cleanStr(u.searchParams.get("id") || u.searchParams.get("_id"), 64);
   if (id) q.set("local_id", "eq." + id);
-  const pat = u.searchParams.get("patient") || u.searchParams.get("subject");
+  const pat = G.cleanStr(u.searchParams.get("patient") || u.searchParams.get("subject"), 64);
   if (pat) q.set(resource === "Observation" || resource === "MedicationAdministration" || resource === "Consent" || resource === "Encounter" ? "patient_local_id" : "local_id", "eq." + pat.replace(/^Patient\//, ""));
   let rows;
   try {

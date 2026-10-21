@@ -91,7 +91,7 @@ function marDueHTML() {
       (d.entry.controlled ? " 🔒" : "") + " <span style='color:var(--muted)'>@" + esc(d.entry.scheduledAt || "") + "</span></div>";
   }).join("");
   return "<div class='card' style='margin-top:10px'><h3>Doses due (" + due.length + ")</h3>" + rows +
-    "<button class='btn btn-o btn-sm' style='margin-top:6px' onclick=\"go('mar')\">Open eMAR →</button></div>";
+    "<button class='btn btn-o btn-sm' style='margin-top:6px' data-act=\"goPage\" data-arg=\"mar\">Open eMAR →</button></div>";
 }
 function renderMar() {
   var box = $("marBox"); if (!box) return;
@@ -110,7 +110,7 @@ function renderMar() {
       "<div class='form-grid' style='margin-top:8px'><div><label>Given by</label><input id='mlBy_" + e.id + "' placeholder='nurse / doctor'></div>" +
       "<div><label>Status</label><select id='mlSt_" + e.id + "'><option>given</option><option>held</option><option>refused</option><option>missed</option></select></div>" +
       (e.controlled ? "<div><label>Witness (required)</label><input id='mlWt_" + e.id + "' placeholder='second staff'></div>" : "") + "</div>" +
-      "<button class='btn btn-p btn-sm' style='margin-top:8px' onclick='logMarDose(\"" + e.id + "\"," + e.controlled + ")'>Log administration</button></div>";
+      "<button class='btn btn-p btn-sm' style='margin-top:8px' data-act='marLogDose' data-arg='" + e.id + "' data-arg2='" + e.controlled + "'>Log administration</button></div>";
   }).join("");
   var lastRx = (c.rx || [])[(c.rx || []).length - 1];
   box.innerHTML = "<div class='card'><h3>💊 eMAR — " + esc(c.name) + "</h3>" +
@@ -120,8 +120,8 @@ function renderMar() {
     "<div><label>Frequency</label><input id='meFreq' placeholder='q6h'></div>" +
     "<div><label>Scheduled at</label><input type='datetime-local' id='meAt'></div>" +
     "<div><label>Controlled?</label><select id='meCtl'><option value=''>No</option><option value='1'>Yes — needs witness</option></select></div></div>" +
-    "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap'><button class='btn btn-p btn-sm' onclick='saveMarEntry()'>+ Schedule dose</button>" +
-    (lastRx ? "<button class='btn btn-o btn-sm' onclick='importRxToMar()'>＋ From latest Rx (" + esc(String(lastRx.date || "")) + ")</button>" : "") + "</div></div>" + cards;
+    "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap'><button class='btn btn-p btn-sm' data-act='saveMarEntry'>+ Schedule dose</button>" +
+    (lastRx ? "<button class='btn btn-o btn-sm' data-act='importRxToMar'>＋ From latest Rx (" + esc(String(lastRx.date || "")) + ")</button>" : "") + "</div></div>" + cards;
 }
 
 window.renderMar = renderMar;
@@ -178,3 +178,9 @@ window.logMarDose = function (id, isCtl) {
 };
 
 })();
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["importRxToMar", "saveMarEntry"].forEach(function (n) { actCall0(n); });
+  actRegister("marLogDose", function (el) { try { logMarDose(actArg(el), actArg(el, 2) === "true"); } catch (e) { actReport("marLogDose", e); } });
+} catch (e) {}

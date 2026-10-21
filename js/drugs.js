@@ -73,6 +73,7 @@ function calcDose(drugId, wt, ageM, strengthIdx, freq, days) {
   let mgDose = null, basis = "";
   if (d.mgkg) {
     if (!(wt > 0)) return { ok: false, why: "Enter weight." };
+    try { if (typeof V !== "undefined") { const _vw = V.check("wt", wt); if (!_vw.ok) return { ok: false, why: _vw.why }; } } catch (eV) {}
     if (d.perDay) { mgDose = (d.mgkg * wt) / div; basis = `${d.mgkg} mg/kg/day ÷ ${div}`; }
     else { mgDose = d.mgkg * wt; basis = `${d.mgkg} mg/kg/dose`; }
   } else if (d.wtBands) {

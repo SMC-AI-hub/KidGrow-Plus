@@ -70,13 +70,13 @@ function renderEmergency() {
   }
   $("emgBox").innerHTML = `
     <div class="toolbar" style="margin-bottom:10px">
-      <div><label style="font-size:12px">Weight (kg)</label><input id="emgWt" type="number" step="0.1" min="1" max="300" value="${EMG.wt}" placeholder="e.g. 12" style="max-width:120px" oninput="EMG.wt=this.value;renderEmgDoses()"></div>
-      <div><label style="font-size:12px">Age (years)</label><input id="emgAge" type="number" step="0.5" min="0" max="18" value="${EMG.age}" placeholder="e.g. 3" style="max-width:120px" oninput="EMG.age=this.value;renderEmgDoses()"></div>
-      ${c ? `<button class="btn btn-o btn-sm" onclick="fillEmgFromChild()">⚖️ Use ${esc(c.name)}'s data</button>` : ""}
-      <span class="sp"></span><button class="btn btn-o btn-sm" onclick="printPage('pg-emg')">🖨️ Print card</button>
+      <div><label style="font-size:12px">Weight (kg)</label><input id="emgWt" type="number" step="0.1" min="1" max="300" value="${EMG.wt}" placeholder="e.g. 12" style="max-width:120px" data-oninput="emgWtInput"></div>
+      <div><label style="font-size:12px">Age (years)</label><input id="emgAge" type="number" step="0.5" min="0" max="18" value="${EMG.age}" placeholder="e.g. 3" style="max-width:120px" data-oninput="emgAgeInput"></div>
+      ${c ? `<button class="btn btn-o btn-sm" data-act="fillEmgFromChild">⚖️ Use ${esc(c.name)}'s data</button>` : ""}
+      <span class="sp"></span><button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-emg">🖨️ Print card</button>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center"><span style="font-size:12.5px;color:var(--muted);font-weight:700">QUICK WT:</span>
-      ${[3, 5, 8, 10, 12, 15, 20, 25, 30, 40].map((w) => `<button class="btn ${String(EMG.wt) === String(w) ? "btn-p" : "btn-o"} btn-xs" onclick="emgChip(${w})">${w} kg</button>`).join("")}</div>
+      ${[3, 5, 8, 10, 12, 15, 20, 25, 30, 40].map((w) => `<button class="btn ${String(EMG.wt) === String(w) ? "btn-p" : "btn-o"} btn-xs" data-act="emgChip" data-arg="${w}">${w} kg</button>`).join("")}</div>
     <div id="emgDoses"></div>
     <div class="alert a-amber" style="margin-top:12px">⚠️ <div><b>Screening aid only.</b> Verify every dose against your hospital protocol / formulary before administering. Not a substitute for PALS/APLS training.</div></div>`;
   renderEmgDoses();
@@ -257,22 +257,22 @@ function renderCard() {
     <div class="toolbar no-print" style="margin-bottom:12px">
       <span style="font-size:13px;color:var(--muted)">Record code: <b>${code.length}</b> chars · QR ${code.length < 1800 ? "fits easily" : "fits (dense)"}</span>
       <span class="sp"></span>
-      <button class="btn btn-o btn-sm" onclick="printPage('pg-card')">🖨️ Print card</button>
-      <button class="btn btn-o btn-sm" onclick="copyRecordCode()">⧉ Copy record code</button>
-      <button class="btn btn-o btn-sm" onclick="downloadRecord()">⬇ Download .json</button>
-      <button class="btn btn-p btn-sm" onclick="downloadParentCard()">📱 Parent file (.html)</button>
-      <button class="btn btn-o btn-sm" onclick="copyParentSummary()">⧉ Parent summary</button>
+      <button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-card">🖨️ Print card</button>
+      <button class="btn btn-o btn-sm" data-act="copyRecordCode">⧉ Copy record code</button>
+      <button class="btn btn-o btn-sm" data-act="downloadRecord">⬇ Download .json</button>
+      <button class="btn btn-p btn-sm" data-act="downloadParentCard">📱 Parent file (.html)</button>
+      <button class="btn btn-o btn-sm" data-act="copyParentSummary">⧉ Parent summary</button>
     </div>
     ${vaxRecordHTML(c)}
     <div style="height:16px"></div>
     <div class="card no-print"><h3>📥 Import a record</h3>
       <div class="hint">From another NeoKid clinic: <b>Scan</b> the card QR, or paste the record code / child .json. You'll preview + verify first — only <b>immunization + growth</b> can arrive. Matching name + DOB merges; otherwise a new child is created.</div>
-      <textarea id="impText" rows="3" style="width:100%;font-family:monospace;font-size:12px" placeholder="KG2|Name|dob|... (KG1 works too)" oninput="CARD.imp=this.value">${esc(CARD.imp)}</textarea>
+      <textarea id="impText" rows="3" style="width:100%;font-family:monospace;font-size:12px" placeholder="KG2|Name|dob|... (KG1 works too)" data-oninput="cardImpInput">${esc(CARD.imp)}</textarea>
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn btn-p btn-sm" onclick="openScanModal()">📷 Scan card QR</button>
-        <button class="btn btn-o btn-sm" onclick="importRecordText()">📥 Import pasted record</button>
-        <button class="btn btn-o btn-sm" onclick="document.getElementById('impFile').click()">⬆ Choose .json file</button>
-        <input type="file" id="impFile" accept=".json,.txt" style="display:none" onchange="importRecordFile(event)">
+        <button class="btn btn-p btn-sm" data-act="openScanModal">📷 Scan card QR</button>
+        <button class="btn btn-o btn-sm" data-act="importRecordText">📥 Import pasted record</button>
+        <button class="btn btn-o btn-sm" data-act="clickImpFile">⬆ Choose .json file</button>
+        <input type="file" id="impFile" accept=".json,.txt" style="display:none" data-onchange="importRecordFile">
       </div><div id="impMsg" style="margin-top:8px;font-size:13px"></div>
     </div>`;
 }
@@ -338,8 +338,8 @@ function previewTransfer(str) {
     <dt>Growth</dt><dd>${ms.length ? `${ms.length} record(s)${last ? ` · latest ${esc(fmtDate(last.date))}: ${last.wt ?? "—"} kg · ${last.ht ?? "—"} cm` : ""}` : "none in this transfer"}</dd>
     <dt>Target</dt><dd>${same ? `Merge into existing <b>${esc(same.name)}</b> — only missing doses/dates are added` : `New child <b>${esc(inc.name)}</b> will be created here`}</dd></dl>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
-    <button class="btn btn-p" onclick="xferDoImport()">✅ Import immunization + growth</button>
-    <button class="btn btn-o" onclick="xferCancel()">Cancel</button></div></div>`;
+    <button class="btn btn-p" data-act="xferDoImport">✅ Import immunization + growth</button>
+    <button class="btn btn-o" data-act="xferCancel">Cancel</button></div></div>`;
   document.body.appendChild(box);
 }
 function xferDoImport() { const inc = XFER; XFER = null; const m = document.getElementById("mXfer"); if (m) m.remove(); if (inc) mergeImported(inc); }
@@ -357,7 +357,7 @@ async function openScanModal() {
     <div class="hint">Point at the QR on the printed card / parent file${supported ? "" : " — live scanning needs Chrome/Edge on Android or desktop"}.</div>
     ${supported ? `<video id="scanVideo" playsinline muted style="width:100%;border-radius:14px;background:#000;max-height:320px"></video><div class="hint" id="scanMsg">Starting camera…</div>`
     : `<div class="alert a-amber" style="text-align:left">📵 This browser can't scan live (iPhone Safari). Ask clinic A to <b>Copy</b> the record code or WhatsApp it, then paste it on this page.</div>`}
-    <div style="margin-top:10px"><button class="btn btn-o" onclick="closeScanModal()">Close</button></div></div>`;
+    <div style="margin-top:10px"><button class="btn btn-o" data-act="closeScanModal">Close</button></div></div>`;
   document.body.appendChild(box);
   if (!supported) return;
   try {
@@ -425,3 +425,13 @@ function importRecordFile(ev) {
   };
   r.readAsText(f);
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["closeScanModal", "copyParentSummary", "copyRecordCode", "downloadParentCard", "downloadRecord", "emgChip", "fillEmgFromChild", "importRecordText", "openScanModal", "xferCancel", "xferDoImport"].forEach(function (n) { actCall0(n); });
+  actRegister("importRecordFile", function (el, ev) { try { importRecordFile(ev); } catch (e) { actReport("importRecordFile", e); } });
+  actRegister("clickImpFile", function () { try { document.getElementById("impFile").click(); } catch (e) { actReport("clickImpFile", e); } });
+  actRegister("cardImpInput", function (el) { try { CARD.imp = el.value; } catch (e) { actReport("cardImpInput", e); } });
+  actRegister("emgAgeInput", function (el) { try { EMG.age = el.value; renderEmgDoses(); } catch (e) { actReport("emgAgeInput", e); } });
+  actRegister("emgWtInput", function (el) { try { EMG.wt = el.value; renderEmgDoses(); } catch (e) { actReport("emgWtInput", e); } });
+} catch (e) {}

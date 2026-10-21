@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v36/.test(sw), "SW cache bumped to v36 (convergent sync: +syncmerge)");
+  ok(/neokid-v45/.test(sw), "SW cache bumped to v45 (E2c: full CSP extraction)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -143,8 +143,9 @@ async function main() {
 
   // ---- PIN hashing + migration + lockout ----
   const h1 = await sb.pinHash("4242", "salt-A"), h1b = await sb.pinHash("4242", "salt-A"), h2 = await sb.pinHash("4242", "salt-B");
-  ok(/^[0-9a-f]{64}$/.test(h1), "pinHash uses SHA-256 hex (strong path, not weak fallback)");
+  ok(/^p2\$[0-9a-f]{64}$/.test(h1), "pinHash uses PBKDF2-100k (p2$ + 256-bit hex, F5)");
   ok(h1 === h1b && h1 !== h2, "pinHash deterministic per salt, salt-sensitive");
+  ok(!/^p2\$/.test(await sb.pinHashLegacy("4242", "salt-A")), "legacy single-round hash has no p2$ marker");
   vm.runInContext("DB.users=[{id:'u9',name:'PIN Test',role:'Doctor',pin:'4242'}]; DB.session={};", sb);
   sb.document.getElementById("lockUser").value = "u9";
   sb.document.getElementById("lockPin").value = "4242";
@@ -155,6 +156,13 @@ async function main() {
   await sb.doLogin();
   vm.runInContext("globalThis.__pin2={sess:(DB.session||{}).userId}", sb);
   ok(sb.__pin2.sess === "u9", "hashed PIN login succeeds");
+  const legacyH = await sb.pinHashLegacy("7777", "salt-L");
+  vm.runInContext(`DB.users.push({id:'u8',name:'Legacy Test',role:'Doctor',pinSalt:'salt-L',pinHash:'${legacyH}'}); DB.session={};`, sb);
+  sb.document.getElementById("lockUser").value = "u8";
+  sb.document.getElementById("lockPin").value = "7777";
+  await sb.doLogin();
+  vm.runInContext("globalThis.__pinU={p2:(DB.users.find(u=>u.id==='u8')||{}).pinHash||'',sess:(DB.session||{}).userId}", sb);
+  ok(/^p2\$/.test(sb.__pinU.p2) && sb.__pinU.sess === "u8", "legacy hash verifies then transparently upgrades to PBKDF2 (F5)");
   vm.runInContext("DB.session={};", sb);
   sb.document.getElementById("lockPin").value = "0000";
   for (let i = 0; i < 5; i++) await sb.doLogin();
@@ -164,6 +172,15 @@ async function main() {
   await sb.doLogin();
   vm.runInContext("globalThis.__pin3={sess:(DB.session||{}).userId}", sb);
   ok(!sb.__pin3.sess && /try again/.test(sb.document.getElementById("lockMsg").textContent || ""), "lockout blocks even the correct PIN");
+
+  // ---- sequential invoice numbers (F18) ----
+  vm.runInContext("DB.bills=[]; DB.settings=Object.assign({},DB.settings,{billSeq:0});", sb);
+  ok(sb.nextInvNoFor([], 0, "2026").invNo === "INV-2026-0001", "first invoice of year is 0001");
+  ok(sb.nextInvNoFor([{ invNo: "INV-2026-0001" }, { invNo: "INV-2026-0007" }], 3, "2026").invNo === "INV-2026-0008", "sequence resumes from max(bills, counter)");
+  ok(sb.nextInvNoFor([{ invNo: "INV-2025-0099" }], 0, "2026").invNo === "INV-2026-0001", "sequence restarts each calendar year");
+  ok(sb.nextInvNoFor([{ id: "abcdef123456" }], 0, "2026").invNo === "INV-2026-0001", "legacy bills without invNo do not break sequencing");
+  ok(sb.receiptRef({ invNo: "INV-2026-0003", id: "x" }) === "INV-2026-0003", "receipt prefers invNo");
+  ok(sb.receiptRef({ id: "abcdef123456" }) === "R-123456", "receipt falls back to R-xxxxxx for legacy bills");
 
   // ---- inactivity auto-lock ----
   vm.runInContext("DB.users=[{id:'u9',name:'Idle Test',role:'Doctor',pinSalt:'s',pinHash:'h'}]; DB.session={userId:'u9',at:'x'}; DB.settings={lockMins:'15'}; IdleLast = Date.now() - 20*60e3;", sb);
@@ -422,21 +439,27 @@ async function main() {
 
   // ---- unified timeline ----
   const tlc = { id: "tl1", name: "Timeline Kid", dob: "2024-01-01", sex: "boy",
-    visits: [{ id: "v1", date: "2026-03-01", type: "Follow-up", subj: "Fever<x>", obj: "", plan: "Review" }],
+    problems: [{ label: "Asthma", status: "active" }], allergy: "Penicillin",
+    visits: [{ id: "v1", date: "2026-03-01", type: "Follow-up", subj: "Fever<x>", obj: "", plan: "Review", vitals: { t: "38.5", hr: "140" } }],
     rx: [{ id: "r1", date: "2026-05-01", dx: "Cold", items: [{ drug: "Paracetamol<script>" }], advice: "", review: "", by: "Dr" }],
     vaccines: { BCG: { date: "2024-01-02", brand: "Serum", batch: "B9", by: "Nurse" } },
     extraVac: [{ id: "x1", name: "Flu shot", date: "2026-01-10", brand: "Vax" }],
-    measures: [{ date: "2026-04-01", wt: 12, ht: 85 }],
+    measures: [{ date: "2026-04-01", wt: 12, ht: 85 }, { date: "2026-04-15", wt: 12.5, ht: 86 }],
     labs: [{ id: "l1", date: "2026-02-01", hb: "11.2", note: "" }],
     aefi: [{ id: "a1", date: "2024-01-03", code: "BCG", vacLabel: "BCG", severity: "Mild", outcome: "Recovered", reported: "No" }] };
   const tev = sb.timelineEvents(tlc);
-  ok(tev.length === 7, "timeline collects all 7 kinds, got " + tev.length);
-  ok(tev[0].date === "2026-05-01" && tev[6].date === "2024-01-02", "timeline sorts newest-first");
+  ok(tev.length === 8, "timeline collects all kinds, got " + tev.length);
+  ok(tev[0].date === "2026-05-01" && tev[7].date === "2024-01-02", "timeline sorts newest-first");
   ok(tev.filter((e) => e.kind === "vax").length === 2, "scheduled + extra vaccines both included");
   ok(sb.timelineEvents(null).length === 0, "timeline empty with no child");
   const tlh = sb.timelineHTML(tlc, "all");
   ok(!tlh.includes("<script>") && !tlh.includes("<x>") && tlh.includes("Paracetamol"), "timeline escapes clinical text");
   ok(tlh.includes("BCG") && tlh.includes("Hb 11.2") && tlh.includes("Mild"), "timeline shows vax+lab+aefi detail");
+  ok(tlh.includes("Case at a glance") && tlh.includes("Asthma") && tlh.includes("Penicillin") && tlh.includes("12.5 kg"), "snapshot: problems + allergy + growth");
+  ok(tlh.includes("May 2026") && tlh.includes("January 2024"), "month-year group headers");
+  ok(tlh.includes("age 2y 3m"), "age-at-event on cards");
+  ok(tlh.includes("+0.5 kg") && tlh.includes("ctx-flag") && !tlh.includes("ctx-flag-red"), "growth-delta flag, no false red");
+  ok(tlh.includes("38.5") && tlh.includes("HR 140"), "visit vitals inline");
   ok(sb.timelineHTML(tlc, "rx").includes("Paracetamol") && !sb.timelineHTML(tlc, "rx").includes("Hb 11.2"), "timeline filter isolates kinds");
   ok(sb.timelineHTML({ ...tlc, rx: [], visits: [], vaccines: {}, extraVac: [], measures: [], labs: [], aefi: [] }, "all").includes("No records yet"), "timeline empty state");
   ok(sb.vaxLabel("NOPE-99") === "NOPE-99", "unknown vax code falls back to code");
@@ -499,7 +522,7 @@ async function main() {
   const binfo = { email: "evil@x.com<script>", profile: { sub_status: "active", current_period_end: "2026-11-16T00:00:00Z" }, subscription: { current_end: "2026-11-16T00:00:00Z", paid_count: 3, remaining_count: 9 }, invoices: [{ date: "2026-10-16T00:00:00Z", amount: 999, status: "paid", short_url: "https://rzp.io/x" }, { date: "2026-09-16T00:00:00Z", amount: 999, status: "failed", short_url: "" }] };
   const bh = C._billInfoHTML(binfo, { ok: true, reason: "active" });
   ok(!bh.includes("<script>") && bh.includes("evil@x.com"), "billing escapes account email");
-  ok(bh.includes("3 paid") && bh.includes("9 to go") && bh.includes("Cloud.cancelSub()"), "billing shows sub counts + cancel");
+  ok(bh.includes("3 paid") && bh.includes("9 to go") && bh.includes('data-act="cloudCancelSub"'), "billing shows sub counts + cancel (delegated)");
   ok(bh.includes("b-green") && bh.includes("b-red") && bh.includes("https://rzp.io/x"), "invoices show paid/failed + link");
   ok(C._billInfoHTML({ profile: {} }, { ok: true, reason: "trial", daysLeft: 5 }).includes("Subscribe now"), "trial sees subscribe CTA");
   ok(C._billInfoHTML({ profile: {} }, { ok: true, reason: "cancelled", daysLeft: 5 }).includes("Resubscribe"), "cancelled sees resubscribe CTA");
@@ -622,8 +645,8 @@ async function main() {
   ok(fs.readFileSync(path.join(R, "js/front.js"), "utf8").includes("filterNav(f ? f.value"), "applyRole re-applies filter");
 
   // ---- display exit (kiosk trap fix) ----
-  ok(sb.displayFootHTML().includes("exitDisplay()") && sb.displayFootHTML().includes("Esc to exit"), "display footer has exit + hint");
-  ok(sb.displayFootHTML().includes("toggleDispMute()") && sb.displayFootHTML().includes("dispFullscreen()"), "display footer keeps mute + fullscreen");
+  ok(sb.displayFootHTML().includes('data-act="exitDisplay"') && sb.displayFootHTML().includes("Esc to exit"), "display footer has exit + hint (delegated)");
+  ok(sb.displayFootHTML().includes('data-act="toggleDispMute"') && sb.displayFootHTML().includes('data-act="dispFullscreen"'), "display footer keeps mute + fullscreen (delegated)");
   ok(typeof sb.exitDisplay === "function" && typeof sb.dispFullscreen === "function", "display exit fns exposed");
   sb.document.getElementById("pageTitle").textContent = "SENTINEL";
   sb.exitDisplay();
@@ -840,7 +863,7 @@ async function main() {
   vm.runInContext(`DB.children=[normalizeChild({id:'d1',name:'Dash Kid',sex:'boy',dob:'2024-01-01'})]; DB.activeId='d1';`, sb);
   sb.renderDashboard();
   const dStats = sb.document.getElementById("dashStats").innerHTML;
-  ok(dStats.includes("go('vaccines')") && dStats.includes("go('milestones')") && dStats.includes("go('growth')") && dStats.includes("go('children')"), "stat cards drill into their screens");
+  ok(dStats.includes('data-act="goPage"') && dStats.includes('data-arg="vaccines"') && dStats.includes('data-arg="milestones"') && dStats.includes('data-arg="growth"') && dStats.includes('data-arg="children"'), "stat cards drill into their screens (delegated)");
 
   // ---- v10.11.0: Sunrise home (stats + queue + alerts + search + MRN + lab review) ----
   vm.runInContext(`DB.children=[
@@ -864,7 +887,7 @@ async function main() {
   ok(sb.homeAlertsHTML([]).includes("All clear"), "no alerts shows all-clear");
   ok(sb.homeAlertsHTML(ha).includes("WhatsApp") && sb.homeAlertsHTML(ha).includes("11 children overdue"), "alerts render with honest counts");
   const hstH = sb.homeStatsHTML(hs);
-  ok(hstH.includes("Patients today") && hstH.includes("go('front')") && hstH.includes("go('analytics')"), "stat cards drill down");
+  ok(hstH.includes("Patients today") && hstH.includes('data-arg="front"') && hstH.includes('data-arg="analytics"'), "stat cards drill down (delegated)");
   // dashboard search (pure core; inputs live in JS-rendered hero)
   const dsH = sb.dashSearchHTML("hari", hKids, []);
   ok(dsH.includes("Hari Patel") && dsH.includes("MRN 0007") && !dsH.includes("Ira Patel"), "dash search ranks + shows MRN");
@@ -1021,7 +1044,7 @@ async function main() {
   const aidsSrc = fs.readFileSync(path.join(R, "js", "aids.js"), "utf8");
   ok(aidsSrc.includes("function xferSeal") && aidsSrc.includes("KG2") && aidsSrc.includes("function scopeTransfer"), "KG2 codec + seal + scope gate exist");
   ok(aidsSrc.includes("BarcodeDetector") && aidsSrc.includes("getUserMedia") && aidsSrc.includes("function openScanModal") && aidsSrc.includes("function previewTransfer"), "QR scanner + receive preview exist (with no-camera fallback)");
-  ok(aidsSrc.includes('onclick="openScanModal()"'), "import box offers Scan");
+  ok(aidsSrc.includes('data-act="openScanModal"'), "import box offers Scan (delegated)");
   const xChild = { name: "Xfer Kid", sex: "girl", dob: "2024-06-01", phone: "999", mother: "M", father: "F",
     vaccines: { BCG: { date: "2024-06-02", brand: "BCGv", mfr: "Serum", batch: "LOT1" } }, extraVac: [],
     measures: [{ date: "2024-06-02", wt: 3.1, ht: 49, hc: 34 }] };
@@ -1208,15 +1231,15 @@ async function main() {
   ok(appM.includes("function previewPage") && psDocs.includes('previewPage("pg-msprint")') && psGrw.includes('previewPage("pg-gsheet")') && psGrc.includes('previewPage("pg-growthprint")'), "canonical reports open a screen preview first (dialog only from the bar)");
   ok(psDocs.includes('shareBarHTML("pg-msprint"') && psGrw.includes('shareBarHTML("pg-gsheet"') && psGrc.includes('shareBarHTML("pg-growthprint"'), "all three canonical previews open with a share bar");
   ok(psCss.includes(".sharebar{"), "share bar styled (screen-only)");
-  ok((sb.shareBarHTML("p", "c", "T").match(/doShare\(/g) || []).length === 6, "share bar offers print + PDF + send + WhatsApp + email + file");
-  ok((sb.shareBarHTML("p", "c", "T", "growth").match(/doShare\(/g) || []).length === 7 && sb.shareBarHTML("p", "c", "T", "growth").includes("Back</button>"), "preview bar adds a Back button to its source page");
+  ok((sb.shareBarHTML("p", "c", "T").match(/data-act="doShare"/g) || []).length === 6, "share bar offers print + PDF + send + WhatsApp + email + file (delegated)");
+  ok((sb.shareBarHTML("p", "c", "T", "growth").match(/data-act="doShare"/g) || []).length === 7 && sb.shareBarHTML("p", "c", "T", "growth").includes("Back</button>"), "preview bar adds a Back button to its source page (delegated)");
   ok(typeof sb.shareTextFor("vacPrint") === "string" && sb.shareTextFor("nope").length > 0, "share text always builds (clinic header fallback)");
   // ---- v10.31.0: permanent motion+glass, reel theme picker ----
   const thCss = fs.readFileSync(path.join(R, "css", "style.css"), "utf8");
   ok(["ember","violet","forest","clay","lagoon","midnight","berry"].every((x) => appM.includes('"' + x + '"')), "all seven reel themes registered");
   ok(appM.includes("function setTheme") && appM.includes("prefers-reduced-motion") && thCss.includes('[data-theme="ember"]') && thCss.includes('[data-theme="berry"]'), "theme picker engine + theme styles exist");
   ok(["ember","violet","forest","clay","lagoon","midnight","berry"].every((x) => thCss.includes('[data-theme="' + x + '"] .sidebar') && thCss.includes('[data-theme="' + x + '"] .btn-p')), "every reel theme restyles sidebar + primary buttons");
-  ok(psIdx.includes("Appearance") && psIdx.includes("setTheme(") && psIdx.includes('data-theme="midnight"'), "settings carries the appearance picker");
+  ok(psIdx.includes("Appearance") && psIdx.includes('data-act="setTheme"') && psIdx.includes('data-theme="midnight"'), "settings carries the appearance picker (delegated, E2a)");
   ok(sb.applyMotion() === true, "motion is permanently on");
   ok(sb.applyGlass() === true, "glass is permanently on");
   ok(sb.setTheme("ember") === true && sb.setTheme("bogus") === false, "setTheme accepts known themes, rejects the rest");

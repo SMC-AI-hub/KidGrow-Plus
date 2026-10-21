@@ -3,18 +3,13 @@
    Configure in Razorpay dashboard: subscription.authenticated/charged/
    activated/cancelled/completed/expired + payment.failed */
 const crypto = require("crypto");
+const G = require("./_guard");
 
-function readRaw(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on("data", (c) => chunks.push(c));
-    req.on("end", () => resolve(Buffer.concat(chunks)));
-    req.on("error", reject);
-  });
-}
+function readRaw(req) { return G.readRawCapped(req, 262144); } // F11: 256KB cap (DoS bound)
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+  if (G.limited(req, res, { prefix: "wh", max: 120 })) return;
   try {
     const raw = await readRaw(req);
     const sig = req.headers["x-razorpay-signature"] || "";

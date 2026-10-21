@@ -91,7 +91,7 @@ for (const f of fs.readdirSync(path.join(R, "js")).filter((f) => f.endsWith(".js
   const n = (read("js/" + f).match(/console\.error/g) || []).length;
   if (n) errSites.push("js/" + f + "x" + n);
 }
-ok(errSites.length <= 2, "console.error only at known render-fault sites (" + (errSites.join(", ") || "none") + ")");
+ok(errSites.length <= 3 && errSites.every((s) => /js\/(app|ops|delegate)\.jsx\d/.test(s)), "console.error only at known fault sites (" + (errSites.join(", ") || "none") + ")");
 ok(/LOGGING POLICY/.test(read("js/app.js")), "logging policy documented at the call site");
 
 // 10. CI runs the suites on every push
@@ -163,6 +163,41 @@ ok(["formulary", "nicu", "mar", "calc", "mrd"].every((p) => frontSrc.includes('"
 const formSrc = read("js/formulary.js");
 ok(formSrc.includes("needSafe(2") && formSrc.includes('guardSubmit("formulary")'), "reviews are role-gated + double-submit guarded");
 ok(read("js/drugs.js").includes("ALWAYS verify"), "formulary keeps its verify warning");
+
+const cfgSrc = read("js/config.js");
+ok(cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PROD_HOSTS covers canonical + legacy prod hosts (F2)");
+{
+  const pkg = JSON.parse(read("package.json"));
+  const appVer = (read("js/cloud.js").match(/var APP_VER = "v([\d.]+)"/) || [])[1] || "";
+  const healthFb = (read("api/health.js").match(/let VERSION = "([\d.]+)"/) || [])[1] || "";
+  const norm = (v) => String(v).replace(/(\.0)+$/, "");
+  ok(norm(pkg.version) === norm(appVer) && norm(appVer) === norm(healthFb) && !!norm(appVer), `release versions agree (pkg ${pkg.version} / app v${appVer} / health ${healthFb}, F13)`);
+  const cloudSrc = read("js/cloud.js");
+  ok(cloudSrc.includes('syncBusy("up")') && cloudSrc.includes('syncBusy("down")'), "sync busy-guard called on both push and pull (quick win)");
+  ok((cloudSrc.match(/syncFree\("/g) || []).length >= 6, "busy-guard freed on every exit path");
+  ok(cloudSrc.includes("window.APP_VER"), "APP_VER exposed globally for version proof (F13)");
+  ok(read("js/validate.js").includes("checkVitals") && read("js/app.js").includes("V.checkVitals") && read("js/growth.js").includes("V.check"), "saves route through central validators (F15)");
+  ok(read("js/nicu.js").includes("NOT case-validated (F25)") && read("index.html").includes('id="sNicuValid"'), "NICU fence banner + settings flag (F25)");
+  ok(read("js/front.js").includes("PBKDF2") && read("js/front.js").includes("100000") && read("js/front.js").includes("p2$"), "PIN KDF is PBKDF2-100k (F5)");
+  ok(read("js/front.js").includes("nextInvNoFor") && read("index.html").includes('id="sGstin"') && read("js/app.js").includes("GSTIN"), "sequential invoices + GSTIN (F18)");
+  ok(read("index.html").includes('id="mBackupWatch"') && read("js/ops.js").includes("snoozeBackup") && read("js/app.js").includes("backupWatch"), "backup watchdog modal + boot hook (F20)");
+  ok(read("index.html").includes('id="mMerge"') && read("js/app.js").includes("confirmMerge") && read("sw.js").includes("./js/merge.js"), "merge tool UI wired + cached (F16)");
+  ok(/owner: 3/.test(read("js/front.js")), "owner role has gate rank (access fix)");
+  ok(read("js/tenant.js").includes("mirror: audit") && read("js/front.js").includes("AUDIT_MIRROR") && read("js/front.js").includes("Tenant.mirror"), "server audit mirror wired for security events (F6)");
+  ok(read("api/create-subscription.js").includes("G.limited") && read("api/razorpay-webhook.js").includes("readRawCapped") && read("api/fhir/[[...slug]].js").includes("G.limited"), "API guards: rate limits + bounded reads (F11)");
+  ok(read("api/err.js").includes("kidgrow-err") && read("js/app.js").includes("errBeaconSend"), "no-PHI error beacon end to end (F17)");
+  ok(read("js/app.js").includes("saveSoon") && read("js/ops.js").includes("storageLine"), "coalesced saves + quota monitor (F22/F4)");
+  ok(read("index.html").includes('id="childPick"') && read("js/app.js").includes("pickFilter"), "type-ahead patient picker (F14)");
+  ok(read("js/cloud.js").includes("syncBtn") && read("js/cloud.js").includes("cloudUpBtn"), "sync buttons show loading state");
+  ok(read("js/cloud.js").includes("data safe on this device, retrying"), "sync-failure microcopy states data safety");
+  ok(read("index.html").includes('aria-label="Search and commands"') && read("css/style.css").includes("focus-visible"), "a11y: labelled controls + focus styles (F21)");
+  ok(read("js/app.js").includes("f.focus({ preventScroll: true })"), "modals autofocus first control (F21)");
+  ok(read("js/exports.js").includes("abdmReady: false"), "ABDM disclaimed to manual-recording-only (E3)");
+  ok(read(".github/workflows/ci.yml").includes("tests/e2e-smoke.js"), "CI runs e2e smoke (F23)");
+  ok(read("js/app.js").includes("IDB.mirror") && read("js/app.js").includes('_meta'), "saves dual-write to IndexedDB shadow + LS meta (E1)");
+  ok(read("js/idb.js").includes("IDB_CUTOVER = false") && read("js/app.js").includes("Adopted newer IndexedDB copy"), "cutover implemented but gated OFF for soak (E1)");
+  ok(read("sw.js").includes("./js/idb.js"), "SW shell caches idb store");
+}
 
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

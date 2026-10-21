@@ -3,7 +3,7 @@
    PIN login + roles · audit trail · token queue ·
    billing & receipts · users management.
    ===================================================== */
-const ROLE_RANK = { Doctor: 3, Admin: 3, Nurse: 2, Pharmacist: 2, Frontdesk: 1 };
+const ROLE_RANK = { owner: 3, Doctor: 3, Admin: 3, Nurse: 2, Pharmacist: 2, Frontdesk: 1 }; // owner was missing (rank 0): locked out of every gate
 const ROLE_HIDE = {
   Frontdesk: ["milestones", "growth", "visits", "timeline", "rx", "analytics", "reports", "users", "settings", "nb", "labs", "aefi", "screen", "diet", "consent", "export", "nicu", "mar", "calc", "mrd", "formulary", "billing"],
   Nurse: ["users", "settings", "billing"],
@@ -40,8 +40,8 @@ function applyRole() {
   const chip = document.getElementById("userChip");
   if (chip) {
     chip.innerHTML = (u && !u.open)
-      ? `👤 <b>${esc(u.name)}</b> <span class="badge b-teal">${esc(u.role)}</span> <button class="btn btn-o btn-xs" onclick="doLogout()">Logout</button>`
-      : ((DB.users || []).length ? "" : `<span style="font-size:12px;color:var(--muted)">🔓 Open mode — <a href="#" onclick="go('users');return false;">set up users & PINs</a></span>`);
+      ? `👤 <b>${esc(u.name)}</b> <span class="badge b-teal">${esc(u.role)}</span> <button class="btn btn-o btn-xs" data-act="doLogout">Logout</button>`
+      : ((DB.users || []).length ? "" : `<span style="font-size:12px;color:var(--muted)">🔓 Open mode — <a href="#" data-act="goPage" data-arg="users">set up users & PINs</a></span>`);
   }
 }
 function enforceLock() {
@@ -55,11 +55,23 @@ function enforceLock() {
     document.getElementById("lockMsg").textContent = "";
   }
 }
-/* PINs are salted hashes (SHA-256 via WebCrypto), never plaintext. Legacy plaintext
-   PINs migrate to hashes on next successful login. Honest limits: a 4-digit PIN
-   has ~13 bits of entropy — this stops casual reads, not targeted cracking.
-   The real multi-user security boundary is Supabase Auth + memberships (M3). */
+/* PINs are salted PBKDF2-SHA256-100k hashes (WebCrypto), never plaintext (F5).
+   Legacy single-round hashes verify-then-upgrade transparently on next login;
+   legacy plaintext PINs migrate the same way. Honest limits: a 4-digit PIN has
+   ~13 bits of entropy — PBKDF2 slows offline cracking ~100k-fold but a targeted
+   attacker with the DB file can still brute-force it. The real multi-user
+   security boundary is Supabase Auth + memberships (M3). */
 async function pinHash(pin, salt) {
+  if (window.crypto && crypto.subtle) {
+    try {
+      const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(pin)), "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(String(salt)), iterations: 100000, hash: "SHA-256" }, km, 256);
+      return "p2$" + [...new Uint8Array(bits)].map((x) => x.toString(16).padStart(2, "0")).join("");
+    } catch (e) { /* fall through to legacy below */ }
+  }
+  return pinHashLegacy(pin, salt);
+}
+async function pinHashLegacy(pin, salt) {
   const msg = salt + ":" + String(pin);
   if (window.crypto && crypto.subtle) {
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
@@ -84,7 +96,16 @@ async function doLogin() {
   const g = pinGuard();
   if (g.until && Date.now() < g.until) { msg.textContent = "🔒 Too many attempts — try again in " + Math.ceil((g.until - Date.now()) / 1000) + "s."; return; }
   let authed = false;
-  if (u && u.pinHash && u.pinSalt) authed = (await pinHash(pin, u.pinSalt)) === u.pinHash;
+  if (u && u.pinHash && u.pinSalt) {
+    if (String(u.pinHash).indexOf("p2$") === 0) authed = (await pinHash(pin, u.pinSalt)) === u.pinHash;
+    else { // legacy single-round hash: verify, then transparently upgrade (F5)
+      authed = (await pinHashLegacy(pin, u.pinSalt)) === u.pinHash;
+      if (authed) {
+        u.pinSalt = pinSalt(); u.pinHash = await pinHash(pin, u.pinSalt);
+        try { log("PIN security upgraded", u.name); } catch (eUp) {}
+      }
+    }
+  }
   else if (u && u.pin != null && String(u.pin) === String(pin)) {
     u.pinSalt = pinSalt(); u.pinHash = await pinHash(pin, u.pinSalt); delete u.pin; authed = true;
   }
@@ -132,10 +153,16 @@ try {
 } catch (e) {}
 
 /* ---------------- audit ---------------- */
+const AUDIT_MIRROR = { "Login": 1, "Login failed": 1, "Logout": 1, "Auto-lock": 1, "PIN security upgraded": 1, "User saved": 1, "User removed": 1, "Patients merged": 1, "Record purged": 1, "Record restored": 1, "Export": 1, "Import": 1, "Bill deleted": 1, "Visit deleted": 1, "Prescription deleted": 1, "Vaccine deleted": 1, "Rates updated": 1, "Break-glass": 1 };
 function log(action, detail) {
   DB.audit = DB.audit || [];
   DB.audit.unshift({ t: new Date().toISOString(), cid: (typeof DB !== "undefined" && DB.activeId) || "", user: (currentUser() || {}).name || "?", action: action || "", detail: detail || "" });
   if (DB.audit.length > 500) DB.audit.length = 500;
+  try { // F6: best-effort server mirror for security-relevant events (no-op offline/unsigned)
+    if (AUDIT_MIRROR[action] && typeof Tenant !== "undefined" && Tenant && typeof Tenant.mirror === "function") {
+      Tenant.mirror("device." + String(action).toLowerCase().replace(/[^a-z0-9]+/g, "."), "device_log", "", String(detail || "").slice(0, 120));
+    }
+  } catch (e) {}
 }
 function exportAudit() {
   if (!need(3, "export audit")) return;
@@ -207,6 +234,20 @@ function billAddCustom() {
   billDraft().items.push({ desc: d, amt: a }); renderFront();
 }
 function billDelItem(i) { billDraft().items.splice(i, 1); renderFront(); }
+function nextInvNoFor(bills, seq, year) {
+  let n = (+seq || 0);
+  (bills || []).forEach((b) => {
+    const m = /^INV-(\d{4})-(\d+)$/.exec(String((b && b.invNo) || ""));
+    if (m && m[1] === String(year)) n = Math.max(n, +m[2]);
+  });
+  return { invNo: "INV-" + year + "-" + String(n + 1).padStart(4, "0"), seq: n + 1 };
+}
+function nextInvNo() {
+  const r = nextInvNoFor(DB.bills, (DB.settings || {}).billSeq, todayISO().slice(0, 4));
+  DB.settings = Object.assign({}, DB.settings, { billSeq: r.seq });
+  return r.invNo;
+}
+function receiptRef(b) { return (b && b.invNo) || ("R-" + String((b && b.id) || "").slice(-6).toUpperCase()); }
 function saveBill() {
   if (typeof guardSubmit === "function" && !guardSubmit("bill")) return; // M4: no double bills
   const dft = billDraft();
@@ -214,7 +255,7 @@ function saveBill() {
   DB.bills = DB.bills || [];
   const kid = DB.children.find((x) => x.id === dft.childId);
   const total = billTotal(), paid = dft.paid === "" ? total : +dft.paid || 0;
-  DB.bills.push({ id: uid(), date: todayISO(), time: nowHM(), childId: dft.childId, name: kid ? kid.name : "Walk-in", items: dft.items.map((i) => ({ ...i })), total, paid, mode: dft.mode, by: (currentUser() || {}).name || "" });
+  DB.bills.push({ id: uid(), invNo: nextInvNo(), date: todayISO(), time: nowHM(), childId: dft.childId, name: kid ? kid.name : "Walk-in", items: dft.items.map((i) => ({ ...i })), total, paid, mode: dft.mode, by: (currentUser() || {}).name || "" });
   BILL_DRAFT = null;
   log("Bill", `₹${total} — ${kid ? kid.name : "Walk-in"}`);
   save(); renderAll();
@@ -230,7 +271,7 @@ function printBill(id) {
   const b = (DB.bills || []).find((x) => x.id === id); if (!b) return;
   const bal = b.total - b.paid;
   $("billPrint").innerHTML = `<div class="receipt">${clinicHeader()}
-    <div style="text-align:center;font-weight:800;letter-spacing:1px;margin:6px 0">RECEIPT · No. R-${b.id.slice(-6).toUpperCase()}</div>
+    <div style="text-align:center;font-weight:800;letter-spacing:1px;margin:6px 0">RECEIPT · No. ${esc(receiptRef(b))}</div>
     <dl class="kv"><dt>Date</dt><dd>${fmtDate(b.date)} ${esc(b.time || "")}</dd><dt>Received from</dt><dd><b>${esc(b.name)}</b></dd><dt>Mode</dt><dd>${esc(b.mode || "—")}</dd></dl>
     <table class="tbl"><tr><th>Particulars</th><th style="text-align:right">Amount (₹)</th></tr>
     ${b.items.map((i) => `<tr><td>${esc(i.desc)}</td><td style="text-align:right">${(+i.amt || 0).toFixed(0)}</td></tr>`).join("")}
@@ -267,42 +308,42 @@ function renderFront() {
   <div class="token-banner"><div><div style="font-size:12px;letter-spacing:1px;opacity:.8">NOW SERVING</div>
     <div style="font-size:34px;font-weight:800">${serving ? `#${serving.n} · ${esc(serving.name)}` : "—"}</div>
     <div style="font-size:13px">${waiting.length} waiting${tod.filter((x) => x.status === "done").length ? ` · ${tod.filter((x) => x.status === "done").length} done` : ""}</div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-p" onclick="callNext()">📢 Call next</button>
-    <button class="btn btn-o btn-sm" onclick="clearOldTokens()">🧹 Clear old days</button></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-p" data-act="callNext">📢 Call next</button>
+    <button class="btn btn-o btn-sm" data-act="clearOldTokens">🧹 Clear old days</button></div></div>
   <div style="height:16px"></div>
   <div class="grid g2">
     <div class="card"><h3>🎟️ Token queue — ${fmtDate(t)}</h3>
       <div class="form-grid">
-        <div><label>Child (registered)</label><select id="tkChild" onchange="document.getElementById('tkName').value=''"><option value="">— walk-in —</option>${DB.children.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
+        <div><label>Child (registered)</label><select id="tkChild" data-onchange="tkNameClear"><option value="">— walk-in —</option>${DB.children.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
         <div><label>Or walk-in name</label><input id="tkName" placeholder="e.g. Sara"></div>
         <div class="full"><label>Reason</label><input id="tkReason" placeholder="e.g. Fever / Vaccination / Review"></div>
       </div>
-      <button class="btn btn-p btn-sm" onclick="addToken()">＋ Add token (#${nextTokenNo(t)})</button>
+      <button class="btn btn-p btn-sm" data-act="addToken">＋ Add token (#${nextTokenNo(t)})</button>
       <div style="margin-top:10px">${tod.length ? tod.map((x) => `
         <div class="vac-row" style="${x.status === "in" ? "border-left:4px solid var(--teal)" : ""}${x.status === "done" ? ";opacity:.55" : ""}">
           <div class="grow"><b>#${x.n}</b> ${esc(x.name)} <span class="badge ${x.status === "in" ? "b-teal" : x.status === "waiting" ? "b-amber" : "b-gray"}">${x.status}</span><br>
           <span style="font-size:12px;color:var(--muted)">${esc(x.time || "")} · ${esc(x.reason || "")}</span></div>
-          ${x.status === "waiting" ? `<button class="btn btn-d btn-xs" onclick="setTokenStatus('${x.id}','in')">Call</button>` : ""}
-          ${x.status === "in" ? `<button class="btn btn-d btn-xs" onclick="setTokenStatus('${x.id}','done')">Done</button>` : ""}
-          ${x.status !== "done" ? `<button class="btn btn-o btn-xs" onclick="setTokenStatus('${x.id}','skipped')">Skip</button>` : ""}
-          <button class="btn btn-danger btn-xs" onclick="delToken('${x.id}')">✕</button>
+          ${x.status === "waiting" ? `<button class="btn btn-d btn-xs" data-act="setTokenStatus" data-arg="${x.id}" data-arg2="in">Call</button>` : ""}
+          ${x.status === "in" ? `<button class="btn btn-d btn-xs" data-act="setTokenStatus" data-arg="${x.id}" data-arg2="done">Done</button>` : ""}
+          ${x.status !== "done" ? `<button class="btn btn-o btn-xs" data-act="setTokenStatus" data-arg="${x.id}" data-arg2="skipped">Skip</button>` : ""}
+          <button class="btn btn-danger btn-xs" data-act="delToken" data-arg="${x.id}">✕</button>
         </div>`).join("") : `<div style="font-size:13px;color:var(--muted)">Queue empty — add the first token.</div>`}</div>
     </div>
     <div class="card"><h3>🧾 New bill</h3>
       <div class="form-grid">
-        <div><label>Child</label><select onchange="billDraft().childId=this.value"><option value="">— walk-in —</option>${DB.children.map((c) => `<option value="${c.id}"${dft.childId === c.id ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
-        <div><label>Mode</label><select onchange="billDraft().mode=this.value">${["UPI", "Cash", "Card"].map((m) => `<option${dft.mode === m ? " selected" : ""}>${m}</option>`).join("")}</select></div>
+        <div><label>Child</label><select data-onchange="billChildSel"><option value="">— walk-in —</option>${DB.children.map((c) => `<option value="${c.id}"${dft.childId === c.id ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
+        <div><label>Mode</label><select data-onchange="billModeSel">${["UPI", "Cash", "Card"].map((m) => `<option${dft.mode === m ? " selected" : ""}>${m}</option>`).join("")}</select></div>
       </div>
       <div class="hint">Quick charges (₹ — edit rates below)</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${rKeys.map((k) => `<button class="btn btn-o btn-xs" onclick="billAddRate('${esc(k).replace(/'/g, "&#39;")}')">${esc(k)} ₹${r[k]}</button>`).join("")}</div>
-      <div style="display:flex;gap:6px;margin-bottom:8px"><input id="bDesc" placeholder="Custom charge" style="flex:2"><input id="bAmt" type="number" min="0" placeholder="₹" style="flex:1"><button class="btn btn-o btn-sm" onclick="billAddCustom()">Add</button></div>
-      ${dft.items.length ? dft.items.map((i, n) => `<div class="vac-row"><div class="grow">${esc(i.desc)}</div><b>₹${(+i.amt || 0).toFixed(0)}</b><button class="btn btn-danger btn-xs" onclick="billDelItem(${n})">✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No charges yet.</div>`}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${rKeys.map((k) => `<button class="btn btn-o btn-xs" data-act="billAddRate" data-arg="${esc(k).replace(/'/g, "&#39;")}">${esc(k)} ₹${r[k]}</button>`).join("")}</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px"><input id="bDesc" placeholder="Custom charge" style="flex:2"><input id="bAmt" type="number" min="0" placeholder="₹" style="flex:1"><button class="btn btn-o btn-sm" data-act="billAddCustom">Add</button></div>
+      ${dft.items.length ? dft.items.map((i, n) => `<div class="vac-row"><div class="grow">${esc(i.desc)}</div><b>₹${(+i.amt || 0).toFixed(0)}</b><button class="btn btn-danger btn-xs" data-act="billDelItem" data-arg="${n}">✕</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">No charges yet — tap a quick charge above or set rates below.</div>`}
       <div class="form-grid" style="margin-top:8px">
         <div><label>Total (₹)</label><input value="${billTotal()}" disabled></div>
-        <div><label>Paid (₹)</label><input id="bPaid" type="number" min="0" value="${dft.paid}" placeholder="${billTotal()}" oninput="billDraft().paid=this.value"></div>
+        <div><label>Paid (₹)</label><input id="bPaid" type="number" min="0" value="${dft.paid}" placeholder="${billTotal()}" data-oninput="billPaidInput"></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-p btn-sm" onclick="saveBill()" ${dft.items.length ? "" : "disabled"}>💾 Save bill${dft.paid !== "" && +dft.paid !== billTotal() ? ` (bal ₹${billTotal() - (+dft.paid || 0)})` : ""}</button>
-      <button class="btn btn-o btn-sm" onclick="BILL_DRAFT=null;renderFront()">Clear</button></div>
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-p btn-sm" data-act="saveBill" ${dft.items.length ? "" : "disabled"}>💾 Save bill${dft.paid !== "" && +dft.paid !== billTotal() ? ` (bal ₹${billTotal() - (+dft.paid || 0)})` : ""}</button>
+      <button class="btn btn-o btn-sm" data-act="billDraftReset">Clear</button></div>
     </div>
   </div>
   <div style="height:16px"></div>
@@ -311,14 +352,14 @@ function renderFront() {
       ${todayBills.length ? todayBills.map((b) => `<div class="vac-row"><div class="grow"><b>R-${b.id.slice(-6).toUpperCase()}</b> · ${esc(b.name)} · ${esc(b.time || "")}<br>
         <span style="font-size:12.5px;color:var(--muted)">${b.items.map((i) => esc(i.desc)).join(" + ")} · ${esc(b.mode || "")}</span></div>
         <b>₹${b.total.toFixed(0)}</b>
-        <button class="btn btn-o btn-xs" onclick="printBill('${b.id}')">🖨️</button>
-        <button class="btn btn-danger btn-xs" onclick="delBill('${b.id}')">✕</button></div>`).join("")
-      : `<div style="font-size:13px;color:var(--muted)">No bills today yet.</div>`}
-      ${bills.filter((b) => b.date !== t).length ? `<div class="hint" style="margin-top:8px">Earlier (${bills.filter((b) => b.date !== t).length}) — latest:</div>` + bills.filter((b) => b.date !== t).slice(0, 5).map((b) => `<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)">${fmtDate(b.date)} · ${esc(b.name)} · <b>₹${b.total.toFixed(0)}</b> <button class="btn btn-o btn-xs" onclick="printBill('${b.id}')">🖨️</button></div>`).join("") : ""}
+        <button class="btn btn-o btn-xs" data-act="printBill" data-arg="${b.id}">🖨️</button>
+        <button class="btn btn-danger btn-xs" data-act="delBill" data-arg="${b.id}">✕</button></div>`).join("")
+      : `<div style="font-size:13px;color:var(--muted)">No bills today yet — start one from a token above.</div>`}
+      ${bills.filter((b) => b.date !== t).length ? `<div class="hint" style="margin-top:8px">Earlier (${bills.filter((b) => b.date !== t).length}) — latest:</div>` + bills.filter((b) => b.date !== t).slice(0, 5).map((b) => `<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)">${fmtDate(b.date)} · ${esc(b.name)} · <b>₹${b.total.toFixed(0)}</b> <button class="btn btn-o btn-xs" data-act="printBill" data-arg="${b.id}">🖨️</button></div>`).join("") : ""}
     </div>
     <div class="card"><h3>💰 Charge rates</h3><div class="hint">Doctor can edit · used by quick-charge buttons</div>
       <div class="form-grid">${rKeys.map((k, i) => `<div><label>${esc(k)} (₹)</label><input type="number" min="0" id="rate${i}" value="${r[k]}"></div>`).join("")}</div>
-      <button class="btn btn-o btn-sm" onclick="saveRates()" style="margin-top:8px">Save rates</button>
+      <button class="btn btn-o btn-sm" data-act="saveRates" style="margin-top:8px">Save rates</button>
     </div>
   </div>
   <div style="height:16px"></div>
@@ -336,22 +377,22 @@ function renderUsers() {
   <div class="grid g2">
     <div class="card"><h3>👥 Users & PINs</h3>
       ${(DB.users || []).length ? "" : `<div class="alert a-amber">🔓 <div><b>Open mode</b> — anyone can use the app. Add a Doctor user + PIN to enable login.</div></div>`}
-      <div class="form-grid">
+      <div class="form-grid no-print">
         <input type="hidden" id="uId">
         <div><label>Name</label><input id="uName" placeholder="e.g. Dr. Sharma"></div>
         <div><label>Role</label><select id="uRole"><option>Doctor</option><option>Nurse</option><option>Pharmacist</option><option>Frontdesk</option><option>Admin</option></select></div>
         <div><label>PIN (4+ digits)</label><input id="uPin" type="password" inputmode="numeric" placeholder="••••"></div>
-        <div style="align-self:end"><button class="btn btn-p btn-sm" onclick="saveUser()">＋ Save user</button></div>
+        <div style="align-self:end"><button class="btn btn-p btn-sm" data-act="saveUser">＋ Save user</button></div>
       </div>
       <div style="margin-top:10px">${(DB.users || []).map((u) => `<div class="vac-row"><div class="grow">👤 <b>${esc(u.name)}</b> <span class="badge b-teal">${esc(u.role)}</span>
         ${(DB.session || {}).userId === u.id ? ` <span class="badge b-gray">logged in</span>` : ""}</div>
-        <button class="btn btn-o btn-xs" onclick="editUser('${u.id}')">Edit</button>
-        <button class="btn btn-danger btn-xs" onclick="delUser('${u.id}')">✕</button></div>`).join("") || `<div style="font-size:13px;color:var(--muted)">No users yet.</div>`}</div>
-      <div style="margin-top:10px"><button class="btn btn-o btn-sm" onclick="doLogout()">Logout now</button></div>
+        <button class="btn btn-o btn-xs" data-act="editUser" data-arg="${u.id}">Edit</button>
+        <button class="btn btn-danger btn-xs" data-act="delUser" data-arg="${u.id}">✕</button></div>`).join("") || `<div style="font-size:13px;color:var(--muted)">No users yet — add a Doctor user + PIN to enable login.</div>`}</div>
+      <div style="margin-top:10px"><button class="btn btn-o btn-sm" data-act="doLogout">Logout now</button></div>
     </div>
     <div class="card"><h3>📜 Audit trail <span style="font-size:13px;color:var(--muted)">(latest ${(DB.audit || []).length}, kept 500)</span></h3>
-      <div class="hint">Who did what, when. <button class="btn btn-o btn-xs" onclick="exportAudit()">⬇ Export CSV</button>
-      <button class="btn btn-o btn-xs" onclick="printPage('pg-users')">🖨️ Print</button></div>
+      <div class="hint">Who did what, when. <button class="btn btn-o btn-xs" data-act="exportAudit">⬇ Export CSV</button>
+      <button class="btn btn-o btn-xs" data-act="printPage" data-arg="pg-users">🖨️ Print</button></div>
       <div style="max-height:420px;overflow:auto"><table class="tbl"><tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr>
       ${au.map((a) => `<tr><td style="font-size:11.5px;white-space:nowrap">${esc(a.t.slice(0, 16).replace("T", " "))}</td><td>${esc(a.user)}</td><td><b>${esc(a.action)}</b></td><td style="font-size:12px">${esc(a.detail)}</td></tr>`).join("") || `<tr><td colspan="4" style="color:var(--muted)">No activity yet.</td></tr>`}</table></div>
     </div>
@@ -394,3 +435,14 @@ function delUser(id) {
 /* Boot (scripts run after DOM parse): hide role-blocked buttons + restore collapsed sections. */
 try { applyRole(); } catch (e) {}
 try { if (typeof restoreNavSecs === "function") restoreNavSecs(); } catch (e) {}
+
+/* E2b: delegated actions for templates in this file. */
+try {
+  ["doLogout", "saveUser", "saveRates", "saveBill", "exportAudit", "clearOldTokens", "callNext", "billAddCustom", "addToken", "billDelItem", "billAddRate", "printBill", "editUser", "delUser", "delToken", "delBill"].forEach(function (n) { actCall0(n); });
+  actCallN("setTokenStatus", 2);
+  actRegister("billDraftReset", function () { try { BILL_DRAFT = null; renderFront(); } catch (e) { actReport("billDraftReset", e); } });
+  actRegister("billPaidInput", function (el) { try { billDraft().paid = el.value; } catch (e) { actReport("billPaidInput", e); } });
+  actRegister("tkNameClear", function () { try { document.getElementById("tkName").value = ""; } catch (e) { actReport("tkNameClear", e); } });
+  actRegister("billModeSel", function (el) { try { billDraft().mode = el.value; } catch (e) { actReport("billModeSel", e); } });
+  actRegister("billChildSel", function (el) { try { billDraft().childId = el.value; } catch (e) { actReport("billChildSel", e); } });
+} catch (e) {}

@@ -25,15 +25,15 @@
       <div><h1 id="brandName">NeoKid Care</h1><small id="brandSub">Neonatal · Pediatric · IAP</small></div>
     </div>
     <nav class="nav" id="sideNav">
-      <div class="navfilter"><input id="navFilter" placeholder="🔍 Filter menu…" autocomplete="off" oninput="filterNav(this.value)" onkeydown="if(event.key==='Escape'){this.value='';filterNav('')}"></div>
+      <div class="navfilter"><input id="navFilter" placeholder="🔍 Filter menu…" autocomplete="off" data-oninput="filterNav" data-onkey="navFilterKey"></div>
       <div class="navsec" data-sec="home">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('home')"><span>Home</span><span class="chev">▾</span></button>
+      <button class="nav-group navsec-h" data-act="toggleNavSec" data-arg="home"><span>Home</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="dashboard" class="active"><span class="ic">📊</span>Dashboard</button>
       </div>
       </div>
       <div class="navsec" data-sec="patients">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('patients')"><span>Patients</span><span class="chev">▾</span></button>
+      <button class="nav-group navsec-h" data-act="toggleNavSec" data-arg="patients"><span>Patients</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="children"><span class="ic">🧒</span>Children</button>
       <button data-page="nb"><span class="ic">👶</span>Newborn</button>
@@ -41,7 +41,7 @@
       </div>
       </div>
       <div class="navsec" data-sec="ops">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('ops')"><span>Clinic ops</span><span class="chev">▾</span></button>
+      <button class="nav-group navsec-h" data-act="toggleNavSec" data-arg="ops"><span>Clinic ops</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="schedule"><span class="ic">📅</span>Schedule</button>
       <button data-page="front"><span class="ic">🎟️</span>Frontdesk</button>
@@ -49,7 +49,7 @@
       </div>
       </div>
       <div class="navsec" data-sec="clinical">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('clinical')"><span>Clinical care</span><span class="chev">▾</span></button>
+      <button class="nav-group navsec-h" data-act="toggleNavSec" data-arg="clinical"><span>Clinical care</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="visits"><span class="ic">🩺</span>Visits & Notes</button>
       <button data-page="rx"><span class="ic">💊</span>Prescription</button>
@@ -68,7 +68,7 @@
       </div>
       </div>
       <div class="navsec" data-sec="immun">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('immun')"><span>Immunization</span><span class="chev">▾</span></button>
+      <button class="nav-group navsec-h" data-act="toggleNavSec" data-arg="immun"><span>Immunization</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="vaccines"><span class="ic">💉</span>Vaccination Record</button>
       <button data-page="card"><span class="ic">🧾</span>Vaccine Card</button>
@@ -77,7 +77,7 @@
       </div>
       </div>
       <div class="navsec" data-sec="specialty">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('specialty')"><span>Specialty</span><span class="chev">▾</span></button>
+      <button class="nav-group navsec-h" data-act="toggleNavSec" data-arg="specialty"><span>Specialty</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="nicu"><span class="ic">🏥</span>NICU</button>
       <button data-page="mar"><span class="ic">💊</span>eMAR</button>
@@ -85,7 +85,7 @@
       </div>
       </div>
       <div class="navsec" data-sec="reports">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('reports')"><span>Reports</span><span class="chev">▾</span></button>
+      <button class="nav-group navsec-h" data-act="toggleNavSec" data-arg="reports"><span>Reports</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="analytics"><span class="ic">📊</span>Analytics</button>
       <button data-page="reports"><span class="ic">🖨️</span>Reports</button>
@@ -94,7 +94,7 @@
       </div>
       </div>
       <div class="navsec" data-sec="system">
-      <button class="nav-group navsec-h" onclick="toggleNavSec('system')"><span>System</span><span class="chev">▾</span></button>
+      <button class="nav-group navsec-h" data-act="toggleNavSec" data-arg="system"><span>System</span><span class="chev">▾</span></button>
       <div class="navsec-b">
       <button data-page="users"><span class="ic">👥</span>Users & Audit</button>
       <button data-page="settings"><span class="ic">⚙️</span>Settings</button>
@@ -109,16 +109,17 @@
   <!-- ============ MAIN ============ -->
   <div class="main">
     <div class="topbar">
-      <button class="icon-btn" id="navToggle" onclick="toggleNav()" title="Collapse / expand menu">☰</button>
+      <button class="icon-btn" id="navToggle" data-act="toggleNav" title="Collapse / expand menu" aria-label="Collapse or expand menu">☰</button>
       <div><h2 id="pageTitle">Dashboard</h2><div class="sub" id="clinicLine">—</div></div>
       <span id="netBadge" class="badge b-green" title="Connection status">● Online</span>
-      <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Theme: light (tap to change)">🌙</button>
-      <button class="icon-btn" id="settingsGear" onclick="go('settings')" title="Settings — clinic profile, logo, doctors">⚙️</button>
+      <button class="icon-btn" id="cmdkBtn" data-act="cmdkOpen" title="Search / commands (Ctrl+K)" aria-label="Search and commands">🔍</button>
+      <button class="icon-btn" id="themeToggle" data-act="toggleTheme" title="Theme: light (tap to change)" aria-label="Change theme">🌙</button>
+      <button class="icon-btn" id="settingsGear" data-act="goPage" data-arg="settings" title="Settings — clinic profile, logo, doctors" aria-label="Settings">⚙️</button>
       <div class="child-picker">
         <div class="avatar" id="childAvatar">–</div>
-        <div><select id="childSelect" title="Active child"></select>
+        <div class="search-wrap"><input id="childPick" class="search" style="max-width:230px" placeholder="🔍 Active child — type to switch" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="childPickRes" aria-label="Active child — type to switch" data-oninput="pickFilter" data-onkey="pickKey" data-onfocus="pickFilter" data-onblur="pickBlur"><div id="childPickRes" class="search-res" role="listbox" style="display:none"></div><select id="childSelect" title="Active child" style="display:none" tabindex="-1" aria-hidden="true"></select>
         <div class="sub" id="childAgeLine" style="font-size:11.5px"></div></div>
-        <button class="btn btn-p btn-sm" onclick="openChildModal()">+ New</button>
+        <button class="btn btn-p btn-sm" data-act="openChildModal">+ New</button>
       </div>
     </div>
 
@@ -132,9 +133,9 @@
       <section class="page active" id="pg-dashboard">
         <div class="hero no-print" id="dashHero"></div>
         <div class="toolbar"><span class="badge b-teal">● IAP Standards Edition</span><span class="badge b-gray" id="dashChildTag"></span><span class="sp"></span>
-          <button class="btn btn-o btn-sm" onclick="exportData()">⬇ Export backup</button>
-          <button class="btn btn-o btn-sm" onclick="document.getElementById('importFile').click()">⬆ Import</button>
-          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+          <button class="btn btn-o btn-sm" data-act="exportData">⬇ Export backup</button>
+          <button class="btn btn-o btn-sm" data-act="clickImportFile">⬆ Import</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" data-onchange="importData">
         </div>
         <div class="grid g4" id="dashHome"></div>
         <div style="height:16px"></div>
@@ -170,7 +171,7 @@
 
       <!-- ======== ANALYTICS ======== -->
       <section class="page" id="pg-analytics">
-        <div class="toolbar"><span style="font-size:13px;color:var(--muted)">Clinic-wide quality indicators</span><span class="sp"></span><button class="btn btn-o btn-sm" onclick="printPage('pg-analytics')">🖨️ Print</button></div>
+        <div class="toolbar"><span style="font-size:13px;color:var(--muted)">Clinic-wide quality indicators</span><span class="sp"></span><button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-analytics">🖨️ Print</button></div>
         <div class="grid g4" id="anStats"></div>
         <div style="height:16px"></div>
         <div class="grid g2">
@@ -223,7 +224,7 @@
       <!-- ======== SCREENING ======== -->
       <section class="page" id="pg-screen"><div id="ph-screen"></div><div id="screenBox"></div></section>
       <section class="page" id="pg-chronic"><div id="ph-chronic"></div><div id="chronicBox"></div></section>
-      <section class="page" id="pg-letters"><div id="ph-letters"></div><div id="lettersBox"></div></section>
+      <section class="page" id="pg-letters"><div id="ph-letters" class="no-print"></div><div id="lettersBox"></div></section>
 
       <!-- ======== RX ======== -->
       <section class="page" id="pg-rx"><div id="ph-rx"></div><div id="rxBox"></div></section>
@@ -265,9 +266,10 @@
       <section class="page" id="pg-calc"><div id="calcBox"></div></section>
       <section class="page" id="pg-children">
         <div class="toolbar">
-          <input class="search" id="childSearch" placeholder="🔍 Search name, parent, phone…  ( press / anywhere )" oninput="renderChildren()" onkeydown="childSearchKey(event)">
+          <input class="search" id="childSearch" placeholder="🔍 Search name, parent, phone…  ( press / anywhere )" data-oninput="renderChildren" data-onkey="childSearchKey">
           <span class="sp"></span>
-          <button class="btn btn-p" onclick="openChildModal()">+ Register child</button>
+          <button class="btn btn-o btn-sm" data-act="openMergeModal">⧉ Merge duplicates</button>
+          <button class="btn btn-p" data-act="openChildModal">+ Register child</button>
         </div>
         <div class="grid g3" id="childCards"></div>
       </section>
@@ -277,8 +279,8 @@
         <div class="toolbar">
           <div class="tabs" id="msTabs" style="margin:0"></div>
           <span class="sp"></span>
-          <button class="btn btn-p btn-sm" onclick="printMilestonesFull()">🖨️ Print / Share</button>
-          <button class="btn btn-o btn-sm" onclick="exportMilestonesCSV()">⬇ CSV</button>
+          <button class="btn btn-p btn-sm" data-act="printMilestonesFull">🖨️ Print / Share</button>
+          <button class="btn btn-o btn-sm" data-act="exportMilestonesCSV">⬇ CSV</button>
         </div>
         <div id="msAlert"></div>
         <div class="grid g4" id="msDomainStats" style="margin-bottom:16px"></div>
@@ -293,9 +295,9 @@
           <div class="progress" style="flex:1;min-width:180px"><div id="vacBar" style="width:0%"></div></div>
           <b id="vacPct">0%</b>
           <span class="sp"></span>
-          <button class="btn btn-o btn-sm" onclick="printPage('pg-vaccines')">🖨️ Print record</button>
+          <button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-vaccines">🖨️ Print record</button>
           <span id="vxShare" class="no-print"></span>
-          <button class="btn btn-p btn-sm" onclick="printCertificate()">🏅 Certificate</button>
+          <button class="btn btn-p btn-sm" data-act="printCertificate">🏅 Certificate</button>
         </div>
         <div id="vacAlerts" class="no-print"></div>
         <div class="timeline no-print" id="vacTimeline"></div>
@@ -306,12 +308,12 @@
             <!-- ======== GROWTH ======== -->
       <section class="page" id="pg-growth"><div id="ph-growth"></div>
         <div class="toolbar">
-          <button class="btn btn-p" onclick="openGrowthModal()">+ Record measurements</button>
-          <button class="btn btn-o btn-sm" onclick="toggleMeasureTable()">📋 History</button>
-          <button class="btn btn-o btn-sm" onclick="printGrowthSheet()">🖨️ Growth sheet (1 page)</button>
-          <button class="btn btn-o btn-sm" onclick="printGrowthFull()">📈 Full report (all charts)</button>
+          <button class="btn btn-p" data-act="openGrowthModal">+ Record measurements</button>
+          <button class="btn btn-o btn-sm" data-act="toggleMeasureTable">📋 History</button>
+          <button class="btn btn-o btn-sm" data-act="printGrowthSheet">🖨️ Growth sheet (1 page)</button>
+          <button class="btn btn-o btn-sm" data-act="printGrowthFull">📈 Full report (all charts)</button>
           <span class="sp"></span>
-          <label style="display:flex;align-items:center;gap:7px;font-size:13px;text-transform:none;letter-spacing:0;margin:0;white-space:nowrap"><input type="checkbox" id="corrAgeTgl" style="width:16px" onchange="toggleCorrAge(this.checked)"> Corrected age for preterm</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;text-transform:none;letter-spacing:0;margin:0;white-space:nowrap"><input type="checkbox" id="corrAgeTgl" style="width:16px" data-onchange="toggleCorrAge"> Corrected age for preterm</label>
         </div>
         <div id="growthPmaLine"></div>
         <div class="tabs no-print" id="growthSubTabs">
@@ -346,7 +348,7 @@
               <button data-gr="cdc">CDC 2000</button>
             </div>
             <span class="sp"></span>
-            <button class="btn btn-o btn-sm" onclick="toggleFullRange()">↔ Full 0–18 view</button>
+            <button class="btn btn-o btn-sm" data-act="toggleFullRange">↔ Full 0–18 view</button>
           </div>
           <div class="card"><h3 id="gChartTitle">—</h3><div class="hint" id="gChartHint"></div>
             <canvas class="chart" id="gChart" width="900" height="360"></canvas>
@@ -362,14 +364,14 @@
       </section>
 <!-- ======== VISITS ======== -->
       <section class="page" id="pg-visits"><div id="ph-visits"></div>
-        <div class="toolbar"><button class="btn btn-p" onclick="openVisitModal()">+ New visit note</button><span class="sp"></span>
-        <button class="btn btn-o btn-sm" onclick="printPage('pg-visits')">🖨️ Print notes</button>
+        <div class="toolbar"><button class="btn btn-p" data-act="openVisitModal">+ New visit note</button><span class="sp"></span>
+        <button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-visits">🖨️ Print notes</button>
           <span id="vsShare" class="no-print"></span></div>
         <div id="visitList"></div>
       </section>
       <section class="page" id="pg-timeline"><div id="ph-timeline"></div>
         <div class="toolbar"><span style="font-size:13px;color:var(--muted)">All visits, prescriptions, vaccines, growth, labs & AEFI — newest first</span><span class="sp"></span>
-        <button class="btn btn-o btn-sm" onclick="printPage('pg-timeline')">🖨️ Print</button></div>
+        <button class="btn btn-o btn-sm" data-act="printPage" data-arg="pg-timeline">🖨️ Print</button></div>
         <div id="timelineList"></div>
       </section>
 
@@ -377,9 +379,9 @@
       <section class="page" id="pg-reports">
         <div class="grid g2">
           <div class="card"><h3>📄 Comprehensive health summary</h3><div class="hint">One-page: profile, growth, vaccines, milestones, visits</div>
-            <button class="btn btn-p" onclick="buildSummary();printPage('pg-summary')">Preview & print summary</button></div>
+            <button class="btn btn-p" data-act="buildSummaryPrint">Preview & print summary</button></div>
           <div class="card"><h3>🏅 Immunization certificate</h3><div class="hint">Official-looking record with clinic seal block</div>
-            <button class="btn btn-d" onclick="printCertificate()">Preview & print certificate</button></div>
+            <button class="btn btn-d" data-act="printCertificate">Preview & print certificate</button></div>
         </div>
         <div style="height:16px"></div>
         <div class="card" id="summaryCard" style="display:none"><div id="summaryBody"></div></div>
@@ -400,41 +402,43 @@
               <div class="full"><label>Clinic / Hospital name</label><input id="sClinic" placeholder="e.g. Smile Child Care Clinic"></div>
               <div><label>Doctor name</label><input id="sDoctor" placeholder="e.g. Dr. A. Sharma, MD (Paeds)"></div>
               <div><label>Registration no.</label><input id="sReg" placeholder="MCI / State reg."></div>
+              <div><label>Clinic GSTIN (prints on receipts)</label><input id="sGstin" placeholder="e.g. 33ABCDE1234F1Z5" style="text-transform:uppercase"></div>
               <div><label>Address</label><input id="sAddr" placeholder="Street, area, city"></div>
               <div><label>Phone</label><input id="sPhone" placeholder="Clinic phone"></div>
-              <div class="full"><label>Clinic / hospital logo (PNG/JPG · shows on sidebar + all letterheads)</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><img id="logoPrev" alt="" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;display:none"><input type="file" id="sLogo" accept="image/*" style="max-width:230px" onchange="handleLogoFile(this)"><button class="btn btn-o btn-xs" onclick="removeLogo()">Remove</button></div></div>
-              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sColorPrint" checked onchange="savePrintPref()"> 🖨️ Print in color (badges · charts · banners) — uncheck to save ink</label></div>
+              <div class="full"><label>Clinic / hospital logo (PNG/JPG · shows on sidebar + all letterheads)</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><img id="logoPrev" alt="" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;display:none"><input type="file" id="sLogo" accept="image/*" style="max-width:230px" data-onchange="handleLogoFile"><button class="btn btn-o btn-xs" data-act="removeLogo">Remove</button></div></div>
+              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sColorPrint" checked data-onchange="savePrintPref"> 🖨️ Print in color (badges · charts · banners) — uncheck to save ink</label></div>
             </div>
-            <button class="btn btn-p" onclick="saveSettings()">💾 Save clinic profile</button>
+            <button class="btn btn-p" data-act="saveSettings">💾 Save clinic profile</button>
           </div>
           <div class="card"><h3>🎨 Appearance</h3><div class="hint">App colors — applies instantly, saved with your login</div>
             <div class="theme-grid">
-              <button class="theme-sw" data-theme="light" onclick="setTheme('light')"><span class="sw" style="--a:#0d9488;--b:#0f2b4d"></span>Classic</button>
-              <button class="theme-sw" data-theme="sunrise" onclick="setTheme('sunrise')"><span class="sw" style="--a:#d9a92c;--b:#0a3a36"></span>Sunrise</button>
-              <button class="theme-sw" data-theme="dark" onclick="setTheme('dark')"><span class="sw" style="--a:#2dd4bf;--b:#0a1424"></span>Night</button>
-              <button class="theme-sw" data-theme="ember" onclick="setTheme('ember')"><span class="sw" style="--a:#FF6115;--b:#431F10"></span>Ember</button>
-              <button class="theme-sw" data-theme="violet" onclick="setTheme('violet')"><span class="sw" style="--a:#7A35FF;--b:#2A1650"></span>Violet</button>
-              <button class="theme-sw" data-theme="forest" onclick="setTheme('forest')"><span class="sw" style="--a:#B7FF72;--b:#18251D"></span>Forest</button>
-              <button class="theme-sw" data-theme="clay" onclick="setTheme('clay')"><span class="sw" style="--a:#FFE98A;--b:#4A2A1E"></span>Clay</button>
-              <button class="theme-sw" data-theme="lagoon" onclick="setTheme('lagoon')"><span class="sw" style="--a:#9FE9D0;--b:#17383F"></span>Lagoon</button>
-              <button class="theme-sw" data-theme="midnight" onclick="setTheme('midnight')"><span class="sw" style="--a:#39FF88;--b:#0B132B"></span>Midnight</button>
-              <button class="theme-sw" data-theme="berry" onclick="setTheme('berry')"><span class="sw" style="--a:#4A5BB5;--b:#2B3370"></span>Berry</button>
+              <button class="theme-sw" data-theme="light" data-act="setTheme" data-arg="light"><span class="sw" style="--a:#0d9488;--b:#0f2b4d"></span>Classic</button>
+              <button class="theme-sw" data-theme="sunrise" data-act="setTheme" data-arg="sunrise"><span class="sw" style="--a:#d9a92c;--b:#0a3a36"></span>Sunrise</button>
+              <button class="theme-sw" data-theme="dark" data-act="setTheme" data-arg="dark"><span class="sw" style="--a:#2dd4bf;--b:#0a1424"></span>Night</button>
+              <button class="theme-sw" data-theme="ember" data-act="setTheme" data-arg="ember"><span class="sw" style="--a:#FF6115;--b:#431F10"></span>Ember</button>
+              <button class="theme-sw" data-theme="violet" data-act="setTheme" data-arg="violet"><span class="sw" style="--a:#7A35FF;--b:#2A1650"></span>Violet</button>
+              <button class="theme-sw" data-theme="forest" data-act="setTheme" data-arg="forest"><span class="sw" style="--a:#B7FF72;--b:#18251D"></span>Forest</button>
+              <button class="theme-sw" data-theme="clay" data-act="setTheme" data-arg="clay"><span class="sw" style="--a:#FFE98A;--b:#4A2A1E"></span>Clay</button>
+              <button class="theme-sw" data-theme="lagoon" data-act="setTheme" data-arg="lagoon"><span class="sw" style="--a:#9FE9D0;--b:#17383F"></span>Lagoon</button>
+              <button class="theme-sw" data-theme="midnight" data-act="setTheme" data-arg="midnight"><span class="sw" style="--a:#39FF88;--b:#0B132B"></span>Midnight</button>
+              <button class="theme-sw" data-theme="berry" data-act="setTheme" data-arg="berry"><span class="sw" style="--a:#4A5BB5;--b:#2B3370"></span>Berry</button>
             </div>
           </div>
           <div class="card"><h3>🔒 Session lock</h3><div class="hint">Auto-locks the app after inactivity (needs user PINs set up)</div>
             <div class="form-grid">
               <div><label>Lock after (minutes, 1–480)</label><input id="sLockMins" type="number" min="1" max="480" placeholder="15"></div>
+              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sNicuValid" data-onchange="saveSettings"> ✅ NICU case-validated — check ONLY after F25 sign-off (≥10 real cases vs discharge/bili builders)</label></div>
             </div>
-            <button class="btn btn-p" onclick="saveSettings()">💾 Save lock setting</button>
+            <button class="btn btn-p" data-act="saveSettings">💾 Save lock setting</button>
           </div>
           <div class="card"><h3>👩‍⚕️ Doctors & letterheads</h3><div class="hint">Add all consulting doctors · ● selected prints on reports</div><div id="docBox"></div></div>
           <div class="card"><h3>🗄️ Data management</h3><div class="hint">All data stays on this device (offline-first, private) · App <b>v10</b></div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-o" onclick="exportData()">⬇ Export backup (JSON)</button>
-              <button class="btn btn-p btn-sm" id="installAppBtn" style="display:none" onclick="installApp()">📲 Install app</button>
-              <button class="btn btn-o" onclick="document.getElementById('importFile').click()">⬆ Import backup</button>
-              <button class="btn btn-o" onclick="undoLastImport()">↩ Undo last import</button>
-              <button class="btn btn-danger" onclick="factoryReset()">🗑 Wipe all data</button>
+              <button class="btn btn-o" data-act="exportData">⬇ Export backup (JSON)</button>
+              <button class="btn btn-p btn-sm" id="installAppBtn" style="display:none" data-act="installApp">📲 Install app</button>
+              <button class="btn btn-o" data-act="clickImportFile">⬆ Import backup</button>
+              <button class="btn btn-o" data-act="undoLastImport">↩ Undo last import</button>
+              <button class="btn btn-danger" data-act="factoryReset">🗑 Wipe all data</button>
             </div>
             <div class="footer-note">Tip: export a backup monthly. Importing replaces current data. Growth references: WHO MGRS 2006 (0–5 y) + IAP 2015 (5–18 y); vaccines: <span data-vaxver>IAP ACVIP 2025</span>. Always confirm on official charts before labelling malnutrition/obesity.</div>
           </div>
@@ -456,6 +460,27 @@
 </div></div>
 
 <!-- ============ MODALS ============ -->
+<div class="modal-bg" id="mBackupWatch"><div class="modal" style="max-width:440px" role="dialog" aria-label="Backup overdue">
+  <h3>💾 Backup overdue</h3>
+  <div class="hint" id="backupWatchLine" style="font-size:13.5px"></div>
+  <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+    <button class="btn btn-p btn-sm" data-act="backupWatchGo">Back up now</button>
+    <button class="btn btn-o btn-sm" data-act="snoozeBackup">Remind tomorrow</button>
+  </div>
+</div></div>
+<div class="modal-bg" id="mMerge"><div class="modal" style="max-width:520px" role="dialog" aria-label="Merge duplicate patients">
+  <h3>⧉ Merge duplicate patients</h3>
+  <div class="hint" style="font-size:12.5px">Keeps the first record's identity, moves all visits / growth / vaccines / Rx from the second, then retires it (audited, reversible via restore).</div>
+  <div class="form-grid" style="margin-top:8px">
+    <div><label>Keep (surviving record)</label><select id="mgKeep"></select></div>
+    <div><label>Merge & retire (duplicate)</label><select id="mgDrop"></select></div>
+  </div>
+  <div class="hint" id="mgPrev" style="font-size:12.5px;margin-top:6px"></div>
+  <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+    <button class="btn btn-p btn-sm" data-act="confirmMerge">Merge records</button>
+    <button class="btn btn-o btn-sm" data-act="closeModal" data-arg="mMerge">Cancel</button>
+  </div>
+</div></div>
 <div class="modal-bg" id="mChild"><div class="modal">
   <h3 id="childModalTitle">Register child</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">Starred fields are required</div>
   <div class="form-grid">
@@ -478,7 +503,7 @@
     <div class="full"><label>Allergies / conditions</label><input id="cAllergy" placeholder="e.g. Egg allergy, asthma"></div>
   </div>
   <div id="hxCards"></div>
-  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mChild')">Cancel</button><button class="btn btn-p" onclick="saveChild()">💾 Save child</button></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" data-act="closeModal" data-arg="mChild">Cancel</button><button class="btn btn-p" data-act="saveChild">💾 Save child</button></div>
 </div></div>
 
 <div class="modal-bg" id="mGrowth"><div class="modal">
@@ -500,7 +525,7 @@
     <div><label>Measured by</label><input id="gBy" placeholder="e.g. Nurse / Doctor"></div>
     <div class="full"><label>Notes</label><input id="gNote" placeholder="e.g. Mild cold, measured on scale B"></div>
   </div>
-  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mGrowth')">Cancel</button><button class="btn btn-p" onclick="saveGrowth()">💾 Save measurement</button></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" data-act="closeModal" data-arg="mGrowth">Cancel</button><button class="btn btn-p" data-act="saveGrowth">💾 Save measurement</button></div>
 </div></div>
 
 <div class="modal-bg" id="mVac"><div class="modal">
@@ -515,14 +540,14 @@
     <div><label>Given by</label><input id="vBy" placeholder="e.g. Dr. / Nurse name"></div>
     <div class="full"><label>Adverse reaction (if any)</label><input id="vAer" placeholder="e.g. Mild fever 24h — or leave blank"></div>
     <div class="full"><label>Remarks</label><input id="vNote" placeholder="e.g. Next visit counselled"></div>
-    <div class="full"><label>Deduct from stock lot</label><select id="vLot" onchange="syncLotFields('v')"></select><div class="hint" id="vLotHint" style="font-size:12px;color:var(--muted)"></div></div>
+    <div class="full"><label>Deduct from stock lot</label><select id="vLot" data-onchange="syncLotFields" data-arg="v"></select><div class="hint" id="vLotHint" style="font-size:12px;color:var(--muted)"></div></div>
     <div class="full" id="vSibBox" style="display:none;background:#f8fafc;border:1px dashed var(--line);border-radius:10px;padding:10px 12px"></div>
   </div>
   <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
-    <button class="btn btn-danger btn-sm" id="vClearBtn" onclick="clearVaccine()">Remove entry</button>
+    <button class="btn btn-danger btn-sm" id="vClearBtn" data-act="clearVaccine">Remove entry</button>
     <span style="flex:1"></span>
-    <button class="btn btn-o" onclick="closeModal('mVac')">Cancel</button>
-    <button class="btn btn-p" onclick="saveVaccine()">💾 Save</button>
+    <button class="btn btn-o" data-act="closeModal" data-arg="mVac">Cancel</button>
+    <button class="btn btn-p" data-act="saveVaccine">💾 Save</button>
   </div>
 </div></div>
 
@@ -540,8 +565,8 @@
     <div><label>Note</label><input id="kNote" placeholder="e.g. Fridge top shelf"></div>
   </div>
   <div style="display:flex;gap:10px;justify-content:flex-end">
-    <button class="btn btn-o" onclick="closeModal('mStock')">Cancel</button>
-    <button class="btn btn-p" onclick="saveStock()">💾 Save lot</button>
+    <button class="btn btn-o" data-act="closeModal" data-arg="mStock">Cancel</button>
+    <button class="btn btn-p" data-act="saveStock">💾 Save lot</button>
   </div>
 </div></div>
 
@@ -551,17 +576,17 @@
     <input type="hidden" id="vsId">
     <div><label>Date *</label><input type="date" id="vsDate"></div>
     <div><label>Visit type</label><select id="vsType"><option>Routine / Well-child</option><option>Illness</option><option>Vaccination</option><option>Growth review</option><option>Developmental review</option><option>Teleconsult</option></select></div>
-    <div><label>Template (optional)</label><div style="display:flex;gap:6px"><select id="vsTemplate" style="flex:1"><option value="">— No template —</option></select><button type="button" class="btn btn-o btn-sm" onclick="Ex.applyTemplate(document.getElementById('vsTemplate').value)">Apply</button></div></div>
+    <div><label>Template (optional)</label><div style="display:flex;gap:6px"><select id="vsTemplate" style="flex:1"><option value="">— No template —</option></select><button type="button" class="btn btn-o btn-sm" data-act="exApplyTemplate">Apply</button></div></div>
     <div class="full" id="vsTplIcd"></div>
     <div class="full"><label>Complaints / History</label><textarea id="vsSubj" rows="2" placeholder="e.g. Fever 2 days, cold, appetite ok"></textarea></div>
     <div class="full"><label>Examination</label><textarea id="vsObj" rows="2" placeholder="e.g. Alert, hydrated; throat congested; chest clear"></textarea></div>
     <div class="full"><label>Assessment & Plan</label><textarea id="vsPlan" rows="2" placeholder="e.g. Viral URI — paracetamol SOS, fluids, review 3 days"></textarea></div>
     <div class="full"><label>Diagnoses (ICD-10)</label><input type="hidden" id="vsIcd" value="[]"><div id="vsIcdChips"></div><input id="vsIcdQ" placeholder="Type to search diagnoses…" autocomplete="off"><div id="vsIcdList"></div></div>
     <div class="full"><div class="card" style="margin:0"><h3>🩺 Vitals</h3><div id="vsVitalsBox"></div></div></div>
-    <div class="full"><div class="card" style="margin:0"><h3>🔍 Examination <span style="font-size:11.5px;font-weight:400;color:var(--muted)">(assess systems, then insert)</span></h3><div id="exRows"></div><button type="button" class="btn btn-o btn-xs" style="margin-top:6px" onclick="Ex.insertExam()">＋ Insert exam into Examination</button></div></div>
-    <div class="full"><label>🎙️ Voice note (speak any language · max 60 s)</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn btn-o btn-sm" id="voiceRecBtn" onclick="voiceToggle()">⏺ Record</button><span id="voiceStatus" style="font-size:12.5px;color:var(--muted)">No recording</span><audio id="voicePlay" controls style="display:none;max-width:220px;height:32px"></audio><button class="btn btn-o btn-xs" id="voiceDelBtn" onclick="voiceClear()" style="display:none">✕</button></div></div>
+    <div class="full"><div class="card" style="margin:0"><h3>🔍 Examination <span style="font-size:11.5px;font-weight:400;color:var(--muted)">(assess systems, then insert)</span></h3><div id="exRows"></div><button type="button" class="btn btn-o btn-xs" style="margin-top:6px" data-act="exInsertExam">＋ Insert exam into Examination</button></div></div>
+    <div class="full"><label>🎙️ Voice note (speak any language · max 60 s)</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn btn-o btn-sm" id="voiceRecBtn" data-act="voiceToggle">⏺ Record</button><span id="voiceStatus" style="font-size:12.5px;color:var(--muted)">No recording</span><audio id="voicePlay" controls style="display:none;max-width:220px;height:32px"></audio><button class="btn btn-o btn-xs" id="voiceDelBtn" data-act="voiceClear" style="display:none">✕</button></div></div>
   </div>
-  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mVisit')">Cancel</button><button class="btn btn-p" onclick="saveVisit()">💾 Save note</button></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" data-act="closeModal" data-arg="mVisit">Cancel</button><button class="btn btn-p" data-act="saveVisit">💾 Save note</button></div>
 </div></div>
 
 <div class="modal-bg" id="mTanner"><div class="modal">
@@ -575,7 +600,7 @@
     <div id="tnMenRow"><label>Menarche</label><select id="tnMen"><option value="">—</option><option value="no">Not attained</option><option value="yes">Attained (age in note)</option></select></div>
     <div class="full"><label>Note</label><input id="tnNote" placeholder="e.g. Growth spurt ongoing; bone age ordered"></div>
   </div>
-  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mTanner')">Cancel</button><button class="btn btn-p" onclick="saveTanner()">&#128190; Save staging</button></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" data-act="closeModal" data-arg="mTanner">Cancel</button><button class="btn btn-p" data-act="saveTanner">&#128190; Save staging</button></div>
 </div></div>
 
 <div class="modal-bg" id="mExtra"><div class="modal">
@@ -589,13 +614,13 @@
     <div><label>Batch / Lot no.</label><input id="xBatch" placeholder="e.g. R-1024"></div>
     <div><label>Given by</label><input id="xBy" placeholder="e.g. Dr. / Nurse name"></div>
     <div class="full"><label>Remarks</label><input id="xNote" placeholder="e.g. Dog bite Day 0 — Essen regimen"></div>
-    <div class="full"><label>Deduct from stock lot</label><select id="xLot" onchange="syncLotFields('x')"></select><div class="hint" id="xLotHint" style="font-size:12px;color:var(--muted)"></div></div>
+    <div class="full"><label>Deduct from stock lot</label><select id="xLot" data-onchange="syncLotFields" data-arg="x"></select><div class="hint" id="xLotHint" style="font-size:12px;color:var(--muted)"></div></div>
   </div>
   <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
-    <button class="btn btn-danger btn-sm" id="xDelBtn" onclick="deleteExtra($('xId').value)">Remove entry</button>
+    <button class="btn btn-danger btn-sm" id="xDelBtn" data-act="deleteExtraFromForm">Remove entry</button>
     <span style="flex:1"></span>
-    <button class="btn btn-o" onclick="closeModal('mExtra')">Cancel</button>
-    <button class="btn btn-p" onclick="saveExtra()">&#128190; Save</button>
+    <button class="btn btn-o" data-act="closeModal" data-arg="mExtra">Cancel</button>
+    <button class="btn btn-p" data-act="saveExtra">&#128190; Save</button>
   </div>
 </div></div>
 
@@ -609,24 +634,28 @@
     <div><label>Type</label><select id="aType"><option>Vaccine</option><option>Growth review</option><option>Review</option><option>General</option><option>Follow-up</option></select></div>
     <div class="full"><label>Note</label><input id="aNote" placeholder="e.g. MMR-2 + Varicella catch-up"></div>
   </div>
-  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" onclick="closeModal('mAppt')">Cancel</button><button class="btn btn-p" onclick="saveAppt()">📅 Book</button></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-o" data-act="closeModal" data-arg="mAppt">Cancel</button><button class="btn btn-p" data-act="saveAppt">📅 Book</button></div>
 </div></div>
 
 <div id="lockScreen" class="lock"><div class="lock-card">
   <img src="icon.svg" alt="NeoKid Care" style="width:52px;height:52px;border-radius:14px"><h2 style="margin:6px 0">NeoKid Care</h2>
   <div class="hint">Select user &amp; enter PIN</div>
   <select id="lockUser"></select>
-  <input id="lockPin" type="password" inputmode="numeric" placeholder="PIN" onkeydown="if(event.key==='Enter')doLogin()">
-  <button class="btn btn-p" style="width:100%;margin-top:6px" onclick="doLogin()">Unlock</button>
+  <input id="lockPin" type="password" inputmode="numeric" placeholder="PIN" data-onkey="lockPinKey">
+  <button class="btn btn-p" style="width:100%;margin-top:6px" data-act="doLogin">Unlock</button>
   <div id="lockMsg" style="color:var(--red);font-size:13px;margin-top:6px"></div>
 </div></div>
 
+<script src="js/delegate.js"></script>
 <script src="js/data.js"></script>
 <script src="js/brands.js"></script>
 <script src="js/ref-who.js"></script>
 <script src="js/ref-cdc.js"></script>
 <script src="js/growth.js"></script>
 <script src="js/growth-chart.js"></script>
+<script src="js/idb.js"></script>
+<script src="js/validate.js"></script>
+<script src="js/merge.js"></script>
 <script src="js/app.js"></script>
 <script src="js/qrcode.min.js"></script>
 <script src="js/clinic.js"></script>
@@ -674,18 +703,8 @@
 <script src="js/metrics.js"></script>
 <script src="js/formulary.js"></script>
 <script src="js/ops.js"></script>
-<div id="updateBar" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#0c2340;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px;text-align:center">A new version of NeoKid Care is ready. <button onclick="kgUpdate()" style="background:#0e7c7b;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;margin-left:8px">Refresh now</button></div>
-<script>
-function kgUpdate() { try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage("SKIP_WAITING"); } catch (e) {} location.reload(); }
-function netTick() { var b = document.getElementById("netBadge"); if (!b) return; var on = navigator.onLine !== false; b.textContent = on ? "● Online" : "○ Offline"; b.className = "badge " + (on ? "b-green" : "b-gray"); }
-window.addEventListener("online", netTick); window.addEventListener("offline", netTick); netTick();
-if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
-  navigator.serviceWorker.register("sw.js").then(function (reg) {
-    function watch(w) { if (!w) return; w.addEventListener("statechange", function () { if (w.state === "installed" && navigator.serviceWorker.controller) document.getElementById("updateBar").style.display = "block"; }); }
-    if (reg.waiting && navigator.serviceWorker.controller) document.getElementById("updateBar").style.display = "block";
-    reg.onupdatefound = function () { watch(reg.installing); };
-  }).catch(function () {});
-}
-</script>
+<script src="js/cmdk.js"></script>
+<div id="updateBar" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#0c2340;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px;text-align:center">A new version of NeoKid Care is ready. <button data-act="kgUpdate" style="background:#0e7c7b;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;margin-left:8px">Refresh now</button></div>
+<script src="js/boot.js"></script>
 </body>
 </html>

@@ -73,8 +73,8 @@ function birthCsv(children) {
 function abhaJson(c) {
   const codes = schedCodes();
   return {
-    record: "KidGrowPro-Child-Health-Record", version: 2, abdmReady: true,
-    note: "Links to ABHA ID for ABDM HIP/MHR upload via a registered integrator.",
+    record: "KidGrowPro-Child-Health-Record", version: 2, abdmReady: false,
+    note: "ABHA ID recorded manually — ABDM HIP/MHR upload is NOT built (see docs/F12-ABDM-POSITION.md).",
     profile: { name: c.name, dob: c.dob, sex: c.sex, blood: c.blood || "", phone: c.phone || "", father: c.father || "", mother: c.mother || "", abhaId: c.abha || "", address: (DB.settings || {}).addr || "" },
     allergies: ((typeof Hx !== "undefined" && Hx.allergyText) ? Hx.allergyText(c) : (c.allergy || "")),
     structuredAllergies: c.allergies || [],
@@ -101,31 +101,32 @@ function renderExport() {
   const c = child();
   const del = (typeof Comply !== "undefined") ? Comply.deleted() : [];
   const card = (icon, title, desc, btn, fn) => `<div class="card"><h3>${icon} ${title}</h3><div class="hint">${desc}</div>
-    <button class="btn btn-p btn-sm" onclick="${fn}">${btn}</button></div>`;
+    <button class="btn btn-p btn-sm" data-act="${fn}">${btn}</button></div>`;
   $("expBox").innerHTML = `
   <div class="grid g2">
-    ${card("📕", "UIP immunisation register (CSV)", `${n} children × 43 doses — dates in dd/mm/yyyy. For NIS / register transcription.`, "⬇ Download", "dlUip()")}
-    ${card("📋", "Due-list / microplan (CSV)", `${due} overdue + upcoming doses with parent phones for mobilisation.`, "⬇ Download", "dlDue()")}
-    ${card("📊", "Coverage summary (CSV)", `Per-antigen coverage + dropout + fully-immunised counts.`, "⬇ Download", "dlCov()")}
-    ${card("⚠️", "AEFI line-list (CSV)", `${nae} event(s) across all children for DIO reporting.`, "⬇ Download", "dlAefi()")}
-    ${card("📖", "Birth register (CSV)", `One row per child with delivery + screening results.`, "⬇ Download", "dlBirth()")}
-    ${card("🪪", "ABHA-ready record (JSON)", `${c ? `For <b>${esc(c.name)}</b>${c.abha ? ` · ABHA ${esc(c.abha)}` : " · <span style='color:var(--amber)'>no ABHA linked — add in Children → Edit</span>"}` : "No child selected."} Links demographics + immunisation + growth to the ABHA ID.`, "⬇ Download", "dlAbha()")}
-    ${card("🔥", "FHIR R4 Bundle (JSON)", `${c ? `For <b>${esc(c.name)}</b> — Patient, Immunizations, Observations, Encounters, Allergies, Consents.` : "No child selected."}`, "⬇ Download", "dlFhir()")}
+    ${card("📕", "UIP immunisation register (CSV)", `${n} children × 43 doses — dates in dd/mm/yyyy. For NIS / register transcription.`, "⬇ Download", "dlUip")}"
+    ${card("📋", "Due-list / microplan (CSV)", `${due} overdue + upcoming doses with parent phones for mobilisation.`, "⬇ Download", "dlDue")}"
+    ${card("📊", "Coverage summary (CSV)", `Per-antigen coverage + dropout + fully-immunised counts.`, "⬇ Download", "dlCov")}"
+    ${card("⚠️", "AEFI line-list (CSV)", `${nae} event(s) across all children for DIO reporting.`, "⬇ Download", "dlAefi")}"
+    ${card("📖", "Birth register (CSV)", `One row per child with delivery + screening results.`, "⬇ Download", "dlBirth")}"
+    ${card("🪪", "ABHA-ready record (JSON)", `${c ? `For <b>${esc(c.name)}</b>${c.abha ? ` · ABHA ${esc(c.abha)}` : " · <span style='color:var(--amber)'>no ABHA linked — add in Children → Edit</span>"}` : "No child selected."} Links demographics + immunisation + growth to the ABHA ID.`, "⬇ Download", "dlAbha")}"
+    ${card("🔥", "FHIR R4 Bundle (JSON)", `${c ? `For <b>${esc(c.name)}</b> — Patient, Immunizations, Observations, Encounters, Allergies, Consents.` : "No child selected."}`, "⬇ Download", "dlFhir")}"
   </div>
   <div class="card" style="margin-top:12px"><h3>🗑️ Erased records (30-day grace)</h3>
   ${del.length ? del.map((d) => `<div class="vac-row"><div class="grow">🧾 <b>${esc((d.child || {}).name)}</b><br><span style="font-size:12.5px;color:var(--muted)">erased ${esc(d.erasedAt)} by ${esc(d.by)} · purges after ${esc(d.purgeAfter)} · ${esc(d.reason)}</span></div>
-    <button class="btn btn-o btn-xs" onclick="eraseRestore('${(d.child || {}).id}')">Restore</button>
-    <button class="btn btn-danger btn-xs" onclick="erasePurgeNow('${(d.child || {}).id}')">Purge now</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">None — erased records wait here 30 days before auto-purge.</div>`}</div>
+    <button class="btn btn-o btn-xs" data-act="eraseRestore" data-arg="${(d.child || {}).id}">Restore</button>
+    <button class="btn btn-danger btn-xs" data-act="erasePurgeNow" data-arg="${(d.child || {}).id}">Purge now</button></div>`).join("") : `<div style="font-size:13px;color:var(--muted)">None — erased records wait here 30 days before auto-purge.</div>`}</div>
   <div style="height:16px"></div>
   <div class="card"><h3>💾 Full backup</h3><div class="hint">Everything in one file. 🔐 Encrypted = safe on Google Drive / WhatsApp / email. Restore JSON from Settings → Import.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-o btn-sm" onclick="exportData()">⬇ JSON backup</button>
-    <button class="btn btn-p btn-sm" onclick="exportEncrypted()">🔐 Encrypted backup</button>
-    <button class="btn btn-o btn-sm" onclick="document.getElementById('encFile').click()">🔓 Restore encrypted</button>
-    <button class="btn btn-o btn-sm" onclick="undoLastImport()">↩ Undo last import</button>
-    <input type="file" id="encFile" accept=".kgenc,.json" style="display:none" onchange="importEncrypted(this.files[0]);this.value=''"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-o btn-sm" data-act="exportData">⬇ JSON backup</button>
+    <button class="btn btn-p btn-sm" data-act="exportEncrypted">🔐 Encrypted backup</button>
+    <button class="btn btn-o btn-sm" data-act="clickEncFile">🔓 Restore encrypted</button>
+    <button class="btn btn-o btn-sm" data-act="undoLastImport">↩ Undo last import</button>
+    <input type="file" id="encFile" accept=".kgenc,.json" style="display:none" data-onchange="importEncryptedSel"></div>
     <div class="hint">${(typeof backupAgeLine === "function") ? backupAgeLine() : ""}</div>
+    <div class="hint">${(typeof storageLine === "function") ? storageLine() : ""}</div>
     <div class="hint">${(typeof undoImportLine === "function") ? undoImportLine() : ""}</div></div>
-  <div class="hint" style="margin-top:8px">ABDM gateway upload itself needs a registered Health Information Provider + patient consent — these files are integration-ready for that step.</div>`;
+  <div class="hint" style="margin-top:8px">ABDM upload is not built — ABHA numbers here are manual records only, not a gateway connection.</div>`;
 }
 function dlFhir() {
   const c = child();
@@ -147,3 +148,10 @@ function dlAbha() {
   downloadFile(`${c.name.replace(/[^\w]+/g, "_")}_abha_record.json`, JSON.stringify(abhaJson(c), null, 1), "application/json");
   auditSafe("Export", `ABHA record — ${c.name}`);
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["erasePurgeNow", "eraseRestore", "exportEncrypted", "dlUip", "dlDue", "dlCov", "dlAefi", "dlBirth", "dlAbha", "dlFhir"].forEach(function (n) { actCall0(n); });
+  actRegister("importEncryptedSel", function (el) { try { importEncrypted(el.files[0]); el.value = ""; } catch (e) { actReport("importEncryptedSel", e); } });
+  actRegister("clickEncFile", function () { try { document.getElementById("encFile").click(); } catch (e) { actReport("clickEncFile", e); } });
+} catch (e) {}

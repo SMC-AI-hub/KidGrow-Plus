@@ -22,7 +22,7 @@ function termsGet(code) { return termsEntries().find((e) => e.code === code) || 
 function termsChipsHTML(sel) {
   return (sel || []).map((c) => {
     const e = termsGet(c);
-    return `<span class="badge b-blue" style="margin:2px 4px 2px 0;display:inline-flex;gap:6px;align-items:center">${termsEsc(c)}${e ? " · " + termsEsc(e.label) : ""}<a href="javascript:void(0)" data-termsdrop="${termsEsc(c)}" style="text-decoration:none">×</a></span>`;
+    return `<span class="badge b-blue" style="margin:2px 4px 2px 0;display:inline-flex;gap:6px;align-items:center">${termsEsc(c)}${e ? " · " + termsEsc(e.label) : ""}<a href="#" data-termsdrop="${termsEsc(c)}" style="text-decoration:none">×</a></span>`;
   }).join("");
 }
 function termsReadSel(hiddenId) {
@@ -51,11 +51,12 @@ function termsAttach(qId, listId, chipsId, hiddenId) {
     termsPaint(hiddenId, chipsId);
     q.oninput = () => {
       const hits = termsSearch(q.value);
-      list.innerHTML = hits.map((e) => `<button type="button" class="btn btn-o btn-xs" style="margin:2px 4px 2px 0" onclick="Terms.pick('${hiddenId}','${chipsId}','${listId}','${qId}','${termsEsc(e.code)}')">${termsEsc(e.code)} · ${termsEsc(e.label)}</button>`).join("");
+      list.innerHTML = hits.map((e) => `<button type="button" class="btn btn-o btn-xs" style="margin:2px 4px 2px 0" data-act="termsPick" data-arg="${hiddenId}" data-arg2="${chipsId}" data-arg3="${listId}" data-arg4="${qId}" data-arg5="${termsEsc(e.code)}">${termsEsc(e.code)} · ${termsEsc(e.label)}</button>`).join("");
     };
     document.getElementById(chipsId).onclick = (ev) => {
       const a = ev && ev.target && ev.target.closest ? ev.target.closest("[data-termsdrop]") : null;
       if (!a) return;
+      try { if (ev && ev.preventDefault) ev.preventDefault(); } catch (e0) {}
       const sel = termsReadSel(hiddenId).filter((c) => c !== a.getAttribute("data-termsdrop"));
       document.getElementById(hiddenId).value = JSON.stringify(sel);
       termsPaint(hiddenId, chipsId);
@@ -64,3 +65,8 @@ function termsAttach(qId, listId, chipsId, hiddenId) {
 }
 var Terms = { search: termsSearch, get: termsGet, chipsHTML: termsChipsHTML, attach: termsAttach, pick: termsPick };
 try { if (typeof window !== "undefined" && window) window.Terms = Terms; } catch (e) {}
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  actRegister("termsPick", function (el) { try { Terms.pick(actArg(el), actArg(el, 2), actArg(el, 3), actArg(el, 4), actArg(el, 5)); } catch (e) { actReport("termsPick", e); } });
+} catch (e) {}

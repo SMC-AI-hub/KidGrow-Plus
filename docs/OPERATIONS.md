@@ -46,6 +46,13 @@ Keep one offline copy per week per clinic (USB/print-room PC).
 
 ## 4. Sync-conflict policy (M4 dual-write)
 
+> **Status (E4 verdict, 2026-10-21): M4 DEFERRED — engine dormant, blob is the
+> supported path.** `Cloud._sb` was never wired, so `live()` is always false
+> and no relational push/pull runs. The policy below describes the engine as
+> built (pure logic tested); it takes effect only after the arming drill in
+> `docs/F10-SYNC-SOP.md` passes. Until then: keep blob + monitor.
+
+
 - Local device storage is the source of rich truth; Postgres holds identity +
   encounter/consent skeletons via idempotent `apply_*_op()` RPCs (last-writer-
   wins on `client_rev`, ties broken by op id — deterministic on all devices).

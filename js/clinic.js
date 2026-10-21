@@ -184,19 +184,19 @@ function renderSchedule() {
   const nm = (id) => { const k = DB.children.find((x) => x.id === id); return k ? k.name : "—"; };
   $("apptList").innerHTML = `
     <div class="toolbar" style="margin-bottom:10px">
-      <input type="date" value="${SCH.date}" onchange="SCH.date=this.value;renderSchedule()" style="max-width:170px">
-      <span class="sp"></span><button class="btn btn-p btn-sm" onclick="openApptModal()">+ Book</button>
+      <input type="date" value="${SCH.date}" data-onchange="schDateSel" style="max-width:170px">
+      <span class="sp"></span><button class="btn btn-p btn-sm" data-act="openApptModal">+ Book</button>
     </div>
     ${tod.length ? tod.map((a) => `
       <div class="vac-row" style="${a.done ? "opacity:.55" : ""}">
         <div class="grow"><b>${esc(a.time || "—")}</b> · ${esc(nm(a.childId))} <span class="badge b-gray">${esc(a.type || "Visit")}</span>
         ${a.note ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(a.note)}</span>` : ""}</div>
         ${typeof apptMsgBtns === "function" ? apptMsgBtns(a) : ""}
-        <button class="btn ${a.done ? "btn-o" : "btn-d"} btn-xs" onclick="toggleAppt('${a.id}')">${a.done ? "↩ Undo" : "✓ Done"}</button>
-        <button class="btn btn-danger btn-xs" onclick="delAppt('${a.id}')">✕</button>
+        <button class="btn ${a.done ? "btn-o" : "btn-d"} btn-xs" data-act="toggleAppt" data-arg="${a.id}">${a.done ? "↩ Undo" : "✓ Done"}</button>
+        <button class="btn btn-danger btn-xs" data-act="delAppt" data-arg="${a.id}">✕</button>
       </div>`).join("") : `<div style="font-size:13px;color:var(--muted);margin-bottom:8px">No appointments on ${fmtDate(SCH.date)}.</div>`}
     ${up.length ? `<div class="hint" style="margin:10px 0 4px">Coming up (14 days)</div>` + up.map((a) => `
-      <div style="font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><b>${fmtDate(a.date)}</b> ${esc(a.time || "")} · ${esc(nm(a.childId))} <span style="color:var(--muted)">(${esc(a.type || "Visit")})</span> <button class="btn btn-o btn-xs" onclick="copyAppt('${a.id}')">⧉</button></div>`).join("") : ""}`;
+      <div style="font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><b>${fmtDate(a.date)}</b> ${esc(a.time || "")} · ${esc(nm(a.childId))} <span style="color:var(--muted)">(${esc(a.type || "Visit")})</span> <button class="btn btn-o btn-xs" data-act="copyAppt" data-arg="${a.id}">⧉</button></div>`).join("") : ""}`;
   renderReminders(due);
 }
 function renderReminders(due) {
@@ -210,12 +210,12 @@ function renderReminders(due) {
   $("remList").innerHTML = `
     <div class="toolbar" style="margin-bottom:10px">
       <span style="font-size:13px;color:var(--muted)">Message language:</span>
-      <select onchange="SCH.lang=this.value;renderSchedule()" style="max-width:150px">
+      <select data-onchange="schLangSel" style="max-width:150px">
         <option value="en"${SCH.lang === "en" ? " selected" : ""}>English</option>
         <option value="hi"${SCH.lang === "hi" ? " selected" : ""}>हिन्दी (Hindi)</option>
         <option value="ta"${SCH.lang === "ta" ? " selected" : ""}>தமிழ் (Tamil)</option>
       </select>
-      <span class="sp"></span><button class="btn btn-o btn-xs" onclick="copyDayList()">📋 Copy day list</button><span style="font-size:12.5px;color:var(--muted)">${act.length} dose(s) need action</span>
+      <span class="sp"></span><button class="btn btn-o btn-xs" data-act="copyDayList">📋 Copy day list</button><span style="font-size:12.5px;color:var(--muted)">${act.length} dose(s) need action</span>
     </div>
     ${kids.length ? kids.map((id) => {
       const c = DB.children.find((x) => x.id === id);
@@ -228,8 +228,8 @@ function renderReminders(due) {
         ${items.length > 5 ? `<span style="font-size:12px;color:var(--muted)"> +${items.length - 5} more</span>` : ""}</div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           ${wa ? `<a class="btn btn-wa btn-xs" href="${wa}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ""}
-          <button class="btn btn-o btn-xs" onclick="copyMsg('${id}')">⧉ Copy</button>
-          <button class="btn btn-o btn-xs" title="Tick when messaged" onclick="markReminded('${id}')">✓</button>
+          <button class="btn btn-o btn-xs" data-act="copyMsg" data-arg="${id}">⧉ Copy</button>
+          <button class="btn btn-o btn-xs" title="Tick when messaged" data-act="markReminded" data-arg="${id}">✓</button>
         </div></div>`;
     }).join("") : `<div class="alert a-green" style="margin:0">✅ <div>No overdue or upcoming doses. All children are up to date!</div></div>`}`;
 }
@@ -284,7 +284,7 @@ function clinicPulseHTML() {
     <span>🟡 <b>${dn}</b> due in 14 days</span>
     ${typeof stockPulseBit === "function" ? stockPulseBit(nSt) : ""}
     <span class="sp" style="flex:1"></span>
-    <button class="btn btn-p btn-sm" onclick="go('schedule')">Open schedule →</button></div>`;
+    <button class="btn btn-p btn-sm" data-act="goPage" data-arg="schedule">Open schedule →</button></div>`;
 }
 
 /* ---------------- analytics page ---------------- */
@@ -323,7 +323,7 @@ function renderAnalytics() {
   $("anFalt").innerHTML = falt.length
     ? `<div class="hint">Weight-for-age z fell ≥ 1.0 between the last two visits — review feeding, illness, psychosocial causes.</div>` + falt.map((f) =>
       `<div class="vac-row"><div class="grow">🚨 <b>${esc(f.child)}</b><br><span style="font-size:12.5px;color:var(--muted)">WAZ ${f.z1} → ${f.z2} (Δ ${f.drop}) · ${fmtDate(f.from)} → ${fmtDate(f.to)}</span></div>
-       <button class="btn btn-o btn-xs" onclick="DB.activeId='${f.childId}';save();renderAll();go('growth')">Open growth →</button></div>`).join("")
+       <button class="btn btn-o btn-xs" data-act="followSetActive" data-arg="${f.childId}">Open growth →</button></div>`).join("")
     : `<div style="font-size:13px;color:var(--muted)">No faltering detected between consecutive visits. Keep measuring!</div>`;
   const vmx = Math.max(1, ...vol.map((v) => v.n));
   $("anVol").innerHTML = `<div class="hint">Recorded clinical visits per month.</div>
@@ -334,3 +334,11 @@ function renderAnalytics() {
   if ($("anClin") && typeof metricsClinicalHTML === "function") $("anClin").innerHTML = metricsClinicalHTML();
   if (typeof renderMgmt === "function") renderMgmt();
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["copyMsg", "delAppt", "markReminded", "toggleAppt"].forEach(function (n) { actCall0(n); });
+  actRegister("followSetActive", function (el) { try { DB.activeId = actArg(el); save(); renderAll(); go("growth"); } catch (e) { actReport("followSetActive", e); } });
+  actRegister("schDateSel", function (el) { try { SCH.date = el.value; renderSchedule(); } catch (e) { actReport("schDateSel", e); } });
+  actRegister("schLangSel", function (el) { try { SCH.lang = el.value; renderSchedule(); } catch (e) { actReport("schLangSel", e); } });
+} catch (e) {}

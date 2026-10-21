@@ -3,6 +3,7 @@
    RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET.
    Returns subscription status + invoices. Never returns secrets. */
 const RZP = "https://api.razorpay.com/v1";
+const G = require("./_guard");
 
 async function rzpGet(path) {
   const r = await fetch(RZP + path, {
@@ -17,7 +18,7 @@ async function rzpGet(path) {
 
 async function authedUser(req) {
   const token = (req.headers.authorization || "").replace(/^Bearer /i, "");
-  if (!token) return null;
+  if (!G.isTokenShape(token)) return null;
   const me = await fetch(process.env.SUPABASE_URL + "/auth/v1/user", {
     headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: "Bearer " + token },
   });
@@ -27,6 +28,7 @@ async function authedUser(req) {
 
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "GET only" });
+  if (G.limited(req, res, { prefix: "bill", max: 60 })) return;
   try {
     const user = await authedUser(req);
     if (!user) return res.status(401).json({ error: "Sign in first." });

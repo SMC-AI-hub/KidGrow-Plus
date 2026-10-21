@@ -28,10 +28,10 @@ function renderConsent() {
   <div class="grid g2">
     <div class="card"><h3>✍️ New consent</h3>
       <div class="form-grid">
-        <div><label>Type</label><select id="conType" onchange="CONS_TYPE=this.value;CONS_TEXT=consentFill(CONS_TYPE,'${esc(c.name).replace(/'/g, "\\'")}');renderConsent()">
+        <div><label>Type</label><select id="conType" data-onchange="consTypeSel" data-arg="${esc(c.name).replace(/'/g, "\\'")}">
           ${Object.keys(CONSENT_TYPES).map((k) => `<option value="${k}"${CONS_TYPE === k ? " selected" : ""}>${CONSENT_TYPES[k].label}</option>`).join("")}</select></div>
         <div><label>Date</label><input type="date" id="conDate" value="${todayISO()}"></div>
-        <div class="full"><label>Consent text (edit as needed)</label><textarea id="conText" rows="5" style="width:100%" oninput="CONS_TEXT=this.value">${esc(CONS_TEXT)}</textarea></div>
+        <div class="full"><label>Consent text (edit as needed)</label><textarea id="conText" rows="5" style="width:100%" data-oninput="consTextInput">${esc(CONS_TEXT)}</textarea></div>
         <div><label>Guardian name</label><input id="conGuard" value="${esc(guardian)}"></div>
         <div><label>Relation</label><select id="conRel"><option>Mother</option><option>Father</option><option>Guardian</option></select></div>
         <div><label>Witness</label><input id="conWit" placeholder="Staff / attender"></div>
@@ -40,17 +40,17 @@ function renderConsent() {
       <div class="hint">Guardian signature (draw below with finger / mouse)</div>
       <canvas id="sigPad" width="600" height="170"></canvas>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn btn-o btn-sm" onclick="sigClear()">Clear</button>
-        <button class="btn btn-p btn-sm" onclick="saveConsent()">💾 Save consent</button>
+        <button class="btn btn-o btn-sm" data-act="sigClear">Clear</button>
+        <button class="btn btn-p btn-sm" data-act="saveConsent">💾 Save consent</button>
       </div>
     </div>
     <div class="card"><h3>📁 Saved consents</h3>
       ${rows.length ? rows.map((x) => `<div class="vac-row"><div class="grow"><b>${fmtDate(x.date)}</b> · ${esc((CONSENT_TYPES[x.type] || {}).label || x.type)}<br>
         <span style="font-size:12.5px;color:var(--muted)">${esc(x.guardian || "")} (${esc(x.relation || "")})${x.witness ? " · witness: " + esc(x.witness) : ""}</span><br>
         ${x.sig ? `<img src="${x.sig}" style="height:44px;border:1px solid #e2e8f0;border-radius:6px;background:#fff" alt="sig">` : `<span style="font-size:12px;color:var(--muted)">no e-signature (wet-sign printout)</span>`}</div>
-        <button class="btn btn-o btn-xs" onclick="printConsent('${x.id}')">🖨️</button>
-        <button class="btn btn-danger btn-xs" onclick="delConsent('${x.id}')">✕</button></div>`).join("")
-      : `<div style="font-size:13px;color:var(--muted)">No consents yet.</div>`}
+        <button class="btn btn-o btn-xs" data-act="printConsent" data-arg="${x.id}">🖨️</button>
+        <button class="btn btn-danger btn-xs" data-act="delConsent" data-arg="${x.id}">✕</button></div>`).join("")
+      : `<div style="font-size:13px;color:var(--muted)">No consents yet — complete the form above and tap Save.</div>`}
     </div>
   </div>`;
   sigInit();
@@ -108,3 +108,10 @@ function printConsent(id) {
     </div>`;
   printPage("pg-conprint");
 }
+
+/* E2c: delegated actions for templates in this file. */
+try {
+  ["delConsent", "printConsent", "saveConsent", "sigClear"].forEach(function (n) { actCall0(n); });
+  actRegister("consTypeSel", function (el) { try { CONS_TYPE = el.value; CONS_TEXT = consentFill(CONS_TYPE, actArg(el)); renderConsent(); } catch (e) { actReport("consTypeSel", e); } });
+  actRegister("consTextInput", function (el) { try { CONS_TEXT = el.value; } catch (e) { actReport("consTextInput", e); } });
+} catch (e) {}
