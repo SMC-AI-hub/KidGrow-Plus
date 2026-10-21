@@ -165,7 +165,7 @@ ok(formSrc.includes("needSafe(2") && formSrc.includes('guardSubmit("formulary")'
 ok(read("js/drugs.js").includes("ALWAYS verify"), "formulary keeps its verify warning");
 
 const cfgSrc = read("js/config.js");
-ok(cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PROD_HOSTS covers canonical + legacy prod hosts (F2)");
+ok(!cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PROD_HOSTS covers surviving prod host only (kidgrow-plus retired)");
 {
   const pkg = JSON.parse(read("package.json"));
   const appVer = (read("js/cloud.js").match(/var APP_VER = "v([\d.]+)"/) || [])[1] || "";

@@ -17,7 +17,7 @@
     SUPABASE_URL: "https://jmlvcrekttbzibqitftj.supabase.co",
     SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbHZjcmVrdHRiemlicWl0ZnRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNzk3MDQsImV4cCI6MjEwNzY1NTcwNH0.Rt6sucMB101Z2sfn_DdvrUeC2FJWH0fLYOCH9X0EKmM"
   };
-  var PROD_HOSTS = ["kidgrow-prod", "kidgrow-plus"]; // substrings of location.hostname; add custom domain here
+  var PROD_HOSTS = ["kidgrow-prod"]; // substrings of location.hostname; add custom domain here (kidgrow-plus retired 2026-10-21)
   var host = "", query = "";
   try {
     if (typeof location !== "undefined" && location) {
