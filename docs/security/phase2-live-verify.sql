@@ -3,7 +3,7 @@
 -- in effect: Part 1 is pure SELECTs; Part 2 builds throwaway rows inside a
 -- transaction it always rolls back. Paste each part separately ("Run").
 -- How to read results: Part 1 = row counts below; Part 2 = E1..E5 lines in
--- the editor's Notices/Messages panel. Send all output back for sign-off.
+-- a result TABLE (copy it) plus the Notices panel. Send all output back for sign-off.
 -- =====================================================================
 
 -- ============================ PART 1: inventory =========================
@@ -69,6 +69,8 @@ BEGIN
 
   -- Idempotent setup (as postgres; rolled back at the end). Claim first: the
   -- trg_tenant_owner trigger mints the owner membership from auth.uid().
+  CREATE TEMP TABLE IF NOT EXISTS e2e_out(line text); DELETE FROM e2e_out;
+  GRANT ALL ON TABLE e2e_out TO authenticated; -- tests run as this role
   PERFORM set_config('request.jwt.claim.sub', '', true); -- null uid: cleanup deletes allowed
   DELETE FROM patients WHERE id IN (p) OR tenant_id = t;
   DELETE FROM memberships WHERE tenant_id = t;
@@ -86,10 +88,10 @@ BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claim.sub', u_ro::text, true);
     INSERT INTO patients (tenant_id, mrn) VALUES (t, 'NEG-1');
-    res := res || 'E1 FAIL: readonly insert was ALLOWED' || chr(10);
+    INSERT INTO e2e_out VALUES ('E1 FAIL: readonly insert was ALLOWED');
   EXCEPTION WHEN OTHERS THEN
-    res := res || 'E1 ' || CASE WHEN SQLSTATE = '42501' THEN 'PASS (42501 deny)'
-      ELSE 'FAIL (' || SQLSTATE || ': ' || SQLERRM || ')' END || chr(10);
+    INSERT INTO e2e_out VALUES ('E1 ' || CASE WHEN SQLSTATE = '42501' THEN 'PASS (42501 deny)'
+      ELSE 'FAIL (' || SQLSTATE || ': ' || SQLERRM || ')' END);
   END;
 
   -- E2: readonly sync-RPC -> expect 42501 'role cannot write clinical data'
@@ -99,11 +101,11 @@ BEGIN
     PERFORM public.apply_patient_op(jsonb_build_object(
       'tenant_id', t::text, 'local_id', 'E2E-RO',
       'client_rev', '2026-10-10T00:00:00Z', 'mrn', 'E2E-RO', 'name', 'Ro'));
-    res := res || 'E2 FAIL: readonly RPC was ALLOWED' || chr(10);
+    INSERT INTO e2e_out VALUES ('E2 FAIL: readonly RPC was ALLOWED');
   EXCEPTION WHEN OTHERS THEN
-    res := res || 'E2 ' || CASE WHEN SQLSTATE = '42501'
+    INSERT INTO e2e_out VALUES ('E2 ' || CASE WHEN SQLSTATE = '42501'
       THEN 'PASS (42501: ' || SQLERRM || ')'
-      ELSE 'FAIL (' || SQLSTATE || ': ' || SQLERRM || ')' END || chr(10);
+      ELSE 'FAIL (' || SQLSTATE || ': ' || SQLERRM || ')' END);
   END;
 
   -- E3: owner DELETE of the real row -> expect success, 0 rows, row intact
@@ -114,12 +116,12 @@ BEGIN
     GET DIAGNOSTICS n = ROW_COUNT;
     SELECT count(*) INTO n_left FROM patients WHERE id = p;
     IF n = 0 AND n_left = 1 THEN
-      res := res || 'E3 PASS (DELETE 0, row intact)' || chr(10);
+      INSERT INTO e2e_out VALUES ('E3 PASS (DELETE 0, row intact)');
     ELSE
-      res := res || 'E3 FAIL (deleted=' || n || ' left=' || n_left || ')' || chr(10);
+      INSERT INTO e2e_out VALUES ('E3 FAIL (deleted=' || n || ' left=' || n_left || ')');
     END IF;
   EXCEPTION WHEN OTHERS THEN
-    res := res || 'E3 FAIL (' || SQLSTATE || ': ' || SQLERRM || ')' || chr(10);
+    INSERT INTO e2e_out VALUES ('E3 FAIL (' || SQLSTATE || ': ' || SQLERRM || ')');
   END;
 
   -- E4 (positive control): owner direct INSERT -> expect 1 row
@@ -130,12 +132,12 @@ BEGIN
       VALUES (t, 'POS-1', 'Positive Control');
     GET DIAGNOSTICS n = ROW_COUNT;
     IF n = 1 THEN
-      res := res || 'E4 PASS (owner insert allowed)' || chr(10);
+      INSERT INTO e2e_out VALUES ('E4 PASS (owner insert allowed)');
     ELSE
-      res := res || 'E4 FAIL (rowcount=' || n || ')' || chr(10);
+      INSERT INTO e2e_out VALUES ('E4 FAIL (rowcount=' || n || ')');
     END IF;
   EXCEPTION WHEN OTHERS THEN
-    res := res || 'E4 FAIL (' || SQLSTATE || ': ' || SQLERRM || ')' || chr(10);
+    INSERT INTO e2e_out VALUES ('E4 FAIL (' || SQLSTATE || ': ' || SQLERRM || ')');
   END;
 
   -- E5 (positive control): owner sync-RPC -> expect 'inserted'
@@ -147,15 +149,18 @@ BEGIN
       'client_rev', '2026-10-10T00:00:00Z', 'mrn', 'E2E-OWN', 'name', 'E2E Owner'))
       INTO rpc_res;
     IF rpc_res = 'inserted' THEN
-      res := res || 'E5 PASS (owner RPC inserted)' || chr(10);
+      INSERT INTO e2e_out VALUES ('E5 PASS (owner RPC inserted)');
     ELSE
-      res := res || 'E5 FAIL (returned ' || coalesce(rpc_res, 'NULL') || ')' || chr(10);
+      INSERT INTO e2e_out VALUES ('E5 FAIL (returned ' || coalesce(rpc_res, 'NULL') || ')');
     END IF;
   EXCEPTION WHEN OTHERS THEN
-    res := res || 'E5 FAIL (' || SQLSTATE || ': ' || SQLERRM || ')' || chr(10);
+    INSERT INTO e2e_out VALUES ('E5 FAIL (' || SQLSTATE || ': ' || SQLERRM || ')');
   END;
 
+  SELECT string_agg(line, chr(10) ORDER BY line) INTO res FROM e2e_out;
   RAISE NOTICE '%', chr(10) || res;
 END $$;
+
+SELECT line AS e2e_result FROM e2e_out ORDER BY line;
 
 rollback;
