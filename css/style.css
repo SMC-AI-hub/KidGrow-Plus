@@ -605,6 +605,24 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
 .ctx-sub{font-size:13px;margin-top:2px}
 .ctx-flag{display:inline-block;font-size:11px;font-weight:800;padding:1px 7px;border-radius:20px;background:#e0f2fe;color:#075985}
 .ctx-flag-red{background:#fee2e2;color:#b91c1c}
+/* Phase T: productive timeline */
+.ctx-liner{display:flex;gap:6px;align-items:baseline;width:100%;text-align:left;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-top:6px;font-size:13px;cursor:pointer;color:inherit;font-family:inherit}
+.ctx-liner:hover{border-color:var(--teal)}
+.ctx-caret{flex:none;color:var(--muted);font-size:11px}
+.ctx-full{margin-top:6px;border-left:3px solid var(--teal);padding:4px 0 4px 8px;font-size:13px}
+.ctx-fullrow{margin:2px 0}
+.tl-attn{margin-bottom:10px}
+.tl-attn h3{margin:0 0 6px}
+.att-row{display:flex;gap:8px;align-items:center;width:100%;text-align:left;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin:4px 0;font-size:13px;cursor:pointer;color:inherit;font-family:inherit}
+.att-row:hover{border-color:var(--teal)}
+.att-red{border-color:#e26d6d;border-left-width:4px}
+.att-go{margin-left:auto;color:var(--muted);font-weight:800}
+.tl-allclear{font-size:13px;color:var(--muted)}
+.ctx-prob{margin-bottom:10px}
+.ctx-probhead{font-size:14px;margin-bottom:6px}
+.ctx-probmeta{font-size:12px;color:var(--muted)}
+.ctx-trend{font-size:12px;color:var(--muted)}
+.ctx-trend-bad{color:#e26d6d;font-weight:700}
 .ctx-dot.ctx-visit{background:#0d9488}.ctx-card.ctx-visit{border-left-color:#0d9488}
 .ctx-dot.ctx-rx{background:#7c3aed}.ctx-card.ctx-rx{border-left-color:#7c3aed}
 .ctx-dot.ctx-vax{background:#16a34a}.ctx-card.ctx-vax{border-left-color:#16a34a}

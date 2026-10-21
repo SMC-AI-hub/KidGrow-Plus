@@ -724,6 +724,8 @@ function renderChildren() {
 
 /* ================= UNIFIED TIMELINE ================= */
 let TIMELINE_FILTER = "all";
+let TIMELINE_VIEW = "chrono"; // Phase T: chrono | problems
+const TIMELINE_OPEN = {}; // Phase T: expanded one-liner keys (stable per data+filter)
 const TIMELINE_FILTERS = [["all", "All"], ["visit", "🩺 Visits"], ["rx", "💊 Rx"], ["vax", "💉 Vaccines"], ["growth", "📏 Growth"], ["labs", "🩸 Labs"], ["aefi", "⚠️ AEFI"]];
 function vaxLabel(code) {
   try {
@@ -776,15 +778,28 @@ function timelineSnapshot(c) {
   parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Active</span> ` +
     (probs.length ? probs.slice(0, 4).map((p) => `<span class="badge b-teal">${esc(p.label || p.code || "Problem")}</span>`).join(" ") + (probs.length > 4 ? ` <span style="font-size:12px">+${probs.length - 4}</span>` : "") : `<span style="font-size:13px;color:var(--muted)">No active problems</span>`) +
     (alg ? ` <span class="badge b-red">\u26A0\uFE0F ${esc(alg)}</span>` : "") + `</div>`);
+  try { // Phase T1: birth line + preterm flag
+    const gw = parseInt(c.gest, 10);
+    parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Birth</span> <span style="font-size:13px">${c.birthWt ? esc(String(c.birthWt)) + " kg" : "—"}${c.gest ? " · " + esc(String(c.gest)) + " wk" : ""}</span>` +
+      ((gw >= 20 && gw < 37) ? ` <span class="badge b-red">preterm</span>` : "") + `</div>`);
+  } catch (e) {}
+  try { // Phase T1: chronic registries on file (asthma / epilepsy / T1DM)
+    const cf = timelineChronicFlags(c);
+    if (cf.length) parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Chronic</span> ` + cf.map((x) => `<span class="badge b-amber">${esc(x)}</span>`).join(" ") + `</div>`);
+  } catch (e) {}
   let lv = null, lr = null;
   try { lv = [...(c.visits || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)))[0] || null; } catch (e) {}
   try { lr = [...(c.rx || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)))[0] || null; } catch (e) {}
   parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Last visit</span> <span style="font-size:13px">${lv ? esc(fmtDate(lv.date)) + " \u00B7 " + esc(lv.type || "Visit") : "\u2014"}</span></div>`);
+  try { // Phase T1: next appointment
+    const na = timelineNextAppt(c);
+    if (na) parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Next visit</span> <span style="font-size:13px">${esc(na.text)}</span></div>`);
+  } catch (e) {}
   if (lr) parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Latest Rx</span> <span style="font-size:13px">${esc(lr.dx || "Rx")} \u00B7 ${(lr.items || []).slice(0, 3).map((i) => esc(i.drug || i.name || "")).filter(Boolean).join(", ") || "\u2014"}${(lr.items || []).length > 3 ? " +" + ((lr.items || []).length - 3) : ""}</span></div>`);
   try {
     if (typeof vaccineSummary === "function") {
       const vs = vaccineSummary(c);
-      if (vs.overdue > 0) parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Vaccines</span> <span class="badge b-red">${vs.overdue} overdue</span> <span style="font-size:13px">${vs.done}/${vs.total} given</span></div>`);
+      if (vs.overdue > 0) parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Vaccines</span> <span class="badge b-red">${vs.overdue} overdue</span> <span style="font-size:13px">${vs.done}/${vs.total} given (${vs.pct}%)</span></div>`);
       else if (vs.next) {
         const names = (vs.next.v.vaccines || []).filter((vx) => !(c.vaccines || {})[vx.code]).map((vx) => vx.name || vx.code);
         parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Next vax</span> <span style="font-size:13px">${esc(names.slice(0, 3).join(", "))} \u00B7 due ${esc(fmtDate(vs.next.due))}</span></div>`);
@@ -797,7 +812,7 @@ function timelineSnapshot(c) {
       const l = ms[ms.length - 1], p = ms[ms.length - 2];
       let d = "";
       if (p && l.wt > 0 && p.wt > 0) { const dd = +((+l.wt) - (+p.wt)).toFixed(1); d = dd > 0 ? ` (+${dd} kg)` : dd < 0 ? ` (${dd} kg)` : ""; }
-      parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Growth</span> <span style="font-size:13px">${l.wt > 0 ? l.wt + " kg" : "\u2014"}${l.ht > 0 ? " \u00B7 " + l.ht + " cm" : ""} \u00B7 ${esc(fmtDate(l.date))}${esc(d)}</span></div>`);
+      parts.push(`<div class="ctx-snaprow"><span class="ctx-snaplab">Growth</span> <span style="font-size:13px">${l.wt > 0 ? l.wt + " kg" : "\u2014"}${l.ht > 0 ? " \u00B7 " + l.ht + " cm" : ""} \u00B7 ${esc(fmtDate(l.date))}${esc(d)}${(() => { try { const tw = timelineTrendWord(c); return tw ? ` <span class="ctx-trend${tw.indexOf("losing") === 0 ? " ctx-trend-bad" : ""}">trend ${esc(tw)}</span>` : ""; } catch (e) { return ""; } })()}</span></div>`);
     }
   } catch (e) {}
   return parts.join("");
@@ -806,9 +821,9 @@ function timelineEvents(c) {
   if (!c) return [];
   const ev = [];
   const ts = (d) => (d || "").slice(0, 10);
-  (c.visits || []).forEach((v) => { const vit = timelineVitals(v); ev.push({ date: ts(v.date), kind: "visit", icon: "🩺", title: v.type || "Visit",
+  (c.visits || []).forEach((v) => { const vit = timelineVitals(v); ev.push({ date: ts(v.date), kind: "visit", icon: "🩺", title: v.type || "Visit", ref: v,
     sub: [v.subj && ("S: " + v.subj), v.obj && ("O: " + v.obj), v.plan && ("A/P: " + v.plan), vit].filter(Boolean).join(" · ") }); });
-  (c.rx || []).forEach((r) => ev.push({ date: ts(r.date), kind: "rx", icon: "💊", title: "Rx" + (r.dx ? " — " + r.dx : ""),
+  (c.rx || []).forEach((r) => ev.push({ date: ts(r.date), kind: "rx", icon: "💊", title: "Rx" + (r.dx ? " — " + r.dx : ""), ref: r,
     sub: (r.items || []).map((i) => i.drug).filter(Boolean).join(", ") + (r.allergyFlag ? " ⚠️ allergy flag" : "") }));
   Object.entries(c.vaccines || {}).forEach(([code, r]) => ev.push({ date: ts(r.date), kind: "vax", icon: "💉",
     title: vaxLabel(code), sub: [r.brand, r.batch && ("batch " + r.batch), r.by && ("by " + r.by)].filter(Boolean).join(" · ") }));
@@ -827,43 +842,274 @@ function timelineEvents(c) {
     flag: (sev === "Serious" || sev === "Severe") ? sev : "", flagCls: "ctx-flag-red" }); });
   const ko = { visit: 0, rx: 1, vax: 2, growth: 3, labs: 4, aefi: 5 };
   ev.sort((a, b) => (b.date || "").localeCompare(a.date || "") || ((ko[a.kind] ?? 9) - (ko[b.kind] ?? 9)));
+  ev.forEach((e, i) => { e.key = e.kind + i; }); // Phase T: stable per data+filter
   return ev;
 }
-function timelineHTML(c, filter) {
+/* ================= Phase T: productive timeline =================
+   T1 story header rows live in timelineSnapshot (Birth / Chronic / Next
+   visit / immun-% / growth trend). Below: T4 one-liners, T2 attention
+   rail, T3 problem grouping, and the shared row builder used by both
+   Chronology and Problems views. */
+function tlHead(s, n) {
+  try {
+    s = String(s || "").replace(/\s+/g, " ").trim();
+    if (!s || s.length <= n) return s;
+    const cut = s.slice(0, n), sp = cut.lastIndexOf(" ");
+    return (sp > n * 0.4 ? cut.slice(0, sp) : cut) + "…";
+  } catch (e) { return ""; }
+}
+function visitOneLiner(v) {
+  try {
+    v = v || {};
+    const parts = [];
+    const c = tlHead(v.subj, 60);
+    if (c) parts.push(c);
+    const dx = Array.isArray(v.icd) ? v.icd.filter(Boolean).join(", ") : String(v.icd || "");
+    if (dx.trim()) parts.push(tlHead(dx, 30));
+    else if (v.type) parts.push(v.type);
+    const p = tlHead(v.plan, 60);
+    if (p) parts.push(p);
+    return parts.join(" → ") || "Visit";
+  } catch (e) { return "Visit"; }
+}
+function visitFullHTML(v) {
+  try {
+    v = v || {};
+    let h = "";
+    [["S", v.subj], ["O", v.obj], ["A", v.assess], ["P", v.plan]].forEach(([k, val]) => {
+      if (val) h += `<div class="ctx-fullrow"><b>${k}:</b> ${esc(String(val))}</div>`;
+    });
+    if (Array.isArray(v.icd) && v.icd.filter(Boolean).length) h += `<div class="ctx-fullrow"><b>ICD:</b> ${esc(v.icd.filter(Boolean).join(", "))}</div>`;
+    return h || `<div class="ctx-fullrow">—</div>`;
+  } catch (e) { return ""; }
+}
+function tlDaysBetween(a, b) {
+  try {
+    const t1 = Date.parse(String(a).slice(0, 10)), t2 = Date.parse(String(b).slice(0, 10));
+    if (isNaN(t1) || isNaN(t2)) return 99999;
+    return Math.round((t2 - t1) / 86400000);
+  } catch (e) { return 99999; }
+}
+function timelineNextAppt(c) {
+  try {
+    if (!c || typeof DB === "undefined" || !Array.isArray(DB.appts)) return null;
+    const t = (typeof todayISO === "function") ? todayISO() : "";
+    const mine = DB.appts.filter((a) => a && a.childId === c.id && !a.done && (!t || String(a.date) >= t));
+    mine.sort((x, y) => String(x.date).localeCompare(String(y.date)) || String(x.time || "").localeCompare(String(y.time || "")));
+    const a = mine[0];
+    if (!a) return null;
+    return { date: a.date, text: fmtDate(a.date) + (a.time ? " · " + a.time : "") + (a.type ? " · " + a.type : "") };
+  } catch (e) { return null; }
+}
+function timelineChronicFlags(c) {
+  const out = [];
+  try {
+    if (typeof chronicOf !== "function") return out;
+    const ch = chronicOf(c);
+    if ((((ch.asthma || {}).checks || []).length + ((ch.asthma || {}).exac || []).length) > 0) out.push("Asthma");
+    if ((((ch.epilepsy || {}).seizures || []).length + ((ch.epilepsy || {}).aeds || []).length) > 0) out.push("Epilepsy");
+    if ((((ch.t1dm || {}).readings || []).length > 0) || (ch.t1dm || {}).insulin) out.push("T1DM");
+  } catch (e) {}
+  return out;
+}
+function timelineLastDelta(c) {
+  try {
+    const ms = [...((c && c.measures) || [])].filter((m) => m && m.date).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (ms.length < 2) return null;
+    const l = ms[ms.length - 1], p = ms[ms.length - 2];
+    if (!(l.wt > 0) || !(p.wt > 0)) return null;
+    const dd = +((+l.wt) - (+p.wt)).toFixed(1);
+    return { txt: (dd > 0 ? "+" + dd : String(dd)) + " kg", neg: dd < 0, date: l.date };
+  } catch (e) { return null; }
+}
+function timelineTrendWord(c) {
+  try {
+    const ms = [...((c && c.measures) || [])].filter((m) => m && m.date && m.wt > 0).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (ms.length < 3) return "";
+    const d1 = (+ms[ms.length - 1].wt) - (+ms[ms.length - 2].wt);
+    const d2 = (+ms[ms.length - 2].wt) - (+ms[ms.length - 3].wt);
+    if (d1 > 0 && d2 > 0) return "gaining ▲";
+    if (d1 < 0 && d2 < 0) return "losing ▼";
+    return "stable —";
+  } catch (e) { return ""; }
+}
+/* T2: needs-attention rail. Ordered by urgency, capped at 5. Each item
+   deep-links to the page where the work gets done. */
+function timelineAttention(c) {
+  const out = [];
+  try {
+    if (!c) return out;
+    const t = (typeof todayISO === "function") ? todayISO() : "";
+    try {
+      const vs = (typeof vaccineSummary === "function") ? vaccineSummary(c) : null;
+      if (vs && vs.overdue > 0) out.push({ icon: "💉", text: `${vs.overdue} vaccine${vs.overdue > 1 ? "s" : ""} overdue`, page: "vaccines", red: true });
+    } catch (e) {}
+    try {
+      const d = timelineLastDelta(c);
+      if (d && d.neg) out.push({ icon: "📉", text: `Weight down ${d.txt.replace("-", "")} — review growth`, page: "growth", red: true });
+    } catch (e) {}
+    try {
+      const n = ((c.labs || []).filter((l) => l && !l.rev)).length;
+      if (n > 0) out.push({ icon: "🩸", text: `${n} lab report${n > 1 ? "s" : ""} to review`, page: "labs", red: false });
+    } catch (e) {}
+    try {
+      const w = (c.aefi || []).filter((a) => a && a.date && tlDaysBetween(a.date, t) >= 0 && tlDaysBetween(a.date, t) <= 30 && String(a.outcome || "").toLowerCase() !== "recovered");
+      if (w.length) out.push({ icon: "⚠️", text: `AEFI watch: ${w[0].vacLabel || w[0].code || "recent AEFI"}${w.length > 1 ? ` (+${w.length - 1})` : ""}`, page: "aefi", red: true });
+    } catch (e) {}
+    try {
+      if (typeof vacStatus === "function" && typeof dueDateFor === "function" && Array.isArray(VACCINE_SCHEDULE)) {
+        for (const vv of VACCINE_SCHEDULE) {
+          let hit = null;
+          for (const vx of (vv.vaccines || [])) { if (vacStatus(c, vv, vx) === "due") { hit = vx; break; } }
+          if (hit) { out.push({ icon: "💉", text: `${hit.name || hit.code} due ${fmtDate(dueDateFor(c, vv))}`, page: "vaccines", red: false }); break; }
+        }
+      }
+    } catch (e) {}
+    try {
+      const a = timelineNextAppt(c);
+      if (a && tlDaysBetween(t, a.date) <= 14) out.push({ icon: "📅", text: `Next visit ${a.text}`, page: "schedule", red: false });
+    } catch (e) {}
+  } catch (e) {}
+  return out.slice(0, 5);
+}
+function timelineAttentionHTML(c) {
+  try {
+    const items = timelineAttention(c);
+    if (!items.length) return `<div class="card tl-attn"><div class="tl-allclear">✅ All clear — nothing needs attention.</div></div>`;
+    return `<div class="card tl-attn"><h3>🔔 Needs attention</h3>` + items.map((a) =>
+      `<button type="button" class="att-row${a.red ? " att-red" : ""}" data-act="goPage" data-arg="${esc(a.page)}"><span>${a.icon}</span><span>${esc(a.text)}</span><span class="att-go">›</span></button>`
+    ).join("") + `</div>`;
+  } catch (e) { return ""; }
+}
+/* T3: problem grouping. ICD-code match first (exact or containment, e.g.
+   J45 ⇔ J45.0), then problem-label substring (≥4 chars), else General. */
+function tlNormCode(s) { try { return String(s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase(); } catch (e) { return ""; } }
+function tlEventCodes(e) {
+  try {
+    if (e.kind === "visit") return ((e.ref && e.ref.icd) || []).map(tlNormCode).filter((x) => x.length >= 2);
+    if (e.kind === "rx" && e.ref) { const d = tlNormCode(e.ref.dx); return d.length >= 2 ? [d] : []; }
+  } catch (x) {}
+  return [];
+}
+function tlEventText(e) {
+  try {
+    const r = e.ref || {};
+    if (e.kind === "visit") return [r.subj, r.obj, r.assess, r.plan, r.type, (r.icd || []).join(" ")].filter(Boolean).join(" ");
+    return [r.dx, (r.items || []).map((i) => i && (i.drug || i.name)).join(" "), r.advice].filter(Boolean).join(" ");
+  } catch (x) { return ""; }
+}
+function tlMatchProblem(e, probs) {
+  try {
+    const codes = tlEventCodes(e), text = tlEventText(e).toLowerCase();
+    for (const p of (probs || [])) {
+      const pc = tlNormCode(p.code);
+      if (pc.length >= 3) for (const ic of codes) { if (ic === pc || ic.includes(pc) || pc.includes(ic)) return p; }
+    }
+    for (const p of (probs || [])) {
+      const lb = String(p.label || "").trim().toLowerCase();
+      if (lb.length >= 4 && text.includes(lb)) return p;
+    }
+  } catch (x) {}
+  return null;
+}
+function timelineProblemGroups(c, f) {
+  const out = [];
+  try {
+    if (!c) return out;
+    const probs = ((c.problems || []).filter((p) => p && (!p.status || p.status === "active")));
+    const kf = (f === "visit" || f === "rx") ? f : "all";
+    const evs = timelineEvents(c).filter((e) => (e.kind === "visit" || e.kind === "rx") && (kf === "all" || e.kind === kf));
+    const buckets = new Map();
+    for (const e of evs) {
+      const p = tlMatchProblem(e, probs);
+      const key = p ? ("P:" + (p.code || p.label || "?")) : "GENERAL";
+      if (!buckets.has(key)) buckets.set(key, { prob: p, items: [] });
+      buckets.get(key).items.push(e);
+    }
+    for (const p of probs) {
+      const key = "P:" + (p.code || p.label || "?");
+      out.push(buckets.get(key) || { prob: p, items: [] });
+    }
+    if (buckets.has("GENERAL")) out.push(buckets.get("GENERAL"));
+  } catch (e) {}
+  return out;
+}
+function timelineProblemsHTML(c, f) {
+  try {
+    const groups = timelineProblemGroups(c, f);
+    if (!groups.length) return `<div class="hint">No visits or prescriptions yet — problems appear here once recorded. Vaccines, growth, labs &amp; AEFI stay in Chronology.</div>`;
+    let h = "";
+    for (const g of groups) {
+      const last = g.items.length ? fmtDate(g.items[0].date) : "";
+      h += `<div class="card ctx-prob"><div class="ctx-probhead">${g.prob ? `🩺 <b>${esc(g.prob.label || "Problem")}</b>${g.prob.code ? ` <span class="badge b-teal">${esc(g.prob.code)}</span>` : ""}` : `📋 <b>General / unlinked</b>`} <span class="ctx-probmeta">${g.items.length} entr${g.items.length === 1 ? "y" : "ies"}${last ? " · last " + esc(last) : ""}</span></div>`;
+      if (g.items.length) h += g.items.map((e) => timelineRowHTML(c, e)).join("");
+      else h += `<div class="hint">No linked visits yet.</div>`;
+      h += `</div>`;
+    }
+    return h;
+  } catch (e) { return ""; }
+}
+/* Shared event card for Chronology + Problems. Visits render the T4
+   one-liner (tap to expand full SOAP); vitals stay inline. */
+function timelineRowHTML(c, e) {
+  try {
+    let age = "";
+    try { age = timelineAgeAt(c && c.dob, e.date); } catch (e2) {}
+    let sub = "";
+    if (e.kind === "visit" && e.ref) {
+      const vit = timelineVitals(e.ref);
+      const open = !!TIMELINE_OPEN[e.key];
+      sub = `<button type="button" class="ctx-liner" data-act="timelineExpand" data-arg="${esc(e.key || "")}" title="Tap to ${open ? "collapse" : "expand"} full note"><span class="ctx-caret">${open ? "▾" : "▸"}</span> <span>${esc(visitOneLiner(e.ref))}</span></button>` +
+        (vit ? `<div class="ctx-sub">${esc(vit)}</div>` : "") +
+        (open ? `<div class="ctx-full">${visitFullHTML(e.ref)}</div>` : "");
+    } else if (e.sub) sub = `<div class="ctx-sub">${esc(e.sub.length > 220 ? e.sub.slice(0, 220) + "…" : e.sub)}</div>`;
+    return `<div class="ctx-item"><div class="ctx-rail"><div class="ctx-dot ctx-${e.kind}"></div></div>` +
+      `<div class="ctx-card ctx-${e.kind}"><div class="ctx-head">${e.icon} <b>${esc(e.title)}</b>` +
+      (e.flag ? ` <span class="ctx-flag ${e.flagCls || ""}">${esc(e.flag)}</span>` : "") +
+      `<br><span class="ctx-date">${esc(fmtDate(e.date))}${age ? " · age " + esc(age) : ""}</span></div>${sub}</div></div>`;
+  } catch (e) { return ""; }
+}
+function timelineHTML(c, filter, view) {
   const f = filter || "all";
+  const v = view || ((typeof TIMELINE_VIEW !== "undefined") ? TIMELINE_VIEW : "chrono");
   const all = timelineEvents(c);
-  const list = f === "all" ? all : all.filter((e) => e.kind === f);
   const chips = TIMELINE_FILTERS.map(([k, l]) => {
     const n = k === "all" ? all.length : all.filter((e) => e.kind === k).length;
     return `<button class="btn btn-xs ${k === f ? "btn-p" : "btn-o"}" data-act="timelineFilter" data-arg="${k}">${esc(l)} (${n})</button>`;
   }).join("");
+  const views = [["chrono", "Chronology"], ["problems", "Problems"]].map(([k, l]) =>
+    `<button class="btn btn-xs ${k === v ? "btn-p" : "btn-o"}" data-act="timelineView" data-arg="${k}">${l}</button>`).join("");
   let snap = "";
   try { snap = timelineSnapshot(c); } catch (e) { snap = ""; }
-  const MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  let rows = "", lastG = "~~~";
-  list.slice(0, 200).forEach((e) => {
-    const g = (e.date || "").slice(0, 7);
-    if (g !== lastG) {
-      lastG = g;
-      const yy = g.slice(0, 4), mm = +g.slice(5, 7);
-      rows += `<div class="ctx-group">${(g && MON[mm - 1]) ? MON[mm - 1] + " " + yy : "Undated"}</div>`;
-    }
-    let age = "";
-    try { age = timelineAgeAt(c && c.dob, e.date); } catch (e2) {}
-    rows += `<div class="ctx-item"><div class="ctx-rail"><div class="ctx-dot ctx-${e.kind}"></div></div>` +
-      `<div class="ctx-card ctx-${e.kind}"><div class="ctx-head">${e.icon} <b>${esc(e.title)}</b>` +
-      (e.flag ? ` <span class="ctx-flag ${e.flagCls || ""}">${esc(e.flag)}</span>` : "") +
-      `<br><span class="ctx-date">${esc(fmtDate(e.date))}${age ? " · age " + esc(age) : ""}</span></div>` +
-      (e.sub ? `<div class="ctx-sub">${esc(e.sub.length > 220 ? e.sub.slice(0, 220) + "…" : e.sub)}</div>` : "") + `</div></div>`;
-  });
+  let attn = "";
+  try { attn = timelineAttentionHTML(c); } catch (e) { attn = ""; }
+  let body = "";
+  if (v === "problems") {
+    body = timelineProblemsHTML(c, f);
+  } else {
+    const list = f === "all" ? all : all.filter((e) => e.kind === f);
+    const MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    let rows = "", lastG = "~~~";
+    list.slice(0, 200).forEach((e) => {
+      const g = (e.date || "").slice(0, 7);
+      if (g !== lastG) {
+        lastG = g;
+        const yy = g.slice(0, 4), mm = +g.slice(5, 7);
+        rows += `<div class="ctx-group">${(g && MON[mm - 1]) ? MON[mm - 1] + " " + yy : "Undated"}</div>`;
+      }
+      rows += timelineRowHTML(c, e);
+    });
+    body = (rows || `<div class="hint">No ${f === "all" ? "" : f + " "}records yet for this child.</div>`) +
+      (list.length > 200 ? `<div class="hint">Showing latest 200 of ${list.length}.</div>` : "");
+  }
   return (snap ? `<div class="card ctx-snap"><h3>🧭 Case at a glance</h3>${snap}</div>` : "") +
-    `<div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${chips}</div>` +
-    (rows || `<div class="hint">No ${f === "all" ? "" : f + " "}records yet for this child.</div>`) +
-    (list.length > 200 ? `<div class="hint">Showing latest 200 of ${list.length}.</div>` : "");
+    (attn || "") +
+    `<div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">${views}<span style="color:var(--muted)">|</span>${chips}</div>` +
+    body;
 }
 function renderTimeline() {
   const el = $("timelineList"); if (!el) return;
-  el.innerHTML = timelineHTML(child(), (typeof TIMELINE_FILTER !== "undefined") ? TIMELINE_FILTER : "all") + ((typeof Comply !== "undefined") ? Comply.auditStrip(child()) : "");
+  el.innerHTML = timelineHTML(child(), (typeof TIMELINE_FILTER !== "undefined") ? TIMELINE_FILTER : "all", (typeof TIMELINE_VIEW !== "undefined") ? TIMELINE_VIEW : "chrono") + ((typeof Comply !== "undefined") ? Comply.auditStrip(child()) : "");
 }
 
 /* ================= VACCINES ================= */
@@ -1974,6 +2220,8 @@ try {
 try {
   actCallN("doShare", 5);
   actRegister("timelineFilter", function (el) { try { TIMELINE_FILTER = actArg(el); renderTimeline(); } catch (e) { actReport("timelineFilter", e); } });
+  actRegister("timelineView", function (el) { try { TIMELINE_VIEW = actArg(el) === "problems" ? "problems" : "chrono"; renderTimeline(); } catch (e) { actReport("timelineView", e); } });
+  actRegister("timelineExpand", function (el) { try { const k = actArg(el); if (k) { TIMELINE_OPEN[k] = !TIMELINE_OPEN[k]; renderTimeline(); } } catch (e) { actReport("timelineExpand", e); } });
 } catch (e) {}
 
 /* E2b: generic-regex catches (single-arg globals). */
