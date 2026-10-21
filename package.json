@@ -1,6 +1,6 @@
 {
   "name": "neokid-care",
-  "version": "10.51.0",
+  "version": "10.52.0",
   "private": true,
   "description": "NeoKid Care \u2014 offline-first neonatal & pediatric clinic PWA with cloud sync",
   "scripts": {

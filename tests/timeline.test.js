@@ -164,9 +164,10 @@ async function main() {
   const rxg = sb.timelineProblemGroups(tia, "rx");
   ok(rxg.length === 2 && rxg[0].items.length === 1 && rxg.every((g) => g.prob), "T3 kind filter applies, empty General omitted");
   const phtml = sb.timelineHTML(tia, "all", "problems");
-  ok(phtml.includes("General / unlinked") && phtml.includes("J45") && phtml.includes("ctx-prob"), "T3 problems view renders groups");
+  ok(phtml.includes("General / unlinked") && phtml.includes("J45") && phtml.includes("tl-cardhead"), "T3 problems view renders groups");
   ok(!phtml.includes("ctx-group"), "T3 problems view has no month dividers");
-  ok(sb.timelineProblemsHTML({ ...tia, visits: [], rx: [], problems: [] }, "all").includes("Chronology"), "T3 empty problems hint points to Chronology");
+  const pempty = sb.timelineProblemsHTML({ ...tia, visits: [], rx: [], problems: [] }, "all");
+  ok((pempty.match(/tl-cardhead/g) || []).length === 4 && pempty.includes("No visits or prescriptions yet"), "U empty problems view still shows 4 cards + hint");
 
   // ---- Chronology view + expand wiring ----
   const ch = sb.timelineHTML(tia, "all");
@@ -185,6 +186,41 @@ async function main() {
   ok(tev.every((e) => e.key) && tev.filter((e) => e.kind === "visit").every((e) => e.ref && e.ref.subj !== undefined), "events carry keys + visit refs");
   ok(vm.runInContext("TIMELINE_VIEW", sb) === "chrono", "default view is Chronology");
   ok(vm.runInContext("typeof Act !== 'undefined' && !!(Act.timelineView && Act.timelineExpand)", sb), "view + expand actions registered");
+
+  // ---- Phase U: category cards ----
+  const cardMap = { all: 4, visit: 1, rx: 1, vax: 1, growth: 1, labs: 1, aefi: 1 };
+  ok(Object.entries(cardMap).every(([k, n]) => sb.tlCardsFor(k).length === n), "U chips map to card sets");
+  ok(sb.tlCardsFor("visit")[0] === "issues" && sb.tlCardsFor("aefi")[0] === "vax", "U visit->Issues, aefi->Vaccine");
+  vm.runInContext("Object.keys(TIMELINE_CARDS).forEach((k) => delete TIMELINE_CARDS[k]); TIMELINE_CARDS.issues=1;", sb);
+  const pcards = sb.timelineProblemsHTML(tia, "all"); // cards only (phtml includes snapshot+rail)
+  ok((pcards.match(/tl-cardhead/g) || []).length === 4, "U four card heads");
+  ok(pcards.includes("2 problems · 4 entries") && pcards.includes("5 to act"), "U Issues face counts");
+  ok(pcards.includes("Needs action") && pcards.includes("overdue") && pcards.includes('data-arg="vaccines"'), "U Issues attention on top");
+  ok(pcards.includes("Asthma") && pcards.includes("2 entries") && !pcards.includes("Salbutamol"), "U problem groups collapsed by default");
+  vm.runInContext('TIMELINE_CARDS["g:P:J45"]=1;', sb);
+  ok(sb.timelineProblemsHTML(tia, "all").includes("Salbutamol"), "U group expand reveals entries");
+  vm.runInContext('delete TIMELINE_CARDS["g:P:J45"];', sb);
+  ok(pcards.includes("13.9 kg") && pcards.includes("-0.3 kg") && !pcards.includes("14.4 kg"), "U Growth face latest-only");
+  vm.runInContext("TIMELINE_CARDS.growth=1;", sb);
+  ok(sb.timelineProblemsHTML(tia, "all").includes("14.4 kg"), "U Growth expand reveals history");
+  vm.runInContext("delete TIMELINE_CARDS.growth;", sb);
+  ok(pcards.includes("losing") && /\(\d+%\)/.test(pcards), "U Growth losing badge + Vaccine immun-%");
+  vm.runInContext("TIMELINE_CARDS.vax=1;", sb);
+  const vaxOpen = sb.timelineProblemsHTML(tia, "all");
+  ok(vaxOpen.includes("DPT booster") && vaxOpen.includes("AEFI (1)"), "U AEFI folds into Vaccine card");
+  vm.runInContext("delete TIMELINE_CARDS.vax;", sb);
+  ok(pcards.includes("Hb 11.0") && pcards.includes("1 to review"), "U Labs face latest + review count");
+  ok(sb.timelineEvents(tia).filter((e) => e.kind === "labs" && e.flag === "to review").length === 1, "U lab events carry review flag");
+  const soloGrowth = sb.timelineProblemsHTML(tia, "growth");
+  ok(soloGrowth.includes('data-arg="growth"') && !soloGrowth.includes('data-arg="vax"') && !soloGrowth.includes('data-arg="issues"'), "U growth chip isolates Growth card");
+  ok(soloGrowth.includes("14.4 kg"), "U solo card force-opens");
+  ok(sb.timelineProblemsHTML(tia, "labs").includes("Hb 11.0"), "U labs chip isolates Labs card");
+  const evilProb = sb.timelineProblemsHTML({ ...tia, problems: [{ label: "X<script>" }] }, "all");
+  ok(!evilProb.includes("<script>") && evilProb.includes("X&lt;script&gt;"), "U problem labels escaped");
+  ok(sb.timelineProblemsHTML(clr, "visit").includes("All clear."), "U all-clear Issues for healthy child");
+  ok(sb.tlGrowthCard({ ...tia, measures: [] }).body.includes("Open Growth"), "U empty Growth card jumps to page");
+  ok(vm.runInContext("typeof Act !== 'undefined' && !!Act.timelineCard", sb), "U card toggle action registered");
+  vm.runInContext("Object.keys(TIMELINE_CARDS).forEach((k) => delete TIMELINE_CARDS[k]); TIMELINE_CARDS.issues=1;", sb);
 
   console.log(`\ntimeline: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

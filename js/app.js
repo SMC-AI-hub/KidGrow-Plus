@@ -726,6 +726,7 @@ function renderChildren() {
 let TIMELINE_FILTER = "all";
 let TIMELINE_VIEW = "chrono"; // Phase T: chrono | problems
 const TIMELINE_OPEN = {}; // Phase T: expanded one-liner keys (stable per data+filter)
+const TIMELINE_CARDS = { issues: 1 }; // Phase U: expanded card keys (issues open by default)
 const TIMELINE_FILTERS = [["all", "All"], ["visit", "🩺 Visits"], ["rx", "💊 Rx"], ["vax", "💉 Vaccines"], ["growth", "📏 Growth"], ["labs", "🩸 Labs"], ["aefi", "⚠️ AEFI"]];
 function vaxLabel(code) {
   try {
@@ -835,7 +836,8 @@ function timelineEvents(c) {
   (c.labs || []).forEach((l) => {
     const p = ["mcv", "ferritin", "crp", "b12", "vitD"].map((k) => l[k] ? `${k} ${l[k]}` : "").filter(Boolean);
     if (l.note) p.push(l.note);
-    ev.push({ date: ts(l.date), kind: "labs", icon: "🩸", title: "Lab" + (l.hb ? ` — Hb ${l.hb}` : ""), sub: p.join(" · ") });
+    ev.push({ date: ts(l.date), kind: "labs", icon: "🩸", title: "Lab" + (l.hb ? ` — Hb ${l.hb}` : ""), sub: p.join(" · "),
+      flag: !l.rev ? "to review" : "", flagCls: "" }); // Phase U: review state visible in feed + Labs card
   });
   (c.aefi || []).forEach((e) => { const sev = e.severity || ""; ev.push({ date: ts(e.date), kind: "aefi", icon: "⚠️", title: `AEFI — ${e.vacLabel || e.code || ""}`,
     sub: [e.severity, e.outcome && ("Outcome: " + e.outcome), e.reported === "Yes" && "Reported"].filter(Boolean).join(" · "),
@@ -1034,18 +1036,115 @@ function timelineProblemGroups(c, f) {
   } catch (e) {}
   return out;
 }
+/* Phase U: Problems view as category cards (Issues / Growth / Vaccine /
+   Labs). Faces show counts + latest + worst flag; tap expands inline.
+   AEFI folds into the Vaccine card; filter chips select cards. */
+function tlCardsFor(f) {
+  if (f === "visit" || f === "rx") return ["issues"];
+  if (f === "growth") return ["growth"];
+  if (f === "vax" || f === "aefi") return ["vax"];
+  if (f === "labs") return ["labs"];
+  return ["issues", "growth", "vax", "labs"];
+}
+function tlSortedMeasures(c) {
+  try { return [...((c && c.measures) || [])].filter((m) => m && m.date).sort((a, b) => String(a.date).localeCompare(String(b.date))); }
+  catch (e) { return []; }
+}
+function tlLatestLab(c) {
+  try {
+    const ls = [...((c && c.labs) || [])].filter((l) => l && l.date).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return ls[0] || null;
+  } catch (e) { return null; }
+}
+function tlCardWrap(key, icon, name, face, badge, body, forceOpen) {
+  const open = !!forceOpen || !!TIMELINE_CARDS[key];
+  return `<div class="card ctx-cardpanel"><button type="button" class="tl-cardhead" data-act="timelineCard" data-arg="${esc(key)}">` +
+    `<span class="ctx-caret">${open ? "▾" : "▸"}</span> <span>${icon}</span> <b>${esc(name)}</b>${badge ? ` <span class="badge b-red">${esc(badge)}</span>` : ""}` +
+    `<span class="tl-cardface">${face}</span></button>${open ? `<div class="tl-cardbody">${body}</div>` : ""}</div>`;
+}
+function tlJumpBtn(page, label) {
+  return `<button type="button" class="btn btn-xs btn-o" data-act="goPage" data-arg="${esc(page)}">${esc(label)} ›</button>`;
+}
+function timelineIssuesHTML(c, f) {
+  let h = "";
+  try {
+    const attn = timelineAttention(c);
+    h += `<div class="tl-subhead">Needs action</div>`;
+    if (!attn.length) h += `<div class="tl-allclear">✅ All clear.</div>`;
+    else h += attn.map((a) => `<button type="button" class="att-row${a.red ? " att-red" : ""}" data-act="goPage" data-arg="${esc(a.page)}"><span>${a.icon}</span><span>${esc(a.text)}</span><span class="att-go">›</span></button>`).join("");
+    const groups = timelineProblemGroups(c, (f === "visit" || f === "rx") ? f : "all");
+    h += `<div class="tl-subhead">Problems</div>`;
+    if (!groups.length) h += `<div class="hint">No visits or prescriptions yet — recorded problems will appear here.</div>`;
+    for (const g of groups) {
+      const gk = "g:" + (g.prob ? ("P:" + (g.prob.code || g.prob.label || "?")) : "GENERAL");
+      const open = !!TIMELINE_CARDS[gk];
+      const last = g.items.length ? fmtDate(g.items[0].date) : "";
+      h += `<button type="button" class="tl-grp" data-act="timelineCard" data-arg="${esc(gk)}"><span class="ctx-caret">${open ? "▾" : "▸"}</span> ` +
+        (g.prob ? `🩺 <b>${esc(g.prob.label || "Problem")}</b>${g.prob.code ? ` <span class="badge b-teal">${esc(g.prob.code)}</span>` : ""}` : `📋 <b>General / unlinked</b>`) +
+        ` <span class="ctx-probmeta">${g.items.length} entr${g.items.length === 1 ? "y" : "ies"}${last ? " · last " + esc(last) : ""}</span></button>`;
+      if (open) h += g.items.length ? g.items.map((e) => timelineRowHTML(c, e)).join("") : `<div class="hint">No linked visits yet.</div>`;
+    }
+  } catch (e) { h += ""; }
+  return h;
+}
+function tlGrowthCard(c) {
+  const ms = tlSortedMeasures(c);
+  if (!ms.length) return { face: `<span style="color:var(--muted)">No records yet</span>`, badge: "", body: `<div class="hint">No growth records yet.</div>` + tlJumpBtn("growth", "Open Growth") };
+  const l = ms[ms.length - 1];
+  const d = timelineLastDelta(c);
+  const tw = timelineTrendWord(c);
+  const face = `${l.wt > 0 ? l.wt + " kg" : "—"}${l.ht > 0 ? " · " + l.ht + " cm" : ""} · ${esc(fmtDate(l.date))}${d ? ` (${esc(d.txt)})` : ""}${tw ? ` · trend ${esc(tw)}` : ""}`;
+  const rows = timelineEvents(c).filter((e) => e.kind === "growth");
+  return { face, badge: (d && d.neg) ? "losing" : "", body: rows.map((e) => timelineRowHTML(c, e)).join("") };
+}
+function tlVaxCard(c) {
+  let vs = null;
+  try { vs = (typeof vaccineSummary === "function") ? vaccineSummary(c) : null; } catch (e) {}
+  const evs = timelineEvents(c);
+  const given = evs.filter((e) => e.kind === "vax");
+  const ae = evs.filter((e) => e.kind === "aefi");
+  let face = "—", badge = "";
+  if (vs) {
+    face = `${vs.done}/${vs.total} (${vs.pct}%)`;
+    if (vs.overdue > 0) { badge = vs.overdue + " overdue"; }
+    else if (vs.next) face += ` · next due ${esc(fmtDate(vs.next.due))}`;
+    else face = "Complete ✓";
+  }
+  let body = "";
+  body += `<div class="tl-subhead">Given (${given.length})</div>`;
+  body += given.length ? given.map((e) => timelineRowHTML(c, e)).join("") : `<div class="hint">None recorded.</div>`;
+  if (ae.length) {
+    body += `<div class="tl-subhead">AEFI (${ae.length})</div>`;
+    body += ae.map((e) => timelineRowHTML(c, e)).join("");
+  }
+  body += tlJumpBtn("vaccines", "Open Vaccines");
+  return { face, badge, body };
+}
+function tlLabsCard(c) {
+  const evs = timelineEvents(c).filter((e) => e.kind === "labs");
+  const unrev = ((c && c.labs) || []).filter((l) => l && !l.rev).length;
+  const l = tlLatestLab(c);
+  const face = l ? `${l.hb ? "Hb " + esc(l.hb) + " · " : ""}${esc(fmtDate(l.date))}${unrev ? ` · ${unrev} to review` : ""}` : `<span style="color:var(--muted)">No records yet</span>`;
+  let body = evs.length ? evs.map((e) => timelineRowHTML(c, e)).join("") : `<div class="hint">No lab records yet.</div>`;
+  body += tlJumpBtn("labs", "Open Labs");
+  return { face, badge: unrev ? unrev + " to review" : "", body };
+}
 function timelineProblemsHTML(c, f) {
   try {
-    const groups = timelineProblemGroups(c, f);
-    if (!groups.length) return `<div class="hint">No visits or prescriptions yet — problems appear here once recorded. Vaccines, growth, labs &amp; AEFI stay in Chronology.</div>`;
+    if (!c) return "";
+    const keys = tlCardsFor(f);
+    const solo = keys.length === 1 ? keys[0] : null;
     let h = "";
-    for (const g of groups) {
-      const last = g.items.length ? fmtDate(g.items[0].date) : "";
-      h += `<div class="card ctx-prob"><div class="ctx-probhead">${g.prob ? `🩺 <b>${esc(g.prob.label || "Problem")}</b>${g.prob.code ? ` <span class="badge b-teal">${esc(g.prob.code)}</span>` : ""}` : `📋 <b>General / unlinked</b>`} <span class="ctx-probmeta">${g.items.length} entr${g.items.length === 1 ? "y" : "ies"}${last ? " · last " + esc(last) : ""}</span></div>`;
-      if (g.items.length) h += g.items.map((e) => timelineRowHTML(c, e)).join("");
-      else h += `<div class="hint">No linked visits yet.</div>`;
-      h += `</div>`;
+    if (keys.includes("issues")) {
+      const groups = timelineProblemGroups(c, (f === "visit" || f === "rx") ? f : "all");
+      const nItems = groups.reduce((n, g) => n + g.items.length, 0);
+      const nProbs = groups.filter((g) => g.prob).length;
+      const nAttn = timelineAttention(c).length;
+      h += tlCardWrap("issues", "🩺", "Issues", `${nProbs} problem${nProbs === 1 ? "" : "s"} · ${nItems} entr${nItems === 1 ? "y" : "ies"}`, nAttn ? nAttn + " to act" : "", timelineIssuesHTML(c, f), solo === "issues");
     }
+    if (keys.includes("growth")) { const g = tlGrowthCard(c); h += tlCardWrap("growth", "📏", "Growth", g.face, g.badge, g.body, solo === "growth"); }
+    if (keys.includes("vax")) { const v = tlVaxCard(c); h += tlCardWrap("vax", "💉", "Vaccine", v.face, v.badge, v.body, solo === "vax"); }
+    if (keys.includes("labs")) { const l = tlLabsCard(c); h += tlCardWrap("labs", "🩸", "Labs", l.face, l.badge, l.body, solo === "labs"); }
     return h;
   } catch (e) { return ""; }
 }
@@ -2222,6 +2321,7 @@ try {
   actRegister("timelineFilter", function (el) { try { TIMELINE_FILTER = actArg(el); renderTimeline(); } catch (e) { actReport("timelineFilter", e); } });
   actRegister("timelineView", function (el) { try { TIMELINE_VIEW = actArg(el) === "problems" ? "problems" : "chrono"; renderTimeline(); } catch (e) { actReport("timelineView", e); } });
   actRegister("timelineExpand", function (el) { try { const k = actArg(el); if (k) { TIMELINE_OPEN[k] = !TIMELINE_OPEN[k]; renderTimeline(); } } catch (e) { actReport("timelineExpand", e); } });
+  actRegister("timelineCard", function (el) { try { const k = actArg(el); if (k) { TIMELINE_CARDS[k] = !TIMELINE_CARDS[k]; renderTimeline(); } } catch (e) { actReport("timelineCard", e); } });
 } catch (e) {}
 
 /* E2b: generic-regex catches (single-arg globals). */
