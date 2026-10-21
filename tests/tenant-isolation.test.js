@@ -325,6 +325,50 @@ async function main() {
   const seOwn = await withClaim(app, A, async () => (await app.query("SELECT count(*)::int AS n FROM subscription_events WHERE user_id=$1", [A])).rows[0].n);
   ok(seOwn === 0, "owner can read own (empty) subscription events");
 
+  // ================= 0007: role governance (Phase 2) =================
+  const RU = "88888888-8888-8888-8888-888888888888"; // readonly member of A
+  const BL = "99999999-9999-9999-9999-999999999999"; // billing member of A
+  const AD = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"; // admin of A
+  const O3 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"; // spare user for owner-grant tests
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='hospital' WHERE id=$1", [tA])); // quota headroom
+  await withClaim(app, A, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'readonly'),($1,$3,'billing'),($1,$4,'admin')", [tA, RU, BL, AD]));
+  const rList = await withClaim(app, RU, async () => (await app.query("SELECT id FROM patients")).rows);
+  ok(rList.length >= 1, "readonly member still reads own-tenant patients");
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'R-1','Nope')", [tA]))) === "denied", "readonly insert denied");
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("UPDATE patients SET name='X' WHERE id=$1", [pA]))) === "denied", "readonly update denied (loud 42501: USING passes, WITH CHECK fails)");
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ tenant_id: tA, local_id: "c_ro", client_rev: "2026-10-10T00:00:00Z", mrn: "CC-RO", name: "Ro" })]))) === "denied", "readonly sync-RPC denied");
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["growth_points", JSON.stringify({ tenant_id: tA, local_id: "g_ro", client_rev: "2026-10-10T00:00:00Z", patient_local_id: "c_m5kid", wt_kg: 3 })]))) === "denied", "readonly clinical-RPC denied");
+  ok(await expectDeny(withClaim(app, BL, async () => app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'BILL-1')", [tA]))) === "denied", "billing insert denied");
+  const nPat = await withClaim(app, N, async () => (await app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'N-1','Nurse Admit') RETURNING id", [tA])).rows[0].id);
+  ok(!!nPat, "nurse CAN admit patients (writer role)");
+  ok(await ac(N, "mar_entries", { tenant_id: tA, local_id: "m_nurse1", client_rev: "2026-10-10T09:00:00Z", patient_local_id: "c_m5kid", drug: "Paracetamol", dose: "120 mg", route: "PO", freq: "sos", status: "given", given_by: "Nurse N", given_at: "2026-10-10T09:05:00Z" }) === "inserted", "nurse CAN chart MAR via RPC");
+  ok((await withClaim(app, A, async () => (await app.query("DELETE FROM patients WHERE id=$1", [pA])).rowCount)) === 0, "owner hard delete is now a silent no-op");
+  const pAStill = await withClaim(app, A, async () => (await app.query("SELECT id FROM patients WHERE id=$1", [pA])).rows);
+  ok(pAStill.length === 1, "blocked delete left the row intact");
+  const delPols = await owner.query("SELECT count(*)::int AS n FROM pg_policies WHERE schemaname='public' AND cmd='DELETE' AND tablename IN ('patients','encounters','consents','nicu_admissions','nicu_rounds','mar_entries','growth_points')");
+  ok(delPols.rows[0].n === 0, "no DELETE policies survive on clinical tables");
+  await owner.query("GRANT anon TO app"); // test-only: let the harness wear the anon role
+  await app.query("SET ROLE anon");
+  ok(await expectDeny(app.query("SELECT public.apply_patient_op($1)", [JSON.stringify(P1)])) === "denied", "anon cannot execute sync RPC");
+  ok(await expectDeny(app.query("SELECT public.accept_invite('nope')")) === "denied", "anon cannot execute accept_invite");
+  await app.query("RESET ROLE");
+  await owner.query("REVOKE anon FROM app");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'superwizard')", [tA, O3]))) === "error:23514", "junk role violates CHECK");
+  const admDoc = await withClaim(app, AD, async () => (await app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'doctor') RETURNING user_id", [tA, O3])).rows);
+  ok(admDoc.length === 1, "admin can grant doctor");
+  await withClaim(app, A, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tA, O3]));
+  ok(await expectDeny(withClaim(app, AD, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'owner')", [tA, O3]))) === "denied", "admin cannot mint owners");
+  ok(await expectDeny(withClaim(app, AD, async () => app.query("UPDATE memberships SET role='owner' WHERE tenant_id=$1 AND user_id=$2", [tA, E]))) === "denied", "admin cannot promote to owner");
+  ok((await withClaim(app, AD, async () => (await app.query("UPDATE memberships SET role='nurse' WHERE tenant_id=$1 AND user_id=$2", [tA, A])).rowCount)) === 0, "admin cannot demote an owner (0 rows)");
+  const aStillOwner = await withClaim(app, A, async () => (await app.query("SELECT role FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tA, A])).rows[0].role);
+  ok(aStillOwner === "owner", "failed demotion changed nothing");
+  await withClaim(app, A, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'owner')", [tA, O3]));
+  ok(true, "owner CAN grant owner (second owner exists)");
+  await withClaim(app, A, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tA, O3]));
+  ok(await expectDeny(withClaim(app, AD, async () => app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'o@x.y','owner')", [tA]))) === "denied", "admin cannot invite owners");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'w@x.y','wizard')", [tA]))) === "error:23514", "junk invite role violates CHECK");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='clinic' WHERE id=$1", [tA])); // restore
+
   try { await app.end(); } catch (_) {}
   await stop();
   console.log(`\nisolation: ${pass} passed, ${fail} failed`);
