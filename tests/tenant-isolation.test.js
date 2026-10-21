@@ -345,6 +345,7 @@ async function main() {
   ok((await withClaim(app, A, async () => (await app.query("DELETE FROM patients WHERE id=$1", [pA])).rowCount)) === 0, "owner hard delete is now a silent no-op");
   const pAStill = await withClaim(app, A, async () => (await app.query("SELECT id FROM patients WHERE id=$1", [pA])).rows);
   ok(pAStill.length === 1, "blocked delete left the row intact");
+  ok(await expectDeny(withClaim(owner, A, async () => owner.query("DELETE FROM patients WHERE id=$1", [pA]))) === "denied", "trigger backstop fires when RLS is bypassed (owner session + claim)");
   const delPols = await owner.query("SELECT count(*)::int AS n FROM pg_policies WHERE schemaname='public' AND cmd='DELETE' AND tablename IN ('patients','encounters','consents','nicu_admissions','nicu_rounds','mar_entries','growth_points')");
   ok(delPols.rows[0].n === 0, "no DELETE policies survive on clinical tables");
   await owner.query("GRANT anon TO app"); // test-only: let the harness wear the anon role

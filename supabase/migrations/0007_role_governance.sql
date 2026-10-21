@@ -265,12 +265,22 @@ end $$;
 -- 2) No PUBLIC/anon EXECUTE on RPC surface (expect 0 rows):
 --    select routine_name, grantee from information_schema.routine_privileges
 --      where specific_schema='public' and grantee in ('PUBLIC','anon');
--- 3) Negative test as a readonly member (expect 42501 on writes):
---    -- set request.jwt.claim.sub to a readonly member, then:
---    insert into patients (tenant_id, mrn) values ('<tenant>','NEG-1');
---    -- expect: ERROR 42501 role cannot write / policy violation
--- 4) Owner hard delete is a silent no-op (expect 0, row intact):
---    delete from patients where id='<a-patient-uuid>'; -- 0 rows
+-- NOTE: the SQL editor runs as postgres (bypasses RLS, auth.uid() is null),
+-- so policy behavior is verified structurally (Q1/Q5) plus direct calls of
+-- the definer enforcement functions (Q3/Q4) — never by raw INSERT/DELETE,
+-- which as postgres would REALLY write. Every query below is read-only.
+-- 3) sync_guard enforces the writer set (pick uuids from memberships first):
+--    select set_config('request.jwt.claim.sub', '<NON-WRITER-uuid>', true);
+--    select public.sync_guard('<their-tenant-uuid>');
+--    -- expect: ERROR 42501 'role cannot write clinical data'
+--    select set_config('request.jwt.claim.sub', '<OWNER-uuid>', true);
+--    select public.sync_guard('<owner-tenant-uuid>');
+--    -- expect: Success, no error
+-- 4) Helper agrees with the policies (expect false, then true):
+--    select set_config('request.jwt.claim.sub', '<NON-WRITER-uuid>', true);
+--    select public.tenant_can_write('<their-tenant-uuid>'); -- false
+--    select set_config('request.jwt.claim.sub', '<OWNER-uuid>', true);
+--    select public.tenant_can_write('<owner-tenant-uuid>'); -- true
 -- 5) No stale permissive policy survived (expect exactly the 0007 set —
 --    *_sel/*_ins/*_upd on each table, NO *_del, NO d_all; any extra row
 --    means an old policy outlived the rename/drop and must be dropped):
@@ -283,6 +293,15 @@ end $$;
 -- 6) Role CHECKs present (expect 2 rows):
 --    select conrelid::regclass, conname from pg_constraint
 --      where conname in ('memberships_role_check','invites_role_check');
+-- 7) Table grants to app roles (expect 0 rows: clinical tables are
+--    dormant-by-construction. Any row = dashboard drift, report it):
+--    select table_name, grantee, privilege_type
+--      from information_schema.role_table_grants
+--      where table_schema = 'public' and grantee in ('anon','authenticated')
+--      order by 1, 2, 3;
+-- 8) Trigger backstop present on all 7 tables (expect 7 rows):
+--    select tgrelid::regclass as tbl, tgname from pg_trigger
+--      where not tgisinternal and tgname = 'block_delete' order by 1;
 
 -- ================= ROLLBACK (0007) =================
 -- Re-apply 0001+0002+0004 policy sections to restore M1/M3/M5 behavior, then:
