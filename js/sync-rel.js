@@ -520,10 +520,12 @@ function renderSyncCard() {
   var st = status();
   var card = document.createElement("div");
   card.className = "card"; card.id = "syncCard";
+  var standby = "";
+  try { standby = live() ? "" : "<div class='hint'>⏸ Relational sync on standby (server link not armed) — blob backup active.</div>"; } catch (e) {} // E4
   var fails = st.failed.slice(0, 5).map(function (o) {
     return "<div style='font-size:12px'>❌ " + esc(o.table) + " " + esc(o.localId) + " — " + esc(o.lastError || "failed") + "</div>";
   }).join("");
-  card.innerHTML = "<h3>🔄 Relational sync (M4)</h3>" +
+  card.innerHTML = standby + "<h3>🔄 Relational sync (M4)</h3>" +
     "<div class='hint'>Pending: <b>" + st.pending + "</b> · Failed: <b>" + st.failed.length + "</b> · Conflicts: <b>" + st.conflicts + "</b>" +
     (st.lastFlush ? " · Last push: " + esc(st.lastFlush.slice(0, 16).replace("T", " ")) : "") +
     (st.lastPull ? " · Last pull: " + esc(st.lastPull.slice(0, 16).replace("T", " ")) : "") + "</div>" + fails +
@@ -553,7 +555,11 @@ function scheduleScan() { if (scanT) clearTimeout(scanT); scanT = setTimeout(fun
 function scheduleFlush() { if (flushT) clearTimeout(flushT); flushT = setTimeout(function () { flushT = null; flush(); }, 5000); }
 var SyncEngine = {
   scan: scanLocal, flush: flush, pull: pull, status: status,
-  syncNow: function () { try { scanLocal(); } catch (e) {} flush().then(function () { pull(); }); },
+  syncNow: function () {
+    try { scanLocal(); } catch (e) {}
+    if (!live()) { toast("Relational sync is on standby — encrypted blob backup is active."); renderSyncCard(); return; } // E4: honest standby
+    flush().then(function () { pull(); });
+  },
   resolve: resolveConflict, showConflicts: showConflicts,
   dismissFailed: function () {
     if (!confirm("Dismiss failed ops? Your LOCAL data is kept; these rows just won't upload.")) return;
