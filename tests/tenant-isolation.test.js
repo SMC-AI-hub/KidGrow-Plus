@@ -369,6 +369,14 @@ async function main() {
   ok(await expectDeny(withClaim(app, AD, async () => app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'o@x.y','owner')", [tA]))) === "denied", "admin cannot invite owners");
   ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'w@x.y','wizard')", [tA]))) === "error:23514", "junk invite role violates CHECK");
   await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='clinic' WHERE id=$1", [tA])); // restore
+  // ================= 0008: no RLS-blind privileges to app roles =================
+  // (CI never grants these, so this guards the invariant; the live proof is the
+  // post-apply check in the 0008 header + the E-block re-run on staging/prod.)
+  const priv = async (r, t, p) => (await owner.query("SELECT has_table_privilege($1,$2,$3) AS v", [r, t, p])).rows[0].v;
+  ok(await priv("anon", "public.patients", "TRUNCATE") === false, "anon holds no TRUNCATE on patients");
+  ok(await priv("authenticated", "public.patients", "TRUNCATE") === false, "authenticated holds no TRUNCATE on patients");
+  ok(await priv("anon", "public.patients", "TRIGGER") === false, "anon holds no TRIGGER on patients");
+  ok(await priv("authenticated", "public.patients", "TRIGGER") === false, "authenticated holds no TRIGGER on patients");
 
   try { await app.end(); } catch (_) {}
   await stop();
