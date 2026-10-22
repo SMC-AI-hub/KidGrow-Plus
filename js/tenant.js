@@ -9,7 +9,7 @@
 "use strict";
 
 var CFG = (typeof window.KIDGROW_CONFIG === "object" && window.KIDGROW_CONFIG) || {};
-var MFA_ROLES = CFG.MFA_REQUIRED_ROLES || ["owner", "admin"];
+var MFA_ROLES = CFG.MFA_REQUIRED_ROLES || ["owner", "admin", "doctor"];
 var T = { mine: [], current: null, role: null, settings: null, tenant: null };
 try { T.current = localStorage.getItem("kidgrow_tenant") || null; } catch (e) {}
 
@@ -50,6 +50,12 @@ function mfaNext(o) {
   if (!o.hasFactors) return "enroll";
   return "verify";
 }
+function mfaGraceActive(untilISO, nowMs) {
+  if (!untilISO) return false;
+  var t = Date.parse(untilISO);
+  if (isNaN(t)) return false;
+  return (nowMs || Date.now()) < t;
+}
 function breakGlassValid(bg, nowMs) {
   if (!bg || !bg.tenant_id || !bg.reason || bg.reason.length < 8) return false;
   if (!bg.at || !bg.until || bg.at > nowMs || bg.until <= nowMs) return false;
@@ -59,7 +65,7 @@ function auditPayload(tenantId, actorId, action, table, recordId, detail) {
   return { tenant_id: tenantId, actor_id: actorId, action: String(action || "").slice(0, 80), record_table: String(table || "").slice(0, 40), record_id: String(recordId || "").slice(0, 80), detail: detail == null ? null : detail };
 }
 function validInviteEmail(e) { return /.+@.+\..+/.test(String(e || "")); }
-window.TenantPure = { planQuota: planQuota, quotaStatus: quotaStatus, roleRank: roleRank, mfaNext: mfaNext, breakGlassValid: breakGlassValid, auditPayload: auditPayload, validInviteEmail: validInviteEmail };
+window.TenantPure = { planQuota: planQuota, quotaStatus: quotaStatus, roleRank: roleRank, mfaNext: mfaNext, mfaGraceActive: mfaGraceActive, breakGlassValid: breakGlassValid, auditPayload: auditPayload, validInviteEmail: validInviteEmail };
 
 /* ---------------- break-glass (local gate relief; server logs it) ---------------- */
 function bgGet() { try { return JSON.parse(localStorage.getItem("kidgrow_breakglass") || "null"); } catch (e) { return null; } }
@@ -142,7 +148,7 @@ function tenantCreate() {
     toast("Organization created ✓");
     audit("tenant.create", "tenants", tid, null);
     return loadMine().then(function () { applyServerRole(); renderTenantCard(); renderBanners(); if (typeof renderAll === "function") renderAll(); });
-  }).catch(function (e) { $("tnErr").textContent = e.message || "Could not create."; });
+  }).catch(function (e) { if (!mfaMaybe(e)) $("tnErr").textContent = e.message || "Could not create."; });
 }
 function saveBranding() {
   if (!live() || !T.current) return;
@@ -154,7 +160,7 @@ function saveBranding() {
     if (r.error) throw r.error;
     toast("Branding saved ✓"); audit("tenant.settings", "tenant_settings", T.current, null);
     return loadMine().then(renderTenantCard);
-  }).catch(function (e) { toast(e.message || "Save failed."); });
+  }).catch(function (e) { if (!mfaMaybe(e)) toast(e.message || "Save failed."); });
 }
 function applyToDevice() {
   try {
@@ -201,7 +207,7 @@ function inviteCreate() {
     $("invOut").innerHTML = "Share this link (7 days, single use):<br><b>" + esc(link) + "</b>";
     audit("member.invite", "invites", em, { role: role });
     try { if (navigator.clipboard) navigator.clipboard.writeText(link); } catch (e) {}
-  }).catch(function (e) { toast(e.message || "Invite failed (quota? role?)."); });
+  }).catch(function (e) { if (!mfaMaybe(e)) toast(e.message || "Invite failed (quota? role?)."); });
 }
 function inviteFromURL() {
   try {
@@ -225,9 +231,11 @@ function mfaGate() {
   Promise.all([c.auth.mfa.getAuthenticatorAssuranceLevel(), c.auth.mfa.listFactors()]).then(function (x) {
     var aal = x[0] && x[0].data ? x[0].data.currentLevel : null;
     var tots = x[1] && x[1].data ? (x[1].data.totp || []) : [];
+    T._aal = aal;
     var next = mfaNext({ aal: aal, hasFactors: tots.length > 0, role: T.role, required: MFA_ROLES });
-    if (next === "verify") mfaVerifyModal(tots[0].id);
+    if (next === "verify") mfaVerifyModal(tots[0].id, mfaGraceActive(CFG.MFA_GRACE_UNTIL, Date.now()));
     else if (next === "enroll") mfaEnrollModal(false);
+    try { renderBanners(); } catch (e) {}
   }).catch(function () {});
 }
 function mfaEnrollModal(fromCard) {
@@ -252,14 +260,15 @@ function mfaEnrollModal(fromCard) {
     Tenant._mfaFactor = f.id;
   }).catch(function (e) { toast("MFA setup failed: " + (e.message || "error")); });
 }
-function mfaVerifyModal(factorId) {
+function mfaVerifyModal(factorId, grace) {
   if ($("mMfa")) return;
   var d = document.createElement("div");
   d.innerHTML = '<div class="modal-bg open" id="mMfa"><div class="modal" style="max-width:360px;text-align:center">' +
-    "<h3>🔐 Authenticator code</h3><div class='hint'>Your role needs two-step verification.</div>" +
+    "<h3>🔐 Authenticator code</h3><div class='hint'>Your role needs two-step verification." + (grace ? " (Optional until " + esc(CFG.MFA_GRACE_UNTIL || "enforcement") + ".)" : "") + "</div>" +
     '<input id="mfaCode" inputmode="numeric" placeholder="123456" style="text-align:center">' +
     '<div id="mfaErr" style="color:var(--red,#dc2626);font-size:13px;min-height:18px"></div>' +
-    '<button class="btn btn-p" style="width:100%" data-act="tenantMfaFinish" data-arg="' + factorId + "'>Verify</button></div></div>";
+    '<button class="btn btn-p" style="width:100%" data-act="tenantMfaFinish" data-arg="' + factorId + '">Verify</button>' +
+    (grace ? '<button class="btn btn-o" style="width:100%;margin-top:8px" data-act="tenantMfaLater">Continue anyway</button>' : "") + "</div></div>";
   ($("cloudRoot") || document.body).appendChild(d.firstChild);
   Tenant._mfaFactor = factorId;
 }
@@ -273,8 +282,23 @@ function mfaFinish(factorId) {
   }).then(function (v) {
     if (v.error) throw v.error;
     var m = $("mMfa"); if (m) m.remove();
+    T._aal = "aal2";
     toast("Verified ✓"); audit("mfa.verify", "auth", "", null);
+    try { renderBanners(); } catch (e) {}
   }).catch(function (e) { $("mfaErr").textContent = e.message || "Wrong code — try again."; });
+}
+
+/* 42501 backstop: DB-enforced MFA failures open verification, not raw errors.
+   (All app privileged writes are INSERT/UPDATE = loud 42501; the app has no
+   roster-DELETE UI, so no silent-fail path needs proactive checks.) */
+function mfaMaybe(e) {
+  var m = String((e && e.message) || "") + " " + String((e && e.code) || "");
+  if (!/42501|permission denied|role cannot write/i.test(m)) return false;
+  if (!T.role || MFA_ROLES.indexOf(T.role) < 0) return false;
+  if (T._aal === "aal2") return false;
+  toast("🔐 Verification needed for this action.");
+  try { mfaGate(); } catch (_) {}
+  return true;
 }
 
 /* ---------------- break-glass UI ---------------- */
@@ -343,6 +367,7 @@ function renderBanners() {
   var old;
   old = $("tenantBanner"); if (old) old.remove();
   old = $("bgBanner"); if (old) old.remove();
+  old = $("mfaBanner"); if (old) old.remove();
   var bg = bgGet();
   if (window.BreakGlassActive() && bg) {
     var mins = Math.max(1, Math.round((bg.until - Date.now()) / 60000));
@@ -363,6 +388,17 @@ function renderBanners() {
     b.textContent = msg;
     var c1 = document.querySelector(".content");
     if (c1 && c1.parentNode) c1.parentNode.insertBefore(b, c1); else document.body.prepend(b);
+  }
+  if (T.role && MFA_ROLES.indexOf(T.role) >= 0 && T._aal && T._aal !== "aal2") {
+    var grace = mfaGraceActive(CFG.MFA_GRACE_UNTIL, Date.now());
+    var mb = document.createElement("div");
+    mb.id = "mfaBanner";
+    mb.style.cssText = "background:" + (grace ? "#92400e" : "#b91c1c") + ";color:#fff;font-size:13px;text-align:center;padding:8px 12px";
+    mb.innerHTML = grace
+      ? "🔐 Two-step verification will be required by " + esc(CFG.MFA_GRACE_UNTIL || "") + " — <a href='#' data-act='tenantMfaNow' style='color:#fff;font-weight:700'>Set up now</a>"
+      : "🔐 Verification required — <a href='#' data-act='tenantMfaNow' style='color:#fff;font-weight:700'>Verify now</a>";
+    var c2 = document.querySelector(".content");
+    if (c2 && c2.parentNode) c2.parentNode.insertBefore(mb, c2); else document.body.prepend(mb);
   }
 }
 function renderTenantCard() {
@@ -427,6 +463,7 @@ function usageView() {
 }
 function auditView() {
   if (!live() || !T.current) return;
+  if (T.role && MFA_ROLES.indexOf(T.role) >= 0 && T._aal && T._aal !== "aal2") { toast("🔐 Verify to view the audit log."); try { mfaGate(); } catch (e) {} return; }
   sb().from("audit_events").select("created_at, actor_id, action, record_table, record_id").eq("tenant_id", T.current).order("created_at", { ascending: false }).limit(50).then(function (r) {
     if (r.error) throw r.error;
     var rows = (r.data || []).map(function (a) {
@@ -443,7 +480,7 @@ function auditView() {
 var Tenant = {
   onboard: onboardModal, create: tenantCreate, saveBranding: saveBranding, applyToDevice: applyToDevice,
   members: membersModal, invite: inviteCreate, switch: tenantSwitch, usage: usageView,
-  mfa: function () { mfaEnrollModal(true); }, _mfaFinish: mfaFinish,
+  mfa: function () { mfaEnrollModal(true); }, _mfaGate: mfaGate, _mfaFinish: mfaFinish,
   _mfaLater: function () { var m = $("mMfa"); if (m) m.remove(); },
   requestBreakGlass: bgModal, _bgGo: bgGo, _bgEnd: bgEnd, auditView: auditView, mirror: audit, // F6: device log() mirrors here
   current: function () { return T.current; }, role: function () { return T.role; },
@@ -503,6 +540,7 @@ try {
   actRegister("tenantMembers", function () { try { Tenant.members(); } catch (e) { actReport("tenantMembers", e); } });
   actRegister("tenantUsage", function () { try { Tenant.usage(); } catch (e) { actReport("tenantUsage", e); } });
   actRegister("tenantMfa", function () { try { Tenant.mfa(); } catch (e) { actReport("tenantMfa", e); } });
+  actRegister("tenantMfaNow", function () { try { Tenant._mfaGate(); } catch (e) { actReport("tenantMfaNow", e); } });
   actRegister("tenantAuditView", function () { try { Tenant.auditView(); } catch (e) { actReport("tenantAuditView", e); } });
   actRegister("tenantSwitch", function (el) { try { Tenant.switch(el.value); } catch (e) { actReport("tenantSwitch", e); } });
 } catch (e) {}

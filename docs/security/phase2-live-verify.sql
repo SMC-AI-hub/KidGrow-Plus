@@ -1,5 +1,5 @@
 -- =====================================================================
--- Phase 2 live verification (staging AND prod). Two parts, both read-only
+-- Phase 2 + P3.1 live verification (staging AND prod). Two parts, both read-only
 -- in effect: Part 1 is pure SELECTs; Part 2 builds throwaway rows inside a
 -- transaction it always rolls back. Paste each part separately ("Run").
 -- How to read results: Part 1 = row counts below; Part 2 = E1..E5 lines in
@@ -82,11 +82,14 @@ BEGIN
     VALUES (t, u_ro, 'readonly');
   INSERT INTO patients (id, tenant_id, mrn, name)
     VALUES (p, t, 'E2E-1', 'E2E');
+  INSERT INTO audit_events (tenant_id, actor_id, action)
+    VALUES (t, u_owner, 'e2e.probe');
 
   -- E1: readonly direct INSERT -> expect 42501
   BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claim.sub', u_ro::text, true);
+    PERFORM set_config('request.jwt.claims', '{"sub":"' || u_ro::text || '","aal":"aal1"}', true);
     INSERT INTO patients (tenant_id, mrn) VALUES (t, 'NEG-1');
     INSERT INTO e2e_out VALUES ('E1 FAIL: readonly insert was ALLOWED');
   EXCEPTION WHEN OTHERS THEN
@@ -98,6 +101,7 @@ BEGIN
   BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claim.sub', u_ro::text, true);
+    PERFORM set_config('request.jwt.claims', '{"sub":"' || u_ro::text || '","aal":"aal1"}', true);
     PERFORM public.apply_patient_op(jsonb_build_object(
       'tenant_id', t::text, 'local_id', 'E2E-RO',
       'client_rev', '2026-10-10T00:00:00Z', 'mrn', 'E2E-RO', 'name', 'Ro'));
@@ -112,6 +116,7 @@ BEGIN
   BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claim.sub', u_owner::text, true);
+    PERFORM set_config('request.jwt.claims', '{"sub":"' || u_owner::text || '","aal":"aal2"}', true);
     DELETE FROM patients WHERE id = p;
     GET DIAGNOSTICS n = ROW_COUNT;
     SELECT count(*) INTO n_left FROM patients WHERE id = p;
@@ -128,6 +133,7 @@ BEGIN
   BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claim.sub', u_owner::text, true);
+    PERFORM set_config('request.jwt.claims', '{"sub":"' || u_owner::text || '","aal":"aal2"}', true);
     INSERT INTO patients (tenant_id, mrn, name)
       VALUES (t, 'POS-1', 'Positive Control');
     GET DIAGNOSTICS n = ROW_COUNT;
@@ -144,6 +150,7 @@ BEGIN
   BEGIN
     PERFORM set_config('role', 'authenticated', true);
     PERFORM set_config('request.jwt.claim.sub', u_owner::text, true);
+    PERFORM set_config('request.jwt.claims', '{"sub":"' || u_owner::text || '","aal":"aal2"}', true);
     SELECT public.apply_patient_op(jsonb_build_object(
       'tenant_id', t::text, 'local_id', 'E2E-OWN',
       'client_rev', '2026-10-10T00:00:00Z', 'mrn', 'E2E-OWN', 'name', 'E2E Owner'))
@@ -155,6 +162,35 @@ BEGIN
     END IF;
   EXCEPTION WHEN OTHERS THEN
     INSERT INTO e2e_out VALUES ('E5 FAIL (' || SQLSTATE || ': ' || SQLERRM || ')');
+  END;
+
+  -- E6: owner aal1 direct INSERT -> expect 42501 (P3.1 enforcement)
+  BEGIN
+    PERFORM set_config('role', 'authenticated', true);
+    PERFORM set_config('request.jwt.claim.sub', u_owner::text, true);
+    PERFORM set_config('request.jwt.claims', '{"sub":"' || u_owner::text || '","aal":"aal1"}', true);
+    INSERT INTO patients (tenant_id, mrn) VALUES (t, 'NEG-AAL1');
+    INSERT INTO e2e_out VALUES ('E6 FAIL: owner aal1 insert was ALLOWED');
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO e2e_out VALUES ('E6 ' || CASE WHEN SQLSTATE = '42501' THEN 'PASS (42501 deny)'
+      ELSE 'FAIL (' || SQLSTATE || ': ' || SQLERRM || ')' END);
+  END;
+
+  -- E7: audit reads need aal2 for owners (expect aal2 sees 1, aal1 sees 0)
+  BEGIN
+    PERFORM set_config('role', 'authenticated', true);
+    PERFORM set_config('request.jwt.claim.sub', u_owner::text, true);
+    PERFORM set_config('request.jwt.claims', '{"sub":"' || u_owner::text || '","aal":"aal2"}', true);
+    SELECT count(*) INTO n FROM audit_events WHERE tenant_id = t;
+    PERFORM set_config('request.jwt.claims', '{"sub":"' || u_owner::text || '","aal":"aal1"}', true);
+    SELECT count(*) INTO n_left FROM audit_events WHERE tenant_id = t;
+    IF n = 1 AND n_left = 0 THEN
+      INSERT INTO e2e_out VALUES ('E7 PASS (aal2 sees 1, aal1 sees 0)');
+    ELSE
+      INSERT INTO e2e_out VALUES ('E7 FAIL (aal2=' || n || ' aal1=' || n_left || ')');
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO e2e_out VALUES ('E7 FAIL (' || SQLSTATE || ': ' || SQLERRM || ')');
   END;
 
   SELECT string_agg(line, chr(10) ORDER BY line) INTO res FROM e2e_out;

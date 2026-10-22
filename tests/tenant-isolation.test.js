@@ -20,12 +20,21 @@ DO $outer$ BEGIN IF NOT EXISTS (
   WHERE n.nspname = 'auth' AND p.proname = 'uid') THEN
   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
   $inner$ SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid $inner$;
+END IF;
+IF NOT EXISTS (
+  SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'auth' AND p.proname = 'jwt') THEN
+  CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS
+  $inner$ SELECT NULLIF(current_setting('request.jwt.claims', true), '')::jsonb $inner$;
 END IF; END $outer$;`;
 
-async function withClaim(client, sub, fn) {
+async function withClaim(client, sub, fn, aal) {
   await client.query("BEGIN");
   try {
-    if (sub) await client.query("SELECT set_config('request.jwt.claim.sub', $1, true)", [sub]);
+    if (sub) {
+      await client.query("SELECT set_config('request.jwt.claim.sub', $1, true)", [sub]);
+      await client.query("SELECT set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: sub, aal: aal || "aal2" })]);
+    }
     const r = await fn();
     await client.query("COMMIT");
     return r;
@@ -377,6 +386,35 @@ async function main() {
   ok(await priv("authenticated", "public.patients", "TRUNCATE") === false, "authenticated holds no TRUNCATE on patients");
   ok(await priv("anon", "public.patients", "TRIGGER") === false, "anon holds no TRIGGER on patients");
   ok(await priv("authenticated", "public.patients", "TRIGGER") === false, "authenticated holds no TRIGGER on patients");
+  // ================= 0009: aal2 enforcement (P3.1) =================
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='hospital' WHERE id=$1", [tA])); // quota headroom (denies below must be aal-caused, not quota-caused)
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'AAL1-1')", [tA]), "aal1")) === "denied", "owner aal1 insert denied");
+  const aal2Pat = await withClaim(app, A, async () => (await app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'AAL2-1','AAL ok') RETURNING id", [tA])).rows[0].id);
+  ok(!!aal2Pat, "owner aal2 insert allowed");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ tenant_id: tA, local_id: "c_aal1", client_rev: "2026-10-10T00:00:00Z", mrn: "CC-AAL1", name: "No" })]), "aal1")) === "denied", "owner aal1 sync-RPC denied");
+  const nAal1 = await withClaim(app, N, async () => (await app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'N-AAL1') RETURNING id", [tA])).rows[0].id, "aal1");
+  ok(!!nAal1, "nurse aal1 insert allowed (MFA-exempt role)");
+  await withClaim(app, A, async () => app.query("UPDATE memberships SET role='doctor' WHERE tenant_id=$1 AND user_id=$2", [tA, RU]));
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'D-AAL1')", [tA]), "aal1")) === "denied", "doctor aal1 insert denied");
+  const dAal2 = await withClaim(app, RU, async () => (await app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'D-AAL2') RETURNING id", [tA])).rows[0].id);
+  ok(!!dAal2, "doctor aal2 insert allowed");
+  await withClaim(app, A, async () => app.query("UPDATE memberships SET role='readonly' WHERE tenant_id=$1 AND user_id=$2", [tA, RU]));
+  ok(await expectDeny(withClaim(app, AD, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'nurse')", [tA, O3]), "aal1")) === "denied", "admin aal1 grant denied");
+  await withClaim(app, AD, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'nurse')", [tA, O3]));
+  ok(true, "admin aal2 grant allowed");
+  await withClaim(app, A, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tA, O3]));
+  ok(await expectDeny(withClaim(app, A, async () => app.query("UPDATE tenants SET name='X' WHERE id=$1", [tA]), "aal1")) === "denied", "owner aal1 tenant update denied");
+  await withClaim(app, A, async () => app.query("INSERT INTO audit_events (tenant_id, actor_id, action) VALUES ($1,$2,'aal.probe')", [tA, A]), "aal1");
+  const au1 = await withClaim(app, A, async () => (await app.query("SELECT count(*)::int AS n FROM audit_events WHERE tenant_id=$1", [tA])).rows[0].n, "aal1");
+  const au2 = await withClaim(app, A, async () => (await app.query("SELECT count(*)::int AS n FROM audit_events WHERE tenant_id=$1", [tA])).rows[0].n);
+  ok(au1 === 0 && au2 >= 1, "audit reads: aal1 sees 0 rows, aal2 sees rows");
+  await withClaim(app, N, async () => app.query("INSERT INTO break_glass_events (tenant_id, actor_id, reason, scope) VALUES ($1,$2,'night-duty drill probe entry','subscription-gate')", [tA, N]), "aal1");
+  ok(true, "break-glass log stays writable at aal1 (emergencies loggable)");
+  await withClaim(app, A, async () => app.query("UPDATE memberships SET role='auditor' WHERE tenant_id=$1 AND user_id=$2", [tA, BL]));
+  const auAud = await withClaim(app, BL, async () => (await app.query("SELECT count(*)::int AS n FROM audit_events WHERE tenant_id=$1", [tA])).rows[0].n, "aal1");
+  ok(auAud >= 1, "auditor reads audit at aal1 (MFA-exempt role)");
+  await withClaim(app, A, async () => app.query("UPDATE memberships SET role='billing' WHERE tenant_id=$1 AND user_id=$2", [tA, BL]));
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='clinic' WHERE id=$1", [tA])); // restore
 
   try { await app.end(); } catch (_) {}
   await stop();

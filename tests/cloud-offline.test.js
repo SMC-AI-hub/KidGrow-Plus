@@ -245,6 +245,9 @@ async function main() {
   ok(TP.mfaNext({ aal: "aal1", hasFactors: false, role: "owner", required: ["owner", "admin"] }) === "enroll", "mfa: required without factors enrolls");
   ok(TP.mfaNext({ aal: "aal1", hasFactors: true, role: "admin", required: ["owner", "admin"] }) === "verify", "mfa: required with factors verifies");
   ok(TP.mfaNext(null) === "ok", "mfa: null-safe");
+  ok(TP.mfaGraceActive("2026-11-05", Date.parse("2026-10-22")) === true, "mfa grace: before cutoff active");
+  ok(TP.mfaGraceActive("2026-11-05", Date.parse("2026-11-06")) === false, "mfa grace: after cutoff over");
+  ok(TP.mfaGraceActive("", Date.now()) === false && TP.mfaGraceActive(null, Date.now()) === false, "mfa grace: missing key fails closed");
   const bgOK = { tenant_id: "t1", reason: "Night duty emergency case", at: NOW - 1000, until: NOW + 3600e3 };
   ok(TP.breakGlassValid(bgOK, NOW) === true, "breakglass: valid record passes");
   ok(TP.breakGlassValid({ ...bgOK, until: NOW - 1 }, NOW) === false, "breakglass: expired rejected");
