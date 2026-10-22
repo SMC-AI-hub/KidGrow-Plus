@@ -1,0 +1,39 @@
+# Security Phase 2 — completion record (2026-10-22)
+
+Scope: H1 (role-gated clinical writes + sync_guard role check + nurse charting),
+H3 (hard deletes blocked), M1 (storage write split), M4 (EXECUTE to authenticated),
+M5 (role CHECKs + owner-only owner-grant). Delivered as one additive migration.
+
+## Repo evidence
+- `supabase/migrations/0007_role_governance.sql` — the migration (atomic BEGIN/COMMIT).
+- `tests/tenant-isolation.test.js` — 23 Phase-2 asserts (role matrix, delete no-op,
+  trigger backstop, anon RPC deny, CHECK violations, grant matrix).
+- Isolation suite: **130/130 green** on embedded PG17 (no regressions).
+- `docs/security/phase2-live-verify.sql` — Part 1 inventory + Part 2 auto-rollback
+  E1–E5 block, rehearsed against a staging-faithful scratch DB before live use.
+
+## Staging (`bubnidgejmbzkevxvthl`) — VERIFIED 2026-10-21/22
+- Apply: `Success. No rows returned`. Census at verify time: 2 tenants / 4 memberships / 4 patients.
+- Fingerprint: 2/7/2 (functions / triggers / CHECKs).
+- E-block: E1–E5 all PASS (readonly deny ×2, owner DELETE 0 + intact, owner positive controls ×2).
+- Q1 = 0 (no DELETE policies), Q2 = 0 (no PUBLIC/anon EXECUTE), Q5 = 0007 set exactly
+  (sel/ins/upd per clinical table; storage d_sel/d_ins/d_upd/d_del, no d_all;
+  m_del/i_del intentionally kept), Q8 = 7/7 triggers on the right tables.
+- Q7 baseline RECORDED (not expected): full table grants incl. TRUNCATE/TRIGGER
+  to anon+authenticated on all 16 tables → RLS is the live gate, not dormancy.
+  New latent finding filed: TRUNCATE bypasses RLS (see below).
+
+## Prod (`jmlvcrekttbzibqitftj`) — VERIFIED 2026-10-22
+- Pre-flight green: census 0/0/0, fingerprint 0/0/0, memberships+invites empty, 3 auth users.
+- Apply: `Success. No rows returned`.
+- (a) fingerprint 2/7/2 ✓ · (b) E1–E5 all PASS ✓ ·
+  (c) census 0/0/0 + Q1 = 0 + Q2 = 0 ✓ · (d) Q5 = 0007 set exactly ✓.
+
+## Open items / follow-ups (NOT part of Phase 2 sign-off)
+1. Prod Q7 (table-grant inventory) was never run — staging showed blanket grants;
+   prod likely mirrors it, but unconfirmed. One query.
+2. TRUNCATE/TRIGGER to anon+authenticated (latent M, RLS-blind) — proposed revoke
+   (0008) awaiting user decision. Zero app impact expected.
+3. PAT used for staging pushes traveled through chat — rotate (was already pending).
+4. Deferred per plan: pgsodium at-rest (2b), AAL/MFA enforcement + M2 tenant minting (Phase 3),
+   front-desk column views (pending confirmation front-desk get logins).
