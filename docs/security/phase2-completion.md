@@ -43,3 +43,14 @@ M5 (role CHECKs + owner-only owner-grant). Delivered as one additive migration.
 3. PAT used for staging pushes traveled through chat — rotate (was already pending).
 4. Deferred per plan: pgsodium at-rest (2b), AAL/MFA enforcement + M2 tenant minting (Phase 3),
    front-desk column views (pending confirmation front-desk get logins).
+
+## P3.1 staging (`0009_aal_enforcement.sql` + grace UX) — VERIFIED 2026-10-22
+- Commit `7cdc84f` (migration + 12 isolation asserts + E-block v2 + app grace UX).
+- Staging: apply Success; E-block v2 E1–E7 all PASS (E6 aal1-owner 42501 deny,
+  E7 audit aal2 sees 1 / aal1 sees 0; E1–E5 Phase 2 guarantees intact).
+- Step B baseline CORRECTED (chat expectation "1 row" was wrong; migration file
+  comment left untouched as immutable history): `my_aal2` shows 3 rows —
+  postgres (owner, always listed), authenticated, service_role (default grant).
+  Security gate = no PUBLIC/anon rows. This 3-row pattern is the baseline.
+- Suite: isolation 146/146, cloud-offline 598/598 (3 new grace asserts), full run exit 0.
+- Prod `0009` GATED until on/after 2026-11-05 (MFA_GRACE_UNTIL, warn-then-enforce).
