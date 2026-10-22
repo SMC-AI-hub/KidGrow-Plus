@@ -29,11 +29,17 @@ M5 (role CHECKs + owner-only owner-grant). Delivered as one additive migration.
 - (a) fingerprint 2/7/2 ✓ · (b) E1–E5 all PASS ✓ ·
   (c) census 0/0/0 + Q1 = 0 + Q2 = 0 ✓ · (d) Q5 = 0007 set exactly ✓.
 
+## 0008 follow-up (`0008_revoke_truncate_trigger.sql`) — VERIFIED 2026-10-22
+- Staging: apply Success; TRUNCATE/TRIGGER grants 64 → 0 rows; E-block 5/5 PASS (no behavior change).
+- Prod: pre-check already 0 rows (prod never had the grants — staging-only drift);
+  apply Success (no-op); post-check 0 rows; E-block 5/5 PASS.
+- Suite: 134/134 green. Open item 2 below is now RESOLVED.
+
 ## Open items / follow-ups (NOT part of Phase 2 sign-off)
-1. Prod Q7 (table-grant inventory) was never run — staging showed blanket grants;
-   prod likely mirrors it, but unconfirmed. One query.
-2. TRUNCATE/TRIGGER to anon+authenticated (latent M, RLS-blind) — proposed revoke
-   (0008) awaiting user decision. Zero app impact expected.
+1. Prod Q7 was run 2026-10-22: uniform 5-privilege pattern (no TRUNCATE/TRIGGER)
+   on all shown tables; the 0008 0-row pre-check covered all 16 tables. Prod grant
+   baseline = narrower than staging's was. No action needed.
+2. ~~TRUNCATE/TRIGGER to anon+authenticated~~ — RESOLVED by 0008 (this file).
 3. PAT used for staging pushes traveled through chat — rotate (was already pending).
 4. Deferred per plan: pgsodium at-rest (2b), AAL/MFA enforcement + M2 tenant minting (Phase 3),
    front-desk column views (pending confirmation front-desk get logins).
