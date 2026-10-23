@@ -34,6 +34,8 @@ Initial + date every case. File in `evidence/m7/` with the M7 gates.
 | 8 |  |  |  |  |  |  |  |  |  |
 | 9 |  |  |  |  |  |  |  |  |  |
 | 10 |  |  |  |  |  |  |  |  |  |
+| 11 (35–37 wk) |  |  |  |  |  |  |  |  |  |
+| 12 (preterm <72 h) |  |  |  |  |  |  |  |  |  |
 
 Discharge-summary section checklist (tick per case in the "Dsumm OK?" column
 only if ALL hold): demographics correct · admission details (GA, birth wt,
@@ -58,3 +60,24 @@ boundary behavior. It found three things the validator must rule on:
    the same tier with or without risk factors. Confirm this matches unit protocol.
 These tests check the code against its own table — they do NOT replace this
 sheet (real cases vs NICE CG98 / unit protocol).
+
+## Proposed rulings on the three findings (VALIDATOR: confirm against NICE CG98
+threshold graphs / unit protocol, then sign and date each)
+P1. Preterm warnings are gate-blocking and WILL be fixed before real cases:
+(a) ≥72 h: photo line GA×10−100 AND exchange line GA×10 both fire warnings
+(29 wk → 190/290); (b) <72 h: straight line from 40 at 0 h to the 72 h photo
+value, and from 80 at 0 h to the 72 h exchange value (secondary source: UNSW
+trial protocol summarising CG98 — confirm on NICE graphs A–F). Validator: ____ Date: ____
+P2. Stop rule: specify-and-build is PROPOSED — stop considered when TSB is
+≥50 µmol/L (≈2.9 mg/dL, NNF guideline) BELOW the applicable photo line;
+haemolytic jaundice needs 2 consecutive such values (needs a haemolysis input —
+validator rules: build the input, or handle haemolytic cases manually).
+Alternative: declare out of scope with explicit in-app "clinician decision"
+text + this requirement revised here. Validator ruling: ____ Date: ____
+P3. Repeat timing: the app currently prints "repeat in 6h" / "6-12h"; NICE uses
+18/24 h (risk-dependent) within 50 of threshold. Validator reconciles which
+intervals stand; if NICE is adopted, a risk-factor input is added to drive
+18 h vs 24 h. Validator ruling: ____ Date: ____
+Term-table anchors corroborated against a secondary source (use NICE graphs for
+the sheet itself): 0 h 100/100 · 12 h 150/200 · 24 h 200/300 · 96 h 350/450 —
+all match the coded table.
