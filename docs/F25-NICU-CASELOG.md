@@ -47,17 +47,20 @@ Validator signature: ______________________ Date: __________
 Counter-sign (clinic owner): ______________________ Date: __________
 
 ## Automated companion (for the validator's context — read before starting)
-`tests/f25-validation.test.js` (20 asserts, green) locks the builder's CURRENT
-boundary behavior. It found three things the validator must rule on:
-1. SUSPECTED BUG — preterm ≥72 h: the formula computes a photo line (e.g. 190
-   at 29 wk) but the flag path returns info instead, so NO photo/exchange
-   warning ever fires for preterms (even at 400). If the unit protocol says
-   preterms must warn, the code must be fixed and this sheet re-run.
-2. No stop-phototherapy logic exists (pack constant `biliStopBelow: 50` is
-   unwired) — the app stays silent below all lines; stopping is entirely the
-   clinician's call until logic is specified + coded + tested.
-3. Risk factors do NOT shift tiers (no such input exists) — same numbers give
-   the same tier with or without risk factors. Confirm this matches unit protocol.
+`tests/f25-validation.test.js` (35 asserts, green) locks the builder's CURRENT
+boundary behavior. Status of its three findings:
+1. FIXED 2026-10-23 (commit pending below) — preterm now warns: ≥72 h uses
+   photo GA×10−100 + exchange GA×10; <72 h uses interpolated lines from
+   40/80 at 0 h. Verified: 29 wk at 400 → exchange + warn tier; 35–37 wk and
+   the 37.9/38.0 switch boundary locked by tests. Validate against NICE
+   graphs A–F on the real cases below.
+2. BUILT 2026-10-23 — `biliStop`: stop considered at photo-line − 50
+   (pack `biliStopMargin`); round chip shows "consider stopping (2nd value if
+   haemolytic)" only when phototherapy is on. Haemolytic 2-value rule is
+   manual until a haemolysis input exists (validator to rule, P2 line below).
+3. OPEN — risk factors do NOT shift tiers and no risk input exists; app prints
+   "repeat in 6h"/"6-12h" while NICE uses 18/24 h within 50 of threshold.
+   Validator reconciles intervals (P3 line below) before any code change.
 These tests check the code against its own table — they do NOT replace this
 sheet (real cases vs NICE CG98 / unit protocol).
 

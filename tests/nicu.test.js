@@ -113,9 +113,9 @@ async function main() {
   const t0 = NP.biliThreshold(40, 0);
   ok(t0.photo === 100 && t0.exchange === 100, "term 0h: 100/100");
   const tp = NP.biliThreshold(35, 80);
-  ok(tp.preterm === true && tp.photo === 250, "preterm 35wk 80h: GAx10-100 = 250");
+  ok(tp.preterm === true && tp.photo === 250 && tp.exchange === 350 && !tp.note, "preterm 35wk 80h: 250/350, flags fire (F25-P1)");
   const tpEarly = NP.biliThreshold(35, 48);
-  ok(tpEarly && /nomogram/.test(tpEarly.note || ""), "preterm <72h: unit-nomogram note, no line");
+  ok(tpEarly && tpEarly.preterm === true && tpEarly.photo === 180 && tpEarly.exchange === 260, "preterm 35wk 48h: interpolated 180/260 (F25-P1)");
   ok(/gestation/i.test((NP.biliThreshold(null, 48) || {}).note || ""), "missing GA: record-gestation note");
 
   // ---- bilirubin flags (NICE uses strictly-greater-than) ----
@@ -124,7 +124,7 @@ async function main() {
   ok(NP.biliFlag(250, 40, 48).band === "consider", "exactly 250 @48h: still consider (strict >)");
   ok(NP.biliFlag(160, 40, 48).band === "repeat", "160 @48h: repeat band");
   ok(NP.biliFlag(100, 40, 48) === null, "100 @48h: below all lines");
-  ok(NP.biliFlag(300, 35, 48).tier === "info", "preterm <72h value: info note, no warn");
+  ok(NP.biliFlag(300, 35, 48).band === "exchange" && NP.biliFlag(300, 35, 48).tier === "warn", "preterm 35wk/48h 300: exchange warn on interpolated line (F25-P1)");
 
   // ---- rise rate ----
   const rr1 = NP.biliRise(200, 48, 260, 54);

@@ -169,15 +169,21 @@ function biliRowFor(ageHrs) {
   for (var i = 0; i < rows.length; i++) { if (rows[i].h <= h) best = rows[i]; }
   return best;
 }
-// NICE CG98: term table; preterm >=72h formula GAx10-100; preterm <72h -> unit nomogram (no fabricated line).
+// NICE CG98: term table (>=38wk); preterm (F25-P1): >=72h GAx10-100 / GAx10,
+// <72h straight line from 40 (photo) / 80 (exchange) at 0h to the 72h values.
 function biliThreshold(gaWk, ageHrs) {
   var ga = (gaWk == null || gaWk === "") ? null : +gaWk;
   var h = +ageHrs;
   if (!(h >= 0)) return null;
   if (ga == null || isNaN(ga)) return { note: "Record gestation to interpret bilirubin." };
   if (ga >= 38) { var r = biliRowFor(h); return r ? { repeat: r.repeat, consider: r.consider, photo: r.photo, exchange: r.exchange, preterm: false } : null; }
-  if (h >= 72) return { repeat: null, consider: null, photo: Math.round(ga * 10 - 100), exchange: null, preterm: true, note: "Preterm formula (GAx10-100); exchange level per unit protocol." };
-  return { note: "Preterm <72h — use unit nomogram (NICE graphs A-F); no line drawn." };
+  var photo72 = Math.round(ga * 10 - 100), exch72 = Math.round(ga * 10), photo, exchange;
+  if (h >= 72) { photo = photo72; exchange = exch72; }
+  else {
+    photo = Math.round(40 + (photo72 - 40) * h / 72);
+    exchange = Math.round(80 + (exch72 - 80) * h / 72);
+  }
+  return { repeat: null, consider: null, photo: photo, exchange: exchange, preterm: true };
 }
 function biliFlag(tsbUmol, gaWk, ageHrs) {
   var v = +tsbUmol; if (!(v > 0)) return null;
@@ -188,6 +194,22 @@ function biliFlag(tsbUmol, gaWk, ageHrs) {
   if (t.consider != null && v > t.consider) return { band: "consider", tier: "info", text: "Bilirubin " + v + " in consider-phototherapy zone (>" + t.consider + ") — repeat in 6h." };
   if (t.repeat != null && v > t.repeat) return { band: "repeat", tier: "info", text: "Bilirubin " + v + " above repeat line (>" + t.repeat + ") — repeat in 6-12h." };
   return null;
+}
+// F25-P2: stop-phototherapy margin — stop CONSIDERED when TSB is >= margin
+// (pack biliStopMargin, 50 umol/L ~ NNF 2.9 mg/dL) BELOW the photo line.
+// Single-value rule (non-haemolytic); haemolytic cases need 2 consecutive
+// values — no haemolysis input exists yet, so the chip text says so.
+function biliStop(tsbUmol, gaWk, ageHrs) {
+  var out = { stop: false, margin: null, line: null };
+  try {
+    var v = +tsbUmol; if (!(v > 0)) return out;
+    var t = biliThreshold(gaWk, ageHrs);
+    if (!t || t.photo == null) return out;
+    var P = nicuPack(); var m = (P && P.biliStopMargin) || 50;
+    out.line = t.photo; out.margin = m;
+    out.stop = v <= t.photo - m;
+  } catch (e) {}
+  return out;
 }
 function biliRise(prevTsb, prevHrs, tsb, hrs) {
   var out = { rate: null, rapid: false };
@@ -269,8 +291,10 @@ function roundBiliChip(r, gaWk) {
     var P = nicuPack(); var conv = (P && P.mgdlToUmol) || 17.1;
     var umol = (b.unit === "mgdl") ? Math.round(v * conv) : Math.round(v);
     var f = biliFlag(umol, gaWk, h);
+    var st = biliStop(umol, gaWk, h);
     var s = "Bili " + v + (b.unit === "mgdl" ? "" : "\u00b5") + "@" + h + "h";
     if (f && f.tier === "warn") s = "\u26a0\ufe0f " + s;
+    else if (st.stop && b.photo === "on") s += " \u00b7 consider stopping (2nd value if haemolytic)";
     return s;
   } catch (e) { return ""; }
 }
@@ -281,7 +305,7 @@ window.NicuPure = {
   weightTrend: weightTrend, eventsUnion: eventsUnion, outcomeLabel: outcomeLabel,
   dischargeSummaryData: dischargeSummaryData, dischargeSummaryHTML: dischargeSummaryHTML,
   handoverHTML: handoverHTML,
-  dolOf: dolOf, biliThreshold: biliThreshold, biliFlag: biliFlag, biliRise: biliRise,
+  dolOf: dolOf, biliThreshold: biliThreshold, biliFlag: biliFlag, biliStop: biliStop, biliRise: biliRise,
   fluidGuide: fluidGuide, sepsisAbxDays: sepsisAbxDays, bundleScore: bundleScore,
   boardSort: boardSort, respLabel: respLabel, respRank: respRank,
   roundRespChip: roundRespChip, roundBiliChip: roundBiliChip

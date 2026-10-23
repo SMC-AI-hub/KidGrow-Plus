@@ -92,30 +92,35 @@ async function main() {
   const K = sb.KGCONTENT || {};
   const NP = sb.NicuPure;
   ok(NP && typeof NP.biliFlag === "function" && typeof NP.biliThreshold === "function", "NicuPure bili fns present");
-  ok(K.nicu && K.nicu.mgdlToUmol === 17.1 && K.nicu.biliStopBelow === 50, "pack: x17.1 + stop-below 50 constants");
+  ok(K.nicu && K.nicu.mgdlToUmol === 17.1 && K.nicu.biliStopMargin === 50, "pack: x17.1 + stop margin 50");
 
-  // Slot 1 DOCUMENTS a suspected bug: the >=72h preterm branch returns BOTH a photo
-  // number AND a note, and biliFlag short-circuits on note -> info, so the formula line
-  // NEVER raises photo/exchange flags (a 29wk baby at 400 gets no warning). Threshold
-  // computes 190 (locked below); flags stay info until a clinician rules + code is fixed.
+  // Slot 1 (F25-P1 FIXED): preterm 29wk, 80h -> photo 190 / exchange 290, flags FIRE.
   const t1 = NP.biliThreshold(29, 80);
-  ok(t1.preterm === true && t1.photo === 190 && t1.exchange === null, "slot1: 29wk/80h formula photo=190, exchange null");
-  ok((NP.biliFlag(195, 29, 80) || {}).band === "info", "slot1-documents-suspected-bug: 195 -> info, photo flag never fires");
-  ok((NP.biliFlag(400, 29, 80) || {}).band === "info", "slot1-documents-suspected-bug: 400 -> info, no warning at all");
+  ok(t1.preterm === true && t1.photo === 190 && t1.exchange === 290, "slot1: 29wk/80h photo=190 exchange=290");
+  ok((NP.biliFlag(195, 29, 80) || {}).band === "photo", "slot1: 195 -> photo");
+  ok((NP.biliFlag(300, 29, 80) || {}).band === "exchange", "slot1: 300 -> exchange");
+  ok((NP.biliFlag(400, 29, 80) || {}).tier === "warn", "slot1 gate case: 400 -> warn tier");
+  ok(NP.biliFlag(185, 29, 80) === null, "slot1: 185 < 190, no consider/repeat -> null");
 
-  // Slot 2: preterm 33wk, 60h (<72h) -> unit nomogram, NO line drawn.
+  // Slot 2 (F25-P1 FIXED): preterm 33wk, 60h -> interpolated lines, not nomogram.
+  // photo72=230: 40+190*60/72=198.3->198; exch72=330: 80+250*60/72=288.3->288.
   const t2 = NP.biliThreshold(33, 60);
-  ok(/nomogram/.test(t2.note || ""), "slot2: 33wk/60h -> nomogram note, no thresholds");
-  ok((NP.biliFlag(300, 33, 60) || {}).band === "info", "slot2: any value -> info band (no line drawn)");
+  ok(t2.preterm === true && t2.photo === 198 && t2.exchange === 288, "slot2: 33wk/60h interpolated 198/288");
+  ok((NP.biliFlag(205, 33, 60) || {}).band === "photo", "slot2: 205 -> photo");
+  ok((NP.biliFlag(300, 33, 60) || {}).band === "exchange", "slot2: 300 -> exchange");
 
   // Slot 3: exchange-range. Term 39wk/48h row = repeat 150 / consider 200 / photo 250 / exchange 450.
   const t3 = NP.biliThreshold(39, 48);
   ok(t3.photo === 250 && t3.exchange === 450, "slot3: 39wk/48h row 250/450");
   ok((NP.biliFlag(460, 39, 48) || {}).band === "exchange", "slot3: 460 > 450 -> exchange");
 
-  // Slot 4 DOCUMENTS a gap: stop-below 50 exists in the pack but NO stop-phototherapy
-  // logic consumes it — the app stays silent (null) below all lines. Clinician decides (F25 sheet).
-  ok(NP.biliFlag(49, 39, 48) === null, "slot4-documents: 49 (near stop-50) -> null, no stop guidance wired");
+  // Slot 4 (F25-P2 BUILT): stop considered at line-50. 39wk/48h line=250: 200 stops, 201 does not.
+  ok(NP.biliStop(200, 39, 48).stop === true, "slot4: 200 (line-50) -> stop considered");
+  ok(NP.biliStop(201, 39, 48).stop === false, "slot4: 201 -> keep going");
+  ok(NP.biliStop(49, 39, 48).stop === true, "slot4: 49 -> stop considered (margin rule)");
+  ok(NP.biliStop(200, null, 48).stop === false, "slot4: missing GA -> no stop call");
+  ok(NP.roundBiliChip({ bili: { tsb: 190, ageHrs: 48, photo: "on" } }, 39).indexOf("consider stopping") >= 0, "slot4: chip hints stop when on photo");
+  ok(NP.roundBiliChip({ bili: { tsb: 190, ageHrs: 48 } }, 39).indexOf("consider stopping") < 0, "slot4: chip silent when not on photo");
 
   // Slots 5+6: mg/dL conversion straddling the 250 photo line, through the real chip path.
   // 14.6*17.1=249.66->250 (consider, no warn) vs 14.7*17.1=251.37->251 (photo, warn).
@@ -132,6 +137,19 @@ async function main() {
   // Slots 8+9: strict-> comparisons — exactly ON the 250 line stays below it.
   ok((NP.biliFlag(250, 39, 48) || {}).band === "consider", "slot8: 250 (on line) -> consider, not photo");
   ok((NP.biliFlag(251, 39, 48) || {}).band === "photo", "slot9: 251 (just above) -> photo");
+
+  // Extra (F25-P1): switch boundary, 35-37wk, <72h preterm, no-cap documents.
+  ok(NP.biliThreshold(37.9, 48).preterm === true && NP.biliThreshold(37.9, 48).photo === 199, "switch: 37.9wk -> preterm formula (199)");
+  const t38 = NP.biliThreshold(38, 48);
+  ok(t38.preterm === false && t38.photo === 250 && t38.exchange === 450, "switch: 38wk -> term table (250/450)");
+  const t37 = NP.biliThreshold(37, 80);
+  ok(t37.photo === 270 && t37.exchange === 370, "37wk/80h: 270/370");
+  const t30 = NP.biliThreshold(30, 36);
+  ok(t30.photo === 120 && t30.exchange === 190, "30wk/36h: interpolated 120/190");
+  ok((NP.biliFlag(130, 30, 36) || {}).band === "photo", "30wk/36h: 130 -> photo");
+  ok((NP.biliFlag(200, 30, 36) || {}).band === "exchange", "30wk/36h: 200 -> exchange");
+  const t29late = NP.biliThreshold(29, 400);
+  ok(t29late.photo === 190 && t29late.exchange === 290, "documents: formula applies past day 14 (no cap yet)");
 
   // Slot 10 DOCUMENTS a gap: biliFlag takes (tsb, ga, hrs) only — risk factors do NOT
   // shift tiers. Identical inputs -> identical tier. Clinician reviews in F25.
