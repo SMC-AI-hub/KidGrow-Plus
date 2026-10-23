@@ -43,3 +43,18 @@ dates · red-flag counselling present.
 
 Validator signature: ______________________ Date: __________
 Counter-sign (clinic owner): ______________________ Date: __________
+
+## Automated companion (for the validator's context — read before starting)
+`tests/f25-validation.test.js` (20 asserts, green) locks the builder's CURRENT
+boundary behavior. It found three things the validator must rule on:
+1. SUSPECTED BUG — preterm ≥72 h: the formula computes a photo line (e.g. 190
+   at 29 wk) but the flag path returns info instead, so NO photo/exchange
+   warning ever fires for preterms (even at 400). If the unit protocol says
+   preterms must warn, the code must be fixed and this sheet re-run.
+2. No stop-phototherapy logic exists (pack constant `biliStopBelow: 50` is
+   unwired) — the app stays silent below all lines; stopping is entirely the
+   clinician's call until logic is specified + coded + tested.
+3. Risk factors do NOT shift tiers (no such input exists) — same numbers give
+   the same tier with or without risk factors. Confirm this matches unit protocol.
+These tests check the code against its own table — they do NOT replace this
+sheet (real cases vs NICE CG98 / unit protocol).

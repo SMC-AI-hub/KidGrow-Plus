@@ -4,7 +4,7 @@
   "private": true,
   "description": "NeoKid Care \u2014 offline-first neonatal & pediatric clinic PWA with cloud sync",
   "scripts": {
-    "test": "node tests/cloud-offline.test.js && node tests/tenant-isolation.test.js && node tests/hardening.test.js && node tests/api.test.js && node tests/history.test.js && node tests/exam.test.js && node tests/dose.test.js && node tests/nicu.test.js && node tests/hri.test.js && node tests/chronic.test.js && node tests/panels.test.js && node tests/comply.test.js && node tests/syncmerge.test.js && node tests/printaudit.test.js && node tests/cmdk.test.js && node tests/validate.test.js && node tests/merge.test.js && node tests/load.test.js && node tests/idb.test.js && node tests/csp.test.js && node tests/syncrel.test.js && node tests/timeline.test.js",
+    "test": "node tests/cloud-offline.test.js && node tests/tenant-isolation.test.js && node tests/hardening.test.js && node tests/api.test.js && node tests/history.test.js && node tests/exam.test.js && node tests/dose.test.js && node tests/nicu.test.js && node tests/f25-validation.test.js && node tests/hri.test.js && node tests/chronic.test.js && node tests/panels.test.js && node tests/comply.test.js && node tests/syncmerge.test.js && node tests/printaudit.test.js && node tests/cmdk.test.js && node tests/validate.test.js && node tests/merge.test.js && node tests/load.test.js && node tests/idb.test.js && node tests/csp.test.js && node tests/syncrel.test.js && node tests/timeline.test.js",
     "test:offline": "node tests/cloud-offline.test.js",
     "test:isolation": "node tests/tenant-isolation.test.js",
     "test:hardening": "node tests/hardening.test.js",
