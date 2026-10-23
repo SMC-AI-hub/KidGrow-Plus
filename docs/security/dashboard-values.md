@@ -9,7 +9,7 @@ Copied from the Supabase dashboard (not SQL) by the owner. Staging recorded
 | 2 | Region | ap-south-1 | ? |
 | 3 | Postgres version (as shown) | 17.11.0.003 | ? |
 | 4 | MFA/TOTP enabled? | Yes | ? |
-| 5 | Email-confirmation setting | ? | ? |
+| 5 | Email-confirmation setting | ON (was OFF; enabled by owner 2026-10-23) | ON (already on) |
 | 6 | Backup plan | None — Free plan, no automated backups | ? (confirm Pro/PITR!) |
 | 7 | Earliest restore point | n/a (no backups) | ? |
 | 8 | JWT expiry (seconds) | ? | ? |
