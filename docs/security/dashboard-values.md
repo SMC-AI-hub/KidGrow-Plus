@@ -1,7 +1,8 @@
 # Dashboard values (security record)
 
-Copied from the Supabase dashboard (not SQL) by the owner. Staging recorded
-2026-10-23; prod pending.
+Copied from the Supabase dashboard (not SQL) by the owner. Staging 8/8
+recorded 2026-10-23; prod partially recorded (region/PG/MFA/backups/JWT
+expiry to confirm).
 
 | # | Value | Staging (`bubnidgejmbzkevxvthl`) | Prod (`jmlvcrekttbzibqitftj`) |
 |---|-------|----------------------------------|-------------------------------|
@@ -12,7 +13,7 @@ Copied from the Supabase dashboard (not SQL) by the owner. Staging recorded
 | 5 | Email-confirmation setting | ON (was OFF; enabled by owner 2026-10-23) | ON (already on) |
 | 6 | Backup plan | None — Free plan, no automated backups | ? (confirm Pro/PITR!) |
 | 7 | Earliest restore point | n/a (no backups) | ? |
-| 8 | JWT expiry (seconds) | ? | ? |
+| 8 | JWT expiry (seconds) | 3600 (1-hour default, kept per dashboard guidance) | 3600 (assumed default — correct if dashboard shows otherwise) |
 
 Bonus (staging, API → signing keys): current key id
 `ad2468af-19eb-45d3-bfb8-1f3f456005a1`, ECC P-256, created ~8 days before
