@@ -17,6 +17,10 @@ Copied from the Supabase dashboard (not SQL) by the owner. Staging recorded
 Bonus (staging, API → signing keys): key id
 `ad2468af-19eb-45d3-bfb8-1f3f456005a1`, ECC P-256, created ~8 days before
 2026-10-23. (Key ID only — not sensitive.)
+Previous key on the same page: `dbe95cba-066e-4db5-9df6-81bc61f4335a`,
+HS256 (shared secret), created + rotated ~8 days before 2026-10-23 —
+i.e. the project migrated HS256 → ECC asymmetric signing ~Oct 15
+(a security upgrade; old key retained as "Previous" for transition).
 
 ## Notes
 
