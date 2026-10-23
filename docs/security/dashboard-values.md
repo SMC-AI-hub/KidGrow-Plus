@@ -14,13 +14,16 @@ Copied from the Supabase dashboard (not SQL) by the owner. Staging recorded
 | 7 | Earliest restore point | n/a (no backups) | ? |
 | 8 | JWT expiry (seconds) | ? | ? |
 
-Bonus (staging, API → signing keys): key id
+Bonus (staging, API → signing keys): current key id
 `ad2468af-19eb-45d3-bfb8-1f3f456005a1`, ECC P-256, created ~8 days before
-2026-10-23. (Key ID only — not sensitive.)
-Previous key on the same page: `dbe95cba-066e-4db5-9df6-81bc61f4335a`,
-HS256 (shared secret), created + rotated ~8 days before 2026-10-23 —
-i.e. the project migrated HS256 → ECC asymmetric signing ~Oct 15
-(a security upgrade; old key retained as "Previous" for transition).
+2026-10-23. (Key IDs only — not sensitive.)
+Bonus (prod, Settings → JWT Keys 2026-10-23, screenshot
+`evidence/ui/prod-jwt-keys-2026-10-23.png`): current
+`a57ec55d-eb42-4275-b426-43b76957701c` (ECC P-256, 8 days ago); previous
+`dbe95cba-066e-4db5-9df6-81bc61f4335a` (HS256 shared secret, rotated 8 days
+ago) — i.e. prod migrated HS256 → ECC ~Oct 15. Dashboard advises revoking
+previous keys once all tokens expired; rotation was 8 days ago so the
+previous key is revokable now (recommended, both projects).
 
 ## Notes
 
