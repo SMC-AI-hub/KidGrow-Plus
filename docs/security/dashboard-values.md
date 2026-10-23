@@ -25,3 +25,11 @@ Bonus (staging, API → signing keys): key id
   for prod.
 - Project-ref check: values above are staging (`bubnidgejmbzkevxvthl` ≠ prod
   `jmlvcrekttbzibqitftj`). Never mix the two when applying migrations.
+- Prod Data API posture observed 2026-10-23 (screenshot
+  `evidence/ui/prod-dataapi-settings-2026-10-23.png`): 16/16 tables exposed,
+  0/23 functions exposed, Max rows 1000, search_path public+extensions.
+- Org plan badge = FREE on the prod project view → prod likely ALSO without
+  automated backups/PITR. Upgrade to a paid plan before go-live (mandatory).
+- Prod "Automatically expose new tables" is ON — Supabase itself recommends
+  OFF. Recommend disabling on prod (and staging) so future tables stay
+  private until explicitly exposed. RLS remains the live gate either way.
