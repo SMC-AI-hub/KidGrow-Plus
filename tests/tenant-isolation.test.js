@@ -14,7 +14,7 @@ const N = "44444444-4444-4444-4444-444444444444"; // nurse, member of A only
 
 const SHIM = `
 CREATE SCHEMA IF NOT EXISTS auth;
-CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY, email text);
+CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY, email text, email_confirmed_at timestamptz);
 DO $outer$ BEGIN IF NOT EXISTS (
   SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'auth' AND p.proname = 'uid') THEN
@@ -98,6 +98,7 @@ async function main() {
     : { host: "127.0.0.1", port: 55434, user: "app", password: "app-test-pw", database: "postgres" };
   app = new Client(appCfg); await app.connect();
 
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'owner-a@synthetic.test',now()),($2,'owner-b@synthetic.test',now()),($3,'nurse-n@synthetic.test',now()) ON CONFLICT (id) DO NOTHING", [A, B, N]); // 0010: writers confirmed before setup writes
   // ---- setup: two hospitals, one patient each (as the apps would) ----
   const tA = await withClaim(app, A, async () => (await app.query("INSERT INTO tenants (name, plan) VALUES ('City Care (synthetic)', 'clinic') RETURNING id")).rows[0].id);
   const tB = await withClaim(app, B, async () => (await app.query("INSERT INTO tenants (name, plan) VALUES ('Metro Kids (synthetic)', 'nicu') RETURNING id")).rows[0].id);
@@ -170,7 +171,7 @@ async function main() {
   const D = "55555555-5555-5555-5555-555555555555"; // quota-tenant owner
   const E = "66666666-6666-6666-6666-666666666666"; // invitee
   const F = "77777777-7777-7777-7777-777777777777"; // wrong-email stranger
-  await owner.query("INSERT INTO auth.users (id, email) VALUES ($1,'owner-a@synthetic.test'),($2,'nurse-e@synthetic.test'),($3,'stranger-f@synthetic.test') ON CONFLICT (id) DO NOTHING", [A, E, F]);
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'owner-a@synthetic.test',now()),($2,'nurse-e@synthetic.test',now()),($3,'stranger-f@synthetic.test',now()),($4,'owner-b@synthetic.test',now()),($5,'stranger-c@synthetic.test',now()),($6,'owner-d@synthetic.test',now()),($7,'nurse-n@synthetic.test',now()) ON CONFLICT (id) DO NOTHING", [A, E, F, B, C, D, N]);
 
   // ---- quota values ----
   const q = async (p, k) => (await owner.query("SELECT public.plan_quota($1,$2) AS v", [p, k])).rows[0].v;
@@ -339,6 +340,7 @@ async function main() {
   const BL = "99999999-9999-9999-9999-999999999999"; // billing member of A
   const AD = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"; // admin of A
   const O3 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"; // spare user for owner-grant tests
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'readonly-ru@synthetic.test',now()),($2,'billing-bl@synthetic.test',now()),($3,'admin-ad@synthetic.test',now()),($4,'spare-o3@synthetic.test',now()) ON CONFLICT (id) DO NOTHING", [RU, BL, AD, O3]); // 0010: all suite writers confirmed
   await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='hospital' WHERE id=$1", [tA])); // quota headroom
   await withClaim(app, A, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'readonly'),($1,$3,'billing'),($1,$4,'admin')", [tA, RU, BL, AD]));
   const rList = await withClaim(app, RU, async () => (await app.query("SELECT id FROM patients")).rows);
@@ -415,6 +417,29 @@ async function main() {
   ok(auAud >= 1, "auditor reads audit at aal1 (MFA-exempt role)");
   await withClaim(app, A, async () => app.query("UPDATE memberships SET role='billing' WHERE tenant_id=$1 AND user_id=$2", [tA, BL]));
   await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='clinic' WHERE id=$1", [tA])); // restore
+
+  // ================= 0010: email-confirmed writes (P3.3) =================
+  await withClaim(app, B, async () => app.query("UPDATE tenants SET plan='hospital' WHERE id=$1", [tB])); // quota headroom (denies below must be email-caused, not quota-caused)
+  const G = "cccccccc-cccc-cccc-cccc-cccccccccccc"; // unconfirmed doctor of B
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'unconfirmed-g@synthetic.test',NULL) ON CONFLICT (id) DO NOTHING", [G]);
+  await withClaim(app, B, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'doctor')", [tB, G]));
+  ok((await withClaim(app, G, async () => (await app.query("SELECT public.my_email_confirmed() AS v")).rows[0].v)) === false, "helper: unconfirmed -> false");
+  ok(await expectDeny(withClaim(app, G, async () => app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'G-UNC')", [tB]))) === "denied", "unconfirmed doctor insert denied");
+  ok(await expectDeny(withClaim(app, G, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ tenant_id: tB, local_id: "c_g", client_rev: "2026-10-10T00:00:00Z", mrn: "CC-G", name: "No" })]))) === "denied", "unconfirmed sync-RPC denied");
+  await withClaim(app, B, async () => app.query("INSERT INTO audit_events (tenant_id, actor_id, action) VALUES ($1,$2,'probe-b')", [tB, B]));
+  await owner.query("UPDATE auth.users SET email_confirmed_at=NULL WHERE id=$1", [B]);
+  const bUnc = await withClaim(app, B, async () => (await app.query("SELECT count(*)::int AS n FROM audit_events WHERE tenant_id=$1", [tB])).rows[0].n);
+  ok(bUnc >= 1, "unconfirmed owner still reads audit (reads ungated)");
+  ok(await expectDeny(withClaim(app, B, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'nurse')", [tB, C]))) === "denied", "unconfirmed owner grant denied");
+  await owner.query("UPDATE auth.users SET email_confirmed_at=now() WHERE id=$1", [B]);
+  await withClaim(app, B, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'nurse')", [tB, C]));
+  ok(true, "re-confirmed owner grant allowed");
+  await withClaim(app, B, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tB, C]));
+  await owner.query("UPDATE auth.users SET email_confirmed_at=now() WHERE id=$1", [G]);
+  ok((await withClaim(app, G, async () => (await app.query("SELECT public.my_email_confirmed() AS v")).rows[0].v)) === true, "helper: confirmed -> true");
+  const gPat = await withClaim(app, G, async () => (await app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'G-CONF') RETURNING id", [tB])).rows[0].id);
+  ok(!!gPat, "confirmed doctor insert allowed");
+  await withClaim(app, B, async () => app.query("UPDATE tenants SET plan='nicu' WHERE id=$1", [tB])); // restore
 
   try { await app.end(); } catch (_) {}
   await stop();

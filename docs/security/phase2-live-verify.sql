@@ -193,6 +193,22 @@ BEGIN
     INSERT INTO e2e_out VALUES ('E7 FAIL (' || SQLSTATE || ': ' || SQLERRM || ')');
   END;
 
+  -- E8: unconfirmed owner direct INSERT -> expect 42501 (P3.3 enforcement).
+  -- Role is still 'authenticated' from E7, so reset to postgres for the
+  -- auth.users UPDATE first (rollback discards everything after).
+  BEGIN
+    PERFORM set_config('role', 'postgres', true);
+    UPDATE auth.users SET email_confirmed_at = NULL WHERE id = u_owner;
+    PERFORM set_config('role', 'authenticated', true);
+    PERFORM set_config('request.jwt.claim.sub', u_owner::text, true);
+    PERFORM set_config('request.jwt.claims', '{"sub":"' || u_owner::text || '","aal":"aal2"}', true);
+    INSERT INTO patients (tenant_id, mrn) VALUES (t, 'NEG-UNCONFIRMED');
+    INSERT INTO e2e_out VALUES ('E8 FAIL: unconfirmed insert was ALLOWED');
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO e2e_out VALUES ('E8 ' || CASE WHEN SQLSTATE = '42501' THEN 'PASS (42501 deny)'
+      ELSE 'FAIL (' || SQLSTATE || ': ' || SQLERRM || ')' END);
+  END;
+
   SELECT string_agg(line, chr(10) ORDER BY line) INTO res FROM e2e_out;
   RAISE NOTICE '%', chr(10) || res;
 END $$;
