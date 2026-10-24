@@ -80,6 +80,8 @@ BEGIN
     VALUES (t, 'E2E verify (auto-rollback)', 'hospital'); -- auto-adds owner
   INSERT INTO memberships (tenant_id, user_id, role)
     VALUES (t, u_ro, 'readonly');
+  UPDATE auth.users SET email_confirmed_at = now()
+    WHERE id IN (u_owner, u_ro); -- 0010: E-block users confirmed (rolled back)
   INSERT INTO patients (id, tenant_id, mrn, name)
     VALUES (p, t, 'E2E-1', 'E2E');
   INSERT INTO audit_events (tenant_id, actor_id, action)
