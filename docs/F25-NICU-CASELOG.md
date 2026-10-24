@@ -77,10 +77,9 @@ haemolytic jaundice needs 2 consecutive such values (needs a haemolysis input �
 validator rules: build the input, or handle haemolytic cases manually).
 Alternative: declare out of scope with explicit in-app "clinician decision"
 text + this requirement revised here. Validator ruling: ____ Date: ____
-P3. Repeat timing: the app currently prints "repeat in 6h" / "6-12h"; NICE uses
-18/24 h (risk-dependent) within 50 of threshold. Validator reconciles which
-intervals stand; if NICE is adopted, a risk-factor input is added to drive
-18 h vs 24 h. Validator ruling: ____ Date: ____
+P3. Repeat timing: RULED 2026-10-23 (owner) — keep app intervals (6h / 6-12h),
+no risk input; formula capped at 336 h with unit-protocol fallback past day 14.
+Validator countersign: ____ Date: ____
 Term-table anchors corroborated against a secondary source (use NICE graphs for
 the sheet itself): 0 h 100/100 · 12 h 150/200 · 24 h 200/300 · 96 h 350/450 —
 all match the coded table.

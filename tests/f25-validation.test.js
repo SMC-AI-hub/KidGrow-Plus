@@ -148,14 +148,19 @@ async function main() {
   ok(t30.photo === 120 && t30.exchange === 190, "30wk/36h: interpolated 120/190");
   ok((NP.biliFlag(130, 30, 36) || {}).band === "photo", "30wk/36h: 130 -> photo");
   ok((NP.biliFlag(200, 30, 36) || {}).band === "exchange", "30wk/36h: 200 -> exchange");
-  const t29late = NP.biliThreshold(29, 400);
-  ok(t29late.photo === 190 && t29late.exchange === 290, "documents: formula applies past day 14 (no cap yet)");
+  const t336 = NP.biliThreshold(29, 336);
+  ok(t336.photo === 190 && t336.exchange === 290, "cap: 336h still formula (190/290)");
+  const t337 = NP.biliThreshold(29, 337);
+  ok(/day 14/.test(t337.note || ""), "cap: 337h -> unit-protocol note, no line");
+  ok((NP.biliFlag(400, 29, 400) || {}).band === "info", "cap: 400@400h -> info (no fabricated line)");
 
-  // Slot 10 DOCUMENTS a gap: biliFlag takes (tsb, ga, hrs) only — risk factors do NOT
-  // shift tiers. Identical inputs -> identical tier. Clinician reviews in F25.
-  ok(NP.biliFlag.length === 3, "slot10-documents: biliFlag has no risk-factor parameter");
+  // Slot 10 (F25-P3 RULED 2026-10-23: keep app intervals, no risk input). biliFlag takes
+  // (tsb, ga, hrs) only; repeat texts locked below so any future change is deliberate.
+  ok(NP.biliFlag.length === 3, "slot10-ruled: no risk-factor parameter (P3)");
   const r10a = NP.biliFlag(210, 39, 48) || {}, r10b = NP.biliFlag(210, 39, 48) || {};
-  ok(r10a.band === "consider" && r10b.band === r10a.band, "slot10-documents: same inputs -> same tier (consider)");
+  ok(r10a.band === "consider" && r10b.band === r10a.band, "slot10-ruled: same inputs -> same tier (consider)");
+  ok((r10a.text || "").indexOf("repeat in 6h") >= 0, "slot10-ruled: consider band keeps 6h repeat text");
+  ok(((NP.biliFlag(160, 39, 48) || {}).text || "").indexOf("repeat in 6-12h") >= 0, "slot10-ruled: repeat band keeps 6-12h repeat text");
 
   console.log(`f25-validation: ${pass} pass, ${fail} fail`);
   process.exit(fail ? 1 : 0);

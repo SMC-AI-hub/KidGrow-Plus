@@ -169,14 +169,16 @@ function biliRowFor(ageHrs) {
   for (var i = 0; i < rows.length; i++) { if (rows[i].h <= h) best = rows[i]; }
   return best;
 }
-// NICE CG98: term table (>=38wk); preterm (F25-P1): >=72h GAx10-100 / GAx10,
-// <72h straight line from 40 (photo) / 80 (exchange) at 0h to the 72h values.
+// NICE CG98: term table (>=38wk); preterm (F25-P1): 72-336h GAx10-100 / GAx10,
+// <72h straight line from 40 (photo) / 80 (exchange) at 0h to the 72h values,
+// >336h (day 14): formula not validated -> unit protocol, no line drawn.
 function biliThreshold(gaWk, ageHrs) {
   var ga = (gaWk == null || gaWk === "") ? null : +gaWk;
   var h = +ageHrs;
   if (!(h >= 0)) return null;
   if (ga == null || isNaN(ga)) return { note: "Record gestation to interpret bilirubin." };
   if (ga >= 38) { var r = biliRowFor(h); return r ? { repeat: r.repeat, consider: r.consider, photo: r.photo, exchange: r.exchange, preterm: false } : null; }
+  if (h > 336) return { note: "Preterm beyond day 14 (336h) — lines validated to day 14 only; use unit protocol." };
   var photo72 = Math.round(ga * 10 - 100), exch72 = Math.round(ga * 10), photo, exchange;
   if (h >= 72) { photo = photo72; exchange = exch72; }
   else {
