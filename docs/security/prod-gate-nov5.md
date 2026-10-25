@@ -15,13 +15,21 @@ checkpoints, copy-paste probes, rollback map. Nothing here runs before
 - [ ] Confirm-or-accept decided for every unconfirmed prod user: at 0010 they
   go read-only until they confirm via email link. Either confirm them first
   or record acceptance (names + owner sign).
+  2026-10-25 fact-pack (via connector): the 2 unconfirmed are probe-named
+  test accounts created Oct 17/18 (exact addresses held in chat, not
+  committed) — likely confirm-or-delete pre-gate, owner's call.
 - [ ] Backups decision recorded: prod org is FREE (no PITR). These four
   migrations change no data and each is atomic with a re-run rollback (see
   §4), but there is no restore path if anything else goes wrong. Recommended:
   upgrade before the gate; minimum: owner signs acceptance of the risk.
+  (Tier not re-verifiable via API — stands on the Oct 23 dashboard evidence.)
 - [ ] Billing state checked: the Oct 23 trial had ~8 days left (~Oct 31), so
   the gate likely runs post-trial. Verify current `sub_status`; break-glass
   covers a lapse mid-shift, but know the state before starting.
+  2026-10-25 fact-pack (via connector): all 4 prod profiles `trialing`, no
+  Razorpay subs; trials end Oct 30 / Oct 31 / Nov 1 / Nov 8 — i.e. 3 of 4
+  lapsed by gate day. Resolve (subscribe/extend) or record acceptance; the
+  migrations themselves are unaffected by trial state.
 - [ ] Carry-over hardening (advised, not blocking): revoke previous HS256 key
   `dbe95cba`; set auto-expose OFF.
 
