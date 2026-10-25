@@ -54,3 +54,22 @@ M5 (role CHECKs + owner-only owner-grant). Delivered as one additive migration.
   Security gate = no PUBLIC/anon rows. This 3-row pattern is the baseline.
 - Suite: isolation 146/146, cloud-offline 598/598 (3 new grace asserts), full run exit 0.
 - Prod `0009` GATED until on/after 2026-11-05 (MFA_GRACE_UNTIL, warn-then-enforce).
+
+## P3.3 staging (`0010_email_confirmed.sql`) — VERIFIED 2026-10-23
+- Commits `dcf0f88` (migration + 8 isolation asserts + E-block v3) and
+  `4d3de64` (E-block setup-confirm fix after read-back caught a lost edit).
+- Staging: apply Success; E-block v3 E1–E8 all PASS (E8 unconfirmed-owner
+  42501 deny; E1–E7 Phase 2 + P3.1 guarantees intact).
+- Step B baseline: `my_email_confirmed` shows 2 rows (postgres +
+  authenticated), no PUBLIC/anon. Differs from `my_aal2`'s 3 rows
+  (service_role absent) — irrelevant: service_role bypasses RLS by design.
+- Suite: isolation 154/154, full run exit 0.
+- Wrong-tab incident 2026-10-23: Step 0 + Step A first run hit PROD (3-user
+  census 1 confirmed/2 unconfirmed = prod fingerprint; 0010 correctly aborted
+  with my_aal2-missing, proving prod untouched). Standalone `rollback;`
+  issued; no rows touched. Prod census banked for Nov 5 sequencing.
+- Staging Step 0 was skipped (retroactive confirmed-email list requested,
+  still pending at sign-off). Unconfirmed staging users are read-only until
+  they confirm via email link.
+- Prod sequence: 0009 on/after 2026-11-05 FIRST, then 0010; prod's 2
+  unconfirmed users go read-only at that point (confirm-or-accept repeats).
