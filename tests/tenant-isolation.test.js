@@ -456,6 +456,32 @@ async function main() {
   const eTN = await errOf(ap(A, "apply_patient_op", { ...P1, tenant_id: null }));
   ok(eTN.code === "P0001" && eTN.msg === "tenant_id required", "NULL tenant_id path unchanged ('tenant_id required')");
 
+  // ================= 0012: tenant minting gates (P3.2) =================
+  const H = "dddddddd-dddd-dddd-dddd-dddddddddddd"; // unconfirmed outsider
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'h-owner@synthetic.test',NULL) ON CONFLICT (id) DO NOTHING", [H]);
+  ok(await expectDeny(withClaim(app, H, async () => app.query("INSERT INTO tenants (name) VALUES ('Hacker Clinic')"))) === "denied", "unconfirmed user cannot mint tenants (t_ins email gate)");
+  const c0 = await withClaim(app, A, async () => (await app.query("SELECT public.my_created_tenant_count() AS v")).rows[0].v);
+  const tC = await withClaim(app, A, async () => (await app.query("INSERT INTO tenants (name) VALUES ('C Clinic (synthetic)') RETURNING id")).rows[0].id);
+  ok(!!tC, "confirmed owner mints (gate is email-only, no cap)");
+  const c1 = await withClaim(app, A, async () => (await app.query("SELECT public.my_created_tenant_count() AS v")).rows[0].v);
+  ok(Number(c1) === Number(c0) + 1, "mint counter increments (audit trail queryable)");
+  // owner-invite TOCTOU: B invites H as owner, then is demoted before H accepts
+  const tokH = await withClaim(app, B, async () => (await app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'h-owner@synthetic.test','owner') RETURNING token", [tB])).rows[0].token);
+  ok(!!tokH, "owner can still invite owners (owner-only preserved)");
+  await withClaim(app, B, async () => app.query("UPDATE memberships SET role='owner' WHERE tenant_id=$1 AND user_id=$2", [tB, G]));
+  await withClaim(app, G, async () => app.query("UPDATE memberships SET role='admin' WHERE tenant_id=$1 AND user_id=$2", [tB, B]));
+  const eH = await errOf(withClaim(app, H, async () => app.query("SELECT public.accept_invite($1)", [tokH])));
+  ok(eH.code === "P0001" && eH.msg === "inviter is no longer an owner", "stale owner-invite rejected after inviter demotion");
+  await withClaim(app, G, async () => app.query("UPDATE memberships SET role='owner' WHERE tenant_id=$1 AND user_id=$2", [tB, B]));
+  await withClaim(app, B, async () => app.query("UPDATE memberships SET role='doctor' WHERE tenant_id=$1 AND user_id=$2", [tB, G]));
+  await withClaim(app, B, async () => app.query("DELETE FROM invites WHERE token=$1", [tokH]));
+  // NULL-created_by grandfather: pre-0012 owner-invite still acceptable
+  await owner.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'h-owner@synthetic.test','owner')", [tB]);
+  const tokG = await withClaim(app, B, async () => (await app.query("SELECT token FROM invites WHERE tenant_id=$1 AND email='h-owner@synthetic.test' AND accepted_at IS NULL ORDER BY created_at DESC LIMIT 1", [tB])).rows[0].token);
+  const accG = await withClaim(app, H, async () => (await app.query("SELECT public.accept_invite($1) AS t", [tokG])).rows[0].t);
+  ok(accG === tB, "pre-0012 (unstamped) owner-invite still accepted");
+  await withClaim(app, B, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tB, H]));
+
   try { await app.end(); } catch (_) {}
   await stop();
   console.log(`\nisolation: ${pass} passed, ${fail} failed`);
