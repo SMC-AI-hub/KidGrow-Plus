@@ -441,6 +441,21 @@ async function main() {
   ok(!!gPat, "confirmed doctor insert allowed");
   await withClaim(app, B, async () => app.query("UPDATE tenants SET plan='nicu' WHERE id=$1", [tB])); // restore
 
+  // ================= 0011: guarded RPC input casts (P3.4/L5) =================
+  const errOf = async (promise) => { try { await promise; return { code: "OK", msg: "" }; } catch (e) { return { code: e.code || "?", msg: e.message || "" }; } };
+  const eT = await errOf(ap(A, "apply_patient_op", { ...P1, tenant_id: "not-a-uuid" }));
+  ok(eT.code === "P0001" && eT.msg === "bad tenant_id", "garbage tenant_id -> clean P0001 'bad tenant_id' (no 22P02)");
+  const eR = await errOf(ap(A, "apply_patient_op", { ...P1, client_rev: "not-a-time" }));
+  const eR2 = await errOf(ap(A, "apply_patient_op", { ...P1, client_rev: "2026-13-45T99:99:99Z" }));
+  ok(eR.code === "P0001" && eR.msg === "bad client_rev", "garbage client_rev -> clean P0001 'bad client_rev'");
+  ok(eR2.code === "P0001" && eR2.msg === "bad client_rev", "out-of-range client_rev (22008) -> clean P0001 'bad client_rev'");
+  const eE = await errOf(ap(A, "apply_encounter_op", { tenant_id: "zzz", local_id: "e1", client_rev: "2026-10-01T10:00:00Z" }));
+  ok(eE.code === "P0001" && eE.msg === "bad tenant_id", "guard covers all four RPCs (encounter)");
+  const eN = await errOf(ap(A, "apply_patient_op", { ...P1, client_rev: null }));
+  ok(eN.code === "P0001" && eN.msg === "client_rev required", "NULL client_rev path unchanged ('client_rev required')");
+  const eTN = await errOf(ap(A, "apply_patient_op", { ...P1, tenant_id: null }));
+  ok(eTN.code === "P0001" && eTN.msg === "tenant_id required", "NULL tenant_id path unchanged ('tenant_id required')");
+
   try { await app.end(); } catch (_) {}
   await stop();
   console.log(`\nisolation: ${pass} passed, ${fail} failed`);

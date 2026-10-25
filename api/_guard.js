@@ -4,6 +4,12 @@
 // across instances) — true distributed limiting needs Upstash (see docs).
 "use strict";
 
+const crypto = require("crypto");
+// Per-instance salt (matches the per-instance limiter's honesty level):
+// ipTag correlates abuse within a boot window but is useless for
+// long-term tracking or reversal (unlike a raw or unsalted-hashed IP).
+const IPTAG_SALT = crypto.randomBytes(16);
+
 const buckets = new Map(); // key -> { n, reset }
 
 function ipOf(req) {
@@ -11,6 +17,14 @@ function ipOf(req) {
     const f = (req.headers["x-forwarded-for"] || "").split(",")[0].trim();
     if (f) return f.slice(0, 64);
     return ((req.socket && req.socket.remoteAddress) || "?").slice(0, 64);
+  } catch (e) { return "?"; }
+}
+
+function ipTag(req) {
+  try {
+    const h = crypto.createHash("sha256");
+    h.update(IPTAG_SALT); h.update(String(ipOf(req)));
+    return h.digest("hex").slice(0, 12);
   } catch (e) { return "?"; }
 }
 
@@ -69,4 +83,4 @@ function isTokenShape(v) {
 }
 function _resetForTests() { buckets.clear(); }
 
-module.exports = { ipOf, rateLimit, limited, readRawCapped, cleanStr, isUuid, isEmail, isTokenShape, _resetForTests };
+module.exports = { ipOf, ipTag, rateLimit, limited, readRawCapped, cleanStr, isUuid, isEmail, isTokenShape, _resetForTests };

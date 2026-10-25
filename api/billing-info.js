@@ -68,6 +68,7 @@ module.exports = async function handler(req, res) {
     }
     return res.status(200).json(out);
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Billing unavailable." });
+    console.error("[billing-info] 500:", (e && e.message) || e);
+    return res.status(500).json({ error: "Billing unavailable." });
   }
 };

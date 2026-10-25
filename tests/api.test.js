@@ -263,6 +263,53 @@ async function main() {
   ok(rEL._s === 429, "beacon rate-limited past 30/min");
   G._resetForTests();
 
+  // ---- P3.4/L1: webhook signature edge shapes -> 401, never throw/500 ----
+  G._resetForTests();
+  const whBody = JSON.stringify({ event: "subscription.activated", payload: { subscription: { entity: { id: "sub_9", current_end: 1763078400 } } } });
+  const runWhRaw = async (sig) => {
+    const req = mkReq(whBody);
+    req.headers["x-razorpay-signature"] = sig;
+    const rr = mkRes(); await webhook(req, rr); return rr;
+  };
+  ok((await runWhRaw("abc"))._s === 401, "P3.4/L1: odd-length signature -> 401 (no throw)");
+  ok((await runWhRaw("0".repeat(64)))._s === 401, "P3.4/L1: wrong 64-hex signature -> 401");
+  ok((await runWhRaw("zz".repeat(32)))._s === 401, "P3.4/L1: non-hex 64-char signature -> 401");
+
+  // ---- P3.4/L2: upstream failures -> generic 500, detail stays server-side ----
+  const ce0 = console.error; let logged = "";
+  console.error = (...a) => { logged += a.join(" "); };
+  global.fetch = async () => { throw new Error("MARKER_UPSTREAM_BOOM"); };
+  const goodSig = crypto.createHmac("sha256", "MARKER_WEBHOOK").update(Buffer.from(whBody)).digest("hex");
+  const rWL2 = await runWhRaw(goodSig);
+  ok(rWL2._s === 500 && rWL2._b.error === "webhook failed" && !/MARKER/.test(JSON.stringify(rWL2._b)), "P3.4/L2: webhook 500 generic, no leak");
+  const rBL2 = mkRes();
+  await billInfo({ method: "GET", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rBL2);
+  ok(rBL2._s === 500 && rBL2._b.error === "Billing unavailable." && !/MARKER/.test(JSON.stringify(rBL2._b)), "P3.4/L2: billing 500 generic, no leak");
+  const rSL2 = mkRes();
+  await createSub({ method: "POST", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rSL2);
+  ok(rSL2._s === 500 && rSL2._b.error === "Could not start subscription." && !/MARKER/.test(JSON.stringify(rSL2._b)), "P3.4/L2: create-sub 500 generic, no leak");
+  const rCL2 = mkRes();
+  await billCancel({ method: "POST", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rCL2);
+  ok(rCL2._s === 500 && rCL2._b.error === "Could not cancel." && !/MARKER/.test(JSON.stringify(rCL2._b)), "P3.4/L2: cancel-sub 500 generic, no leak");
+  global.fetch = realFetch;
+  console.error = ce0;
+  ok(/MARKER_UPSTREAM_BOOM/.test(logged), "P3.4/L2: upstream detail still reaches server logs");
+
+  // ---- P3.4/L3: client IP is hashed, never logged raw ----
+  const tagA1 = G.ipTag({ headers: { "x-forwarded-for": "203.0.113.7" } });
+  const tagA2 = G.ipTag({ headers: { "x-forwarded-for": "203.0.113.7" } });
+  const tagB = G.ipTag({ headers: { "x-forwarded-for": "198.51.100.9" } });
+  ok(/^[0-9a-f]{12}$/.test(tagA1), "P3.4/L3: ipTag is 12 hex chars");
+  ok(tagA1 === tagA2 && tagA1 !== tagB, "P3.4/L3: ipTag stable per IP, distinct across IPs");
+  ok(tagA1.indexOf("203.0.113") < 0, "P3.4/L3: ipTag reveals no plaintext IP");
+  const cl0 = console.log; let beaconLog = "";
+  console.log = (...a) => { beaconLog += a.join(" "); };
+  G._resetForTests();
+  await errBeacon({ method: "POST", headers: { "x-forwarded-for": "203.0.113.7" }, body: { page: "p-l3", msg: "m-l3" } }, mkRes());
+  console.log = cl0;
+  ok(/"ipTag":"[0-9a-f]{12}"/.test(beaconLog) && !/"ip":/.test(beaconLog) && beaconLog.indexOf("203.0.113.7") < 0, "P3.4/L3: beacon logs ipTag, never the IP");
+  G._resetForTests();
+
   for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
   Object.assign(process.env, saved);
 

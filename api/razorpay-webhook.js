@@ -14,7 +14,9 @@ module.exports = async function handler(req, res) {
     const raw = await readRaw(req);
     const sig = req.headers["x-razorpay-signature"] || "";
     const expect = crypto.createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET || "").update(raw).digest("hex");
-    if (!sig || sig !== expect) return res.status(401).json({ error: "bad signature" });
+    const sigBuf = Buffer.from(String(sig), "hex"), expBuf = Buffer.from(expect, "hex");
+    const sigOk = sigBuf.length > 0 && sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
+    if (!sigOk) return res.status(401).json({ error: "bad signature" });
 
     const evt = JSON.parse(raw.toString("utf8"));
     const name = evt.event || "";
@@ -53,6 +55,7 @@ module.exports = async function handler(req, res) {
     }
     return res.status(200).json({ status: "ok" });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "webhook failed" });
+    console.error("[razorpay-webhook] 500:", (e && e.message) || e);
+    return res.status(500).json({ error: "webhook failed" });
   }
 };

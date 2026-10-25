@@ -53,6 +53,7 @@ module.exports = async function handler(req, res) {
     });
     return res.status(200).json({ subscription_id: sub.id, key_id: process.env.RAZORPAY_KEY_ID });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Could not start subscription." });
+    console.error("[create-subscription] 500:", (e && e.message) || e);
+    return res.status(500).json({ error: "Could not start subscription." });
   }
 };
