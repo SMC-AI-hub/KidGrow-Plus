@@ -90,3 +90,21 @@ M5 (role CHECKs + owner-only owner-grant). Delivered as one additive migration.
   at 0007+0008 (prod has_0011=false read requested as trailing confirmation).
 - Still owed (trailing): P3.3 Step 0 retro confirmed-email list; P3.4 prod
   has_0011=false read.
+
+## P3.2 staging (`0012_tenant_minting.sql`) — VERIFIED 2026-10-25
+- Commit `6fc9ba3` (0012 + 6 isolation asserts). Decisions (user-confirmed):
+  no per-user cap (audit only); owner-invites owner-only; t_ins email gate.
+- Recon corrections: owner-only invites + role CHECKs (0007) and the
+  m_ins/m_upd owner-rule (0009) already live — 0012 added only the gaps:
+  t_ins email gate, invites.created_by stamp, accept-time inviter recheck
+  (TOCTOU close, NULL-grandfathered), my_created_tenant_count() helper.
+- Same-table audit trigger considered and REJECTED (would break E7 exact-1;
+  couples minting to audit_events availability). Trail = created_by/created_at.
+- Staging: apply Success; C1 gate text live; C2 behavioral (E8-style, u1
+  03389ca1-…) -> 42501 t_ins deny + rollback (first attempt failed on probe
+  bug: role switched before reading auth.users; redone in two runs);
+  C3 helper grants postgres+authenticated only; C4 inviter guard live;
+  E-block v3 E1–E8 PASS (E7 exact-1 intact = no stray 0012 writes).
+- Suite: isolation 166/166, full run exit 0.
+- Prod sequence extended: 0009 -> 0010 -> 0012 (0012 requires 0010).
+- Still owed (trailing): prod has_0011=false read; P3.3 Step 0 retro email list.
