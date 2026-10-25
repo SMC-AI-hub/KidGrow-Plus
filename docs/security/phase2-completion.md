@@ -73,3 +73,20 @@ M5 (role CHECKs + owner-only owner-grant). Delivered as one additive migration.
   they confirm via email link.
 - Prod sequence: 0009 on/after 2026-11-05 FIRST, then 0010; prod's 2
   unconfirmed users go read-only at that point (confirm-or-accept repeats).
+
+## P3.4 staging (`0011_rpc_input_casts.sql` + app L1–L4) — VERIFIED 2026-10-25
+- Commit `d3c345a` (0011 + webhook/billing/guard/err/vercel patches + 19 asserts).
+- Staging: 0011 apply Success; has_0011 true; C1 garbage tenant_id ->
+  P0001 `bad tenant_id`, C2 garbage client_rev -> P0001 `bad client_rev`
+  (both from guard RAISE, no raw 22P02/22007). E-block v3 rerun E1–E8 all
+  PASS — 0011 changed nothing but the two casts.
+- Drill incident (process, no data): C1/C2 first run BEFORE Step A showed raw
+  22P02/22007 with DECLARE-init context, proving old body live; resolved by
+  applying 0011. Also learned: `current_database()` reads `postgres` on BOTH
+  projects — valid tab fingerprint is users=7 + my_email_confirmed=1.
+- Suite: isolation 160/160, api 71/71, hardening 79/79, cloud-offline
+  598/598, full run exit 0.
+- L1–L4 ride the Vercel deploy off the staging push (no SQL). Prod untouched
+  at 0007+0008 (prod has_0011=false read requested as trailing confirmation).
+- Still owed (trailing): P3.3 Step 0 retro confirmed-email list; P3.4 prod
+  has_0011=false read.
