@@ -9,7 +9,8 @@ checkpoints, copy-paste probes, rollback map. Nothing here runs before
 
 - [ ] Date is on/after 2026-11-05.
 - [ ] Prod census re-taken (banked 2026-10-23: 3 users, 1 confirmed /
-  2 unconfirmed — RE-VERIFY, people change):
+  2 unconfirmed; re-taken 2026-10-25 via connector: 4 users, 2 confirmed —
+  RE-VERIFY at the gate, people change):
   `select count(*) as users, count(email_confirmed_at) as confirmed from auth.users;`
 - [ ] Confirm-or-accept decided for every unconfirmed prod user: at 0010 they
   go read-only until they confirm via email link. Either confirm them first

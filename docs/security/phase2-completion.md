@@ -108,3 +108,12 @@ M5 (role CHECKs + owner-only owner-grant). Delivered as one additive migration.
 - Suite: isolation 166/166, full run exit 0.
 - Prod sequence extended: 0009 -> 0010 -> 0012 (0012 requires 0010).
 - Still owed (trailing): prod has_0011=false read; P3.3 Step 0 retro email list.
+
+## Trailing reads cleared 2026-10-25 (via Supabase connector, no user SQL)
+- P3.3 Step 0 retro email list (staging): 7/7 users confirmed — no
+  read-only surprises on staging. (Addresses held in chat, not committed:
+  this repo is public.)
+- P3.4 prod has_0011 read: FALSE — prod untouched at 0007+0008 as required.
+- Prod census drift noted: 2026-10-23 banked 3 users (1 confirmed / 2
+  unconfirmed); 2026-10-25 re-take shows 4 users, 2 confirmed. Nov 5 packet
+  updated; census must still be re-taken at the gate.
