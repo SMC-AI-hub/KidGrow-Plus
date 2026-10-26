@@ -23,7 +23,8 @@ const flag = (v, ga, h, x) => ev(`NicuPure.biliFlag(${v}, ${ga}, ${h}, ${JSON.st
 const advise = (v, ga, h, x) => ev(`NicuPure.biliAdvise(${v}, ${ga}, ${h}, ${JSON.stringify(x || {})})`);
 
 // ---- data present ----
-ok(ev(`KGCONTENT.nicu.biliGuides.risks.length === 11`), "biliGuides: 11 risk factors");
+ok(ev(`KGCONTENT.nicu.biliGuides.risks.length === 16`), "biliGuides: 16 risk factors (11 G3 + 5 G5 AAP)");
+ok(ev(`KGCONTENT.nicu.biliGuides.risks.filter(r => r.aap).map(r => r.id).sort().join(",") === "albuminLow,datPos,g6pd,otherHemolytic,sepsis,unstable24"`), "biliGuides: 6 AAP neurotox tags (prematurity via GA column)");
 ok(ev(`KGCONTENT.nicu.biliGuides.risks.filter(r => r.nice141).map(r => r.id).join(",") === "sibPhoto,bfIntent"`), "biliGuides: NICE 1.4.1 subset = sibPhoto + bfIntent");
 ok(ev(`KGCONTENT.nicu.biliGuides.nnf.tcbMargin === 50 && KGCONTENT.nicu.biliGuides.iap.followRiskHrs === 24`), "biliGuides: NNF-50 / IAP-24h constants");
 
@@ -84,10 +85,12 @@ ok((() => { const a = ev(`NicuPure.biliStop(200, 39, 48, true)`), b = ev(`NicuPu
 setDB({ guideBili: "nnf" });
 ok(ev(`NicuPure.biliMode()`) === "nice" && flag(230, 39, 48, { kind: "tcb" }).src === "nice", "gated nnf request still NICE");
 
-// ---- AAP placeholder (G5 engine pending) ----
+// ---- AAP live (G5 engine) + out-of-scope delegation ----
 setDB({ guideBili: "aap", guideEnabled: { bili_aap: true } });
-ok(flag(210, 39, 48).text.indexOf("repeat in 6h") >= 0, "aap now: NICE Table-1 fallback");
-ok(advise(210, 39, 48, {}).join(";").indexOf("G5") >= 0, "aap now: G5 placeholder line");
+ok((() => { const r = flag(210, 39, 48, {}); return r.src === "aap" && r.band === "below"; })(), "aap live: real AAP band (G5 engine)");
+ok(advise(210, 39, 48, {}).join(";").indexOf("G5") < 0, "aap live: G5 placeholder gone");
+ok((() => { const r = flag(210, 34, 48, {}); return r.src === "aap-oos" && r.band === "photo"; })(), "aap <35w: NICE delegation, labelled oos");
+ok(advise(210, 34, 48, {}).join(";").indexOf("Outside AAP scope") >= 0, "aap <35w: explicit out-of-scope line");
 
 // ---- chip integration ----
 setDB({});

@@ -293,7 +293,8 @@
     "id": "g6pd",
     "label": "G6PD deficiency / high-prevalence setting",
     "iap": true,
-    "nnf": true
+    "nnf": true,
+    "aap": true
    },
    {
     "id": "cephalo",
@@ -336,6 +337,31 @@
     "label": "Primipara mother",
     "iap": false,
     "nnf": true
+   },
+   {
+    "id": "albuminLow",
+    "label": "Albumin <3.0 g/dL",
+    "aap": true
+   },
+   {
+    "id": "datPos",
+    "label": "DAT (Coombs) positive / isoimmune haemolysis",
+    "aap": true
+   },
+   {
+    "id": "otherHemolytic",
+    "label": "Other haemolytic condition",
+    "aap": true
+   },
+   {
+    "id": "sepsis",
+    "label": "Sepsis",
+    "aap": true
+   },
+   {
+    "id": "unstable24",
+    "label": "Clinical instability in past 24h",
+    "aap": true
    }
   ],
   "autoPreterm38": true,

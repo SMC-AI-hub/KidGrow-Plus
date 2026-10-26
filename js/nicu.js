@@ -194,10 +194,10 @@ function biliMode() {
   try {
     if (typeof guideEffective === "function") {
       var m = guideEffective("bili");
-      if (m === "iap" || m === "nnf") return m;
+      if (m === "iap" || m === "nnf" || m === "aap") return m;
     }
   } catch (e) {}
-  return "nice"; /* aap falls through to nice until the G5 engine lands */
+  return "nice";
 }
 function biliGPack() { try { var P = nicuPack(); return (P && P.biliGuides) || null; } catch (e) { return null; } }
 function biliRiskDef(id) {
@@ -266,9 +266,10 @@ function biliAdvise(tsbUmol, gaWk, ageHrs, x) {
   var lines = [];
   try {
     var v = +tsbUmol, h = +ageHrs; if (!(v > 0) || !(h >= 0)) return lines;
+    var mode = biliMode(), cx = x || {};
+    if (mode === "aap") return biliAapAdvise(v, gaWk, h, cx);
     var t = biliThreshold(gaWk, ageHrs);
     if (!t || t.note || t.photo == null) return lines;
-    var mode = biliMode(), cx = x || {};
     var G = biliGPack() || {};
     var N = G.nnf || {}, F = G.mohfwFollowup || {};
     var onPhoto = cx.photo === "on", offPhoto = cx.photo === "off";
@@ -300,9 +301,6 @@ function biliAdvise(tsbUmol, gaWk, ageHrs, x) {
       else if (h >= (F.noRiskMinH || 24) && h <= (F.noRiskMaxH || 72)) lines.push("follow-up: review " + (F.noRiskVisit || "48h") + " after discharge [NNF/MoHFW]");
       else if (h > (F.noRiskMaxH || 72)) lines.push("follow-up: " + (F.lateVisit || "optional") + " after discharge (no risk factors) [NNF/MoHFW]");
     }
-    try {
-      if (typeof guideEffective === "function" && guideEffective("bili") === "aap") lines.push("AAP 2022 engine lands in G5 — thresholds above are NICE meanwhile.");
-    } catch (e) {}
   } catch (e) {}
   return lines;
 }
@@ -315,7 +313,7 @@ function biliRiskChecksHTML() {
   } catch (e) { return ""; }
 }
 function biliFormSrcLabel() {
-  try { var m = biliMode(); return m === "iap" ? "NICE line · IAP advice" : m === "nnf" ? "NICE line · NNF advice" : "NICE CG98"; } catch (e) { return "NICE CG98"; }
+  try { var m = biliMode(); return m === "iap" ? "NICE line · IAP advice" : m === "nnf" ? "NICE line · NNF advice" : m === "aap" ? "AAP 2022" : "NICE CG98"; } catch (e) { return "NICE CG98"; }
 }
 function biliFormPendBadge() {
   try {
@@ -335,8 +333,128 @@ function biliCheckedRisks() {
   } catch (e) {}
   return out;
 }
+/* G5: AAP 2022 engine — own nomogram curves (GA 35-40+ x neurotox risk),
+   escalation band, distance-based follow-up. Thresholds in mg/dL (source
+   unit); inputs converted for comparison, texts quoted in mg/dL. */
+function aapPack() { try { return (typeof KGCONTENT !== "undefined" && KGCONTENT && KGCONTENT.aapbili) || null; } catch (e) { return null; } }
+function aapHasRisk(cx) {
+  cx = cx || {};
+  var ids = cx.risks || [];
+  for (var i = 0; i < ids.length; i++) { var d = biliRiskDef(ids[i]); if (d && d.aap) return true; }
+  return false;
+}
+function aapInterp(col, hours, h) {
+  if (h <= hours[0]) return col[0];
+  for (var i = 1; i < hours.length; i++) {
+    if (h <= hours[i]) {
+      var t = (h - hours[i - 1]) / (hours[i] - hours[i - 1]);
+      return Math.round((col[i - 1] + t * (col[i] - col[i - 1])) * 10) / 10;
+    }
+  }
+  return col[col.length - 1];
+}
+/* Hour-specific AAP thresholds (mg/dL). null = out of scope (caller shows
+   NICE meanwhile); {note} = beyond figure range. GA = completed weeks. */
+function aapThreshold(gaWk, ageHrs, cx) {
+  var P = aapPack();
+  var ga = (gaWk == null || gaWk === "") ? null : +gaWk;
+  var h = +ageHrs;
+  if (!P || !P.hours) return null;
+  if (!(h >= 0)) return null;
+  if (h > (P.maxHrs || 336)) return { note: "Beyond AAP figure range (" + (P.maxHrs || 336) + "h) — use unit protocol." };
+  if (ga == null || isNaN(ga) || ga < (P.scopeGaMin || 35)) return null;
+  var col = ga >= 40 ? "40" : String(Math.floor(ga));
+  var rk = aapHasRisk(cx) ? "any" : "none";
+  if (!P.photo[rk] || !P.photo[rk][col] || !P.exch[rk] || !P.exch[rk][col]) return null;
+  var hh = h < 1 ? 1 : h;
+  return { photoMg: aapInterp(P.photo[rk][col], P.hours, hh), exchMg: aapInterp(P.exch[rk][col], P.hours, hh), risk: rk === "any", gaCol: col, dispGa: ga >= 40 ? "\u226540" : col };
+}
+function aapSub(v, gaWk, h, cx, conv) {
+  var T = aapThreshold(gaWk, h, cx);
+  if (!T || T.note) return { band: "info", tier: "info", text: (T && T.note) || "AAP curve unavailable.", src: "aap" };
+  var R = (aapPack() || {}).rules || {};
+  var escBelow = (R.escalationBelowExchMg == null ? 2.0 : +R.escalationBelowExchMg);
+  var vMg = Math.round(v / conv * 10) / 10;
+  var esc = Math.round((T.exchMg - escBelow) * 10) / 10;
+  var tag = T.dispGa + "w " + (T.risk ? "risk" : "no-risk");
+  if (vMg >= T.exchMg) return { band: "exchange", tier: "warn", text: "TSB " + vMg + " mg/dL at/above EXCHANGE level (" + T.exchMg + ", " + tag + ") — initiate urgent exchange transfusion; intensive photo + hydration + TSB q2h meanwhile. IVIG 0.5-1 g/kg option if DAT+. [AAP]", src: "aap" };
+  if (vMg >= esc) return { band: "escalation", tier: "warn", text: "TSB " + vMg + " mg/dL within 2 of exchange (" + T.exchMg + ", " + tag + ") — ESCALATION: emergent intensive phototherapy + PO/IV hydration, urgent transfer to exchange-capable NICU, STAT labs + blood bank, TSB q2h. [AAP]", src: "aap" };
+  if (vMg >= T.photoMg) return { band: "photo", tier: "warn", text: "TSB " + vMg + " mg/dL at/above phototherapy line (" + T.photoMg + ", " + tag + ") — start intensive phototherapy. [AAP]", src: "aap" };
+  var d = Math.round((T.photoMg - vMg) * 10) / 10;
+  return { band: "below", tier: "info", text: "TSB " + vMg + " mg/dL, " + d + " below photo line (" + T.photoMg + ", " + tag + "). [AAP]", src: "aap" };
+}
+/* AAP flag with graceful scope fallback: <35w / unknown GA / missing pack
+   delegate to NICE (src aap-oos) — never silent, always labelled. */
+function biliAapFlag(v, gaWk, h, cx) {
+  var ga = (gaWk == null || gaWk === "") ? null : +gaWk;
+  var P = aapPack();
+  if (P && ga != null && !isNaN(ga) && ga >= (P.scopeGaMin || 35)) {
+    var conv = ((nicuPack() || {}).mgdlToUmol) || 17.1;
+    return aapSub(v, gaWk, h, cx, conv);
+  }
+  var t = biliThreshold(gaWk, h);
+  if (!t || t.note || t.photo == null) return t && t.note ? { band: "info", tier: "info", text: t.note, src: "aap-oos" } : null;
+  if (t.exchange != null && v > t.exchange) return { band: "exchange", tier: "warn", text: "Bilirubin " + v + " above EXCHANGE level (" + t.exchange + ") — urgent senior review.", src: "aap-oos" };
+  if (v > t.photo) return { band: "photo", tier: "warn", text: "Bilirubin " + v + " above phototherapy line (" + t.photo + ") — start/reassess phototherapy.", src: "aap-oos" };
+  var sub = biliNiceSub(v, gaWk, h, t, cx);
+  if (sub) sub.src = "aap-oos";
+  return sub;
+}
+function biliAapAdvise(v, gaWk, h, cx) {
+  var lines = [];
+  var P = aapPack() || {};
+  var R = P.rules || {};
+  var ga = (gaWk == null || gaWk === "") ? null : +gaWk;
+  if (ga == null || isNaN(ga)) { lines.push("GA unknown — record completed weeks to apply AAP curves (NICE shown meanwhile). [AAP]"); return lines; }
+  if (ga < (P.scopeGaMin || 35)) { lines.push("Outside AAP scope (<35w) — use NNF/NICE; NICE line shown meanwhile. [AAP]"); return lines; }
+  var conv = ((nicuPack() || {}).mgdlToUmol) || 17.1;
+  var vMg = Math.round(v / conv * 10) / 10;
+  var T = aapThreshold(gaWk, h, cx);
+  if (!T || T.note) { if (T && T.note) lines.push(T.note + " [AAP]"); return lines; }
+  var onPhoto = cx.photo === "on", offPhoto = cx.photo === "off";
+  var rks = cx.risks || [];
+  var datPos = rks.indexOf("datPos") >= 0;
+  var haem = cx.haem === true || datPos || rks.indexOf("otherHemolytic") >= 0;
+  var startH = (cx.photoStartHrs == null || cx.photoStartHrs === "") ? null : +cx.photoStartHrs;
+  if (onPhoto) {
+    if (startH != null && isFinite(startH)) {
+      var T0 = aapThreshold(gaWk, startH, cx);
+      var stopBelow = (R.stopBelowStartMg == null ? 2.0 : +R.stopBelowStartMg);
+      if (T0 && !T0.note && vMg <= Math.round((T0.photoMg - stopBelow) * 10) / 10) {
+        lines.push("consider stopping — \u2265" + stopBelow + " below start threshold (" + T0.photoMg + " at " + startH + "h). [AAP]");
+        if (ga < 38 || startH < 48 || haem) lines.push("consider longer — rebound risks (GA<38 / start<48h / haemolysis). [AAP]");
+      }
+      if (vMg > T.photoMg && (h - startH) <= 24) lines.push(haem ? "haemolysis concern above line — recheck TSB within 3-6h of starting photo. [AAP]" : "recheck TSB within 12-24h of starting photo (low haemolysis concern). [AAP]");
+    } else {
+      lines.push("record photo-start age to apply the \u22652-below-start stopping rule. [AAP]");
+    }
+  }
+  if (offPhoto) {
+    var early = (R.reboundStartEarlyH == null ? 48 : +R.reboundStartEarlyH);
+    if ((startH != null && startH < early) || datPos || haem) lines.push("TSB 6-12h after stopping + repeat next day (rebound risk). [AAP]");
+    else if (startH == null) lines.push("TSB 6-12h after stopping + repeat next day (start age unknown). [AAP]");
+    else lines.push("repeat bilirubin next day. [AAP]");
+  }
+  if (cx.kind === "tcb") {
+    var hiMg = (R.tcbConfirmHighMg == null ? 15 : +R.tcbConfirmHighMg);
+    var nearMg = (R.tcbConfirmNearMg == null ? 3.0 : +R.tcbConfirmNearMg);
+    if (vMg >= hiMg || vMg >= Math.round((T.photoMg - nearMg) * 10) / 10) lines.push("confirm with TSB — TcB \u2265" + hiMg + " or within " + nearMg + " of photo line. [AAP]");
+  }
+  if (vMg < T.photoMg) {
+    var d = Math.round((T.photoMg - vMg) * 10) / 10;
+    var rows = R.followBelow || [];
+    var txt = "follow-up per clinical judgment.";
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].belowLt == null || d < rows[i].belowLt) { txt = rows[i].text; break; }
+    }
+    lines.push(d + " below photo line (" + T.photoMg + ", " + T.dispGa + "w " + (T.risk ? "risk" : "no-risk") + ") — " + txt + " [AAP]");
+  }
+  return lines;
+}
 function biliFlag(tsbUmol, gaWk, ageHrs, x) {
   var v = +tsbUmol; if (!(v > 0)) return null;
+  var mode0 = biliMode(), cx0 = x || {};
+  if (mode0 === "aap") return biliAapFlag(v, gaWk, ageHrs, cx0);
   var t = biliThreshold(gaWk, ageHrs);
   if (!t || t.note || t.photo == null) return t && t.note ? { band: "info", tier: "info", text: t.note } : null;
   var mode = biliMode(), cx = x || {};
@@ -441,7 +559,7 @@ function roundBiliChip(r, gaWk) {
     if (!(v > 0) || !(h >= 0)) return "";
     var P = nicuPack(); var conv = (P && P.mgdlToUmol) || 17.1;
     var umol = (b.unit === "mgdl") ? Math.round(v * conv) : Math.round(v);
-    var cx = { kind: b.kind, risks: b.risks, well: b.well, haem: b.haem, photo: b.photo };
+    var cx = { kind: b.kind, risks: b.risks, well: b.well, haem: b.haem, photo: b.photo, photoStartHrs: b.photoStartHrs };
     var f = biliFlag(umol, gaWk, h, cx);
     var adv = biliAdvise(umol, gaWk, h, cx);
     var s = "Bili " + v + (b.unit === "mgdl" ? "" : "\u00b5") + "@" + h + "h";
@@ -459,6 +577,7 @@ window.NicuPure = {
   handoverHTML: handoverHTML,
   dolOf: dolOf, biliThreshold: biliThreshold, biliFlag: biliFlag, biliStop: biliStop, biliRise: biliRise,
   biliMode: biliMode, biliAdvise: biliAdvise, biliModeRisks: biliModeRisks,
+  aapThreshold: aapThreshold, aapHasRisk: aapHasRisk,
   fluidGuide: fluidGuide, sepsisAbxDays: sepsisAbxDays, bundleScore: bundleScore,
   boardSort: boardSort, respLabel: respLabel, respRank: respRank,
   roundRespChip: roundRespChip, roundBiliChip: roundBiliChip
@@ -583,6 +702,7 @@ function renderNicu() {
           "<div><label>Sample</label><select id='nrTsbKind'><option value=''>—</option><option value='tsb'>TSB (serum)</option><option value='tcb'>TcB (skin)</option></select></div>" +
           "<div><label>Age at sample (hrs)</label><input type='number' id='nrBiliHrs' placeholder='49'></div>" +
           "<div><label>Phototherapy</label><select id='nrPhoto'><option value=''>—</option><option value='on'>on phototherapy</option><option value='off'>stopped today</option></select></div>" +
+          "<div><label>Photo started at (hrs)</label><input type='number' id='nrPhotoStart' placeholder='50'></div>" +
           "<div><label>Baby well? (NICE 1.4)</label><select id='nrWell'><option value=''>—</option><option value='yes'>well</option><option value='no'>unwell</option></select></div>" +
           "<div><label>Haemolysis?</label><select id='nrHaem'><option value=''>—</option><option value='no'>no</option><option value='yes'>yes</option></select></div></div>" +
           "<div><label>Jaundice risk factors</label><div style='display:flex;flex-wrap:wrap;gap:4px 12px'>" + biliRiskChecksHTML() + "</div></div>" +
@@ -654,7 +774,7 @@ window.saveNicuRound = function () {
     id: uid(), date: $("nrDate").value, wtG: $("nrWt").value,
     vitals: vit,
     resp: gv("nrResp") ? { mode: gv("nrResp"), fio2: gv("nrFio2"), pip: gv("nrPip"), peep: gv("nrPeep") } : {},
-    bili: gv("nrTsb") !== "" ? { tsb: +gv("nrTsb"), unit: gv("nrTsbU"), kind: gv("nrTsbKind") || null, ageHrs: gv("nrBiliHrs"), photo: gv("nrPhoto"), well: gv("nrWell") === "yes" ? true : gv("nrWell") === "no" ? false : null, haem: gv("nrHaem") === "yes" ? true : gv("nrHaem") === "no" ? false : null, risks: biliCheckedRisks() } : {},
+    bili: gv("nrTsb") !== "" ? { tsb: +gv("nrTsb"), unit: gv("nrTsbU"), kind: gv("nrTsbKind") || null, ageHrs: gv("nrBiliHrs"), photo: gv("nrPhoto"), photoStartHrs: gv("nrPhotoStart"), well: gv("nrWell") === "yes" ? true : gv("nrWell") === "no" ? false : null, haem: gv("nrHaem") === "yes" ? true : gv("nrHaem") === "no" ? false : null, risks: biliCheckedRisks() } : {},
     sepsis: (gv("nrSepsis") || gv("nrCulture") || gv("nrAbx") || gv("nrAbxStart")) ? { screen: gv("nrSepsis"), culture: gv("nrCulture").trim(), abx: gv("nrAbx").trim(), abxStart: gv("nrAbxStart") } : {},
     feeds: $("nrFeed").value ? { totalMl: +$("nrFeed").value } : {},
     fluids: (gv("nrIv") !== "" || gv("nrFeedType")) ? { ivMl: gv("nrIv"), feedType: gv("nrFeedType") } : {},
@@ -673,7 +793,7 @@ window.saveNicuRound = function () {
       var bTs = parseFloat((r.bili || {}).tsb), bHr = parseFloat((r.bili || {}).ageHrs);
       if (bTs > 0 && bHr >= 0) {
         var umol = (r.bili.unit === "mgdl") ? Math.round(bTs * conv) : Math.round(bTs);
-        var bf = biliFlag(umol, act.ga, bHr, { kind: r.bili.kind, risks: r.bili.risks, well: r.bili.well, haem: r.bili.haem, photo: r.bili.photo });
+        var bf = biliFlag(umol, act.ga, bHr, { kind: r.bili.kind, risks: r.bili.risks, well: r.bili.well, haem: r.bili.haem, photo: r.bili.photo, photoStartHrs: r.bili.photoStartHrs });
         if (bf && bf.tier === "warn") Alerts.raise("warn", "NICU-BILI", c.name + ": " + bf.text);
         var prev = null;
         (act.rounds || []).forEach(function (x) { if (x.id !== r.id && x.date <= r.date && x.bili && parseFloat(x.bili.tsb) > 0 && parseFloat(x.bili.ageHrs) >= 0) prev = x; });
