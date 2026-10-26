@@ -1,7 +1,8 @@
 # Guideline Sources Plan — AIIMS/AAP (TSH) + IAP/NNF (jaundice) + HL2026 (F1a)
 
-Owner decisions (2026-10-26): no AAP for jaundice — IAP/NNF selectable; global default + per-module
-override; global default AIIMS; F1a implement-first, validator confirms vs HL2026 print.
+Owner decisions (2026-10-26): jaundice modes = NICE + IAP + NNF + AAP (the earlier "no AAP" was a
+typo — AAP linked alongside, corrected same day); global default + per-module override; global default AIIMS;
+F1a implement-first, validator confirms vs HL2026 print.
 Standing rule applies: build phase by phase, report + STOP after each; validator sign-off gates rollout.
 
 ## Research bank (all primary, fetched 2026-10-25/26)
@@ -20,6 +21,12 @@ Standing rule applies: build phase by phase, report + STOP after each; validator
 - **F1a:** HL-aligned ibuprofen <6mo avoidance corroborated by two HL-citing charts (CMA 2021 citing HL
   16th; MIT citing HL) + AAP fever report lower age limits (APAP 3mo / ibu 6mo). Exact HL2026 formulary
   text paywalled → validator confirms against print copy.
+- **AAP jaundice (G5):** AAP CPG Revision, Pediatrics 150(3):e2022058859 (Aug 2022, valid through Aug 2027)
+  + Technical Report, Pediatrics 154(3):e2024068026 (Sep 2024). Already banked: escalation-of-care = 2 mg/dL
+  below exchange; discontinuation when ≥2 mg/dL below the hour-specific start threshold; follow-up by
+  distance-to-threshold (≤1.9 do-not-discharge / 2-3.4 TSB in 4-24h / 3.4-5.4 in 1-2d); post-photo TSB 6-12h
+  + next-day if <48h/DAT+/haemolytic else next-day. Nomogram curves (GA 35/36/37/38/39/≥40w × ±neurotoxicity
+  risk) to be transcribed from CPG figures during G5 + validator-checked.
 - **Scope saver:** NNF uses NICE thresholds and IAP defers to NICE/AAP charts → IAP/NNF modes need NO new
   threshold engine. The app's validated NICE table stays; only sub-threshold/monitoring/follow-up rules vary.
 
@@ -27,8 +34,9 @@ Standing rule applies: build phase by phase, report + STOP after each; validator
 
 - Global setting `guideSource` (default `aiims`) + per-module overrides (`guideTSH`, `guideBili`).
 - Fallback: module override → global if the module supports it → module default.
-- Support map: TSH = aiims / aap / mayo (mayo retained, validated); bili = nice / iap / nnf.
+- Support map: TSH = aiims / aap / mayo (mayo retained, validated); bili = nice / iap / nnf / aap.
   Bili does not support `aiims` (AIIMS jaundice chapter text not sourced) → falls back to module default.
+  The `aap` bili slot is framework-ready in G1 but lands functionally in G5.
 - **Safe rollout:** new modes ship behind per-mode "validator enabled" flags (same pattern as the existing
   "NICU case-validated" setting). Pre-sign-off behaviour = status quo (Mayo + NICE). Post-sign-off defaults:
   TSH → aiims, bili → nnf (Indian neonatal authority; validator may pick iap instead).
@@ -73,8 +81,19 @@ Standing rule applies: build phase by phase, report + STOP after each; validator
   hard block. No other F1 rows touched (stay IAP/Nelson-sourced).
 - Tests: gate-boundary asserts (5.9mo ibu gated, 6.0mo clear; 2.9mo para gated, 3.0mo clear).
 
+## G5 — AAP 2022 jaundice mode (full engine; sequenced last — biggest build)
+
+Unlike IAP/NNF (which reuse NICE thresholds), AAP 2022 needs its own threshold engine:
+- Phototherapy + exchange nomogram curves by GA week (35/36/37/38/39/≥40) × ±neurotoxicity-risk
+  (GA<38, isoimmune haemolysis, G6PD, sepsis/instability, albumin<3), transcribed from CPG figures.
+- Escalation-of-care band (2 mg/dL below exchange); discontinuation (≥2 below start threshold);
+  distance-to-threshold follow-up table; post-photo TSB timing (6-12h + next-day vs next-day).
+- Scope ≥35w only (CPG range); <35w in aap mode → explicit "outside AAP scope, use NNF/NICE" message.
+- Own transcription-validation pass (validator checks curves against CPG figures) before enable-flag.
+- May run after Nov 5 if G1-G4 fill the window — G1 framework already reserves the slot.
+
 ## Build order + gates
 
-G1 → G2 → G3 → G4. Each: implement + suite-green + commit + report + STOP. Validator enables each mode
-after countersigning (sheets: TSH aiims/aap, bili iap/nnf, F1a vs HL2026 print). Nov-5 security gate unaffected
-(all clinical-content, additive + flagged).
+G1 → G2 → G3 → G4 → G5. Each: implement + suite-green + commit + report + STOP. Validator enables each mode
+after countersigning (sheets: TSH aiims/aap, bili iap/nnf/aap, F1a vs HL2026 print). Nov-5 security gate
+unaffected (all clinical-content, additive + flagged).
