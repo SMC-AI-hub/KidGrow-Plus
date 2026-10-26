@@ -1,1 +1,169 @@
-{"source":"NeoKid Care Phase 7 — CBC/urine/TSH mini-panels. WBC bands: URMC Health Encyclopedia + Seattle Children's lab ranges. Platelets 150–450 (ABPath pediatric CBC). TSH: Mayo Clinic Labs pediatric s-TSH. Urine: dipstick reading guide (flag ≥1+). Screening flags only — confirm against the reporting lab's own ranges.","version":"2026.1-p7","last_reviewed":null,"verification":"PENDING — every threshold needs clinician verification before real-world use","wbc":{"unit":"x10^9/L","bands":[{"maxD":14,"lo":9,"hi":30},{"maxD":60,"lo":5,"hi":21},{"maxM":72,"lo":5,"hi":19},{"maxM":null,"lo":4.5,"hi":13.5}]},"platelet":{"unit":"x10^9/L","lo":150,"hi":450,"critLo":50,"critHi":1000},"tsh":{"unit":"mIU/L","bands":[{"maxM":12,"lo":0.7,"hi":8.4},{"maxM":72,"lo":0.7,"hi":6},{"maxM":132,"lo":0.6,"hi":4.8},{"maxM":null,"lo":0.5,"hi":4.3}]},"urine":{"grades":["Negative","Trace","1+","2+","3+"],"notes":{"protein":"Protein ≥1+ — repeat clean-catch + quantify (UPCR); persistent proteinuria needs renal workup.","leuco":"Leucocytes + nitrite together suggest UTI — send culture before antibiotics.","nitrite":"Nitrite positive — bacterial conversion; correlate with leucocytes + symptoms, send culture.","blood":"Haematuria — exclude UTI, stones, GN (check BP + protein + creatinine); refer if persistent.","glucose":"Glycosuria — check blood glucose + HbA1c; new finding needs same-day review.","ketones":"Ketonuria — if diabetic/ill, check glucose + gases; DKA risk. If starvation, rehydrate + retest."}},"recheck":{"moderate_days":28,"mild_days":56}}
+{
+ "source": "NeoKid Care Phase 7 \u2014 CBC/urine/TSH mini-panels. WBC bands: URMC Health Encyclopedia + Seattle Children's lab ranges. Platelets 150\u2013450 (ABPath pediatric CBC). TSH: Mayo Clinic Labs pediatric s-TSH. Urine: dipstick reading guide (flag \u22651+). Screening flags only \u2014 confirm against the reporting lab's own ranges.",
+ "version": "2026.1-p7",
+ "last_reviewed": null,
+ "verification": "PENDING \u2014 every threshold needs clinician verification before real-world use",
+ "wbc": {
+  "unit": "x10^9/L",
+  "bands": [
+   {
+    "maxD": 14,
+    "lo": 9,
+    "hi": 30
+   },
+   {
+    "maxD": 60,
+    "lo": 5,
+    "hi": 21
+   },
+   {
+    "maxM": 72,
+    "lo": 5,
+    "hi": 19
+   },
+   {
+    "maxM": null,
+    "lo": 4.5,
+    "hi": 13.5
+   }
+  ]
+ },
+ "platelet": {
+  "unit": "x10^9/L",
+  "lo": 150,
+  "hi": 450,
+  "critLo": 50,
+  "critHi": 1000
+ },
+ "tsh": {
+  "unit": "mIU/L",
+  "bands": [
+   {
+    "maxM": 12,
+    "lo": 0.7,
+    "hi": 8.4
+   },
+   {
+    "maxM": 72,
+    "lo": 0.7,
+    "hi": 6
+   },
+   {
+    "maxM": 132,
+    "lo": 0.6,
+    "hi": 4.8
+   },
+   {
+    "maxM": null,
+    "lo": 0.5,
+    "hi": 4.3
+   }
+  ]
+ },
+ "urine": {
+  "grades": [
+   "Negative",
+   "Trace",
+   "1+",
+   "2+",
+   "3+"
+  ],
+  "notes": {
+   "protein": "Protein \u22651+ \u2014 repeat clean-catch + quantify (UPCR); persistent proteinuria needs renal workup.",
+   "leuco": "Leucocytes + nitrite together suggest UTI \u2014 send culture before antibiotics.",
+   "nitrite": "Nitrite positive \u2014 bacterial conversion; correlate with leucocytes + symptoms, send culture.",
+   "blood": "Haematuria \u2014 exclude UTI, stones, GN (check BP + protein + creatinine); refer if persistent.",
+   "glucose": "Glycosuria \u2014 check blood glucose + HbA1c; new finding needs same-day review.",
+   "ketones": "Ketonuria \u2014 if diabetic/ill, check glucose + gases; DKA risk. If starvation, rehydrate + retest."
+  }
+ },
+ "recheck": {
+  "moderate_days": 28,
+  "mild_days": 56
+ },
+ "tshNeo": {
+  "unit": "mIU/L, SERUM units (serum TSH ~= 2.2x whole-blood DBS; convert before interpreting)",
+  "source": "Table II age-specific TSH reference, Behura et al, Indian Pediatr 2023;60:855-856 (term day-points + preterm GA 95th-percentile uppers); action cutoffs ISPAE-2018 vs AAP-2023, same article Table I. Preterm printed ranges used at their UPPER end (11.8 / 9) to minimise false positives.",
+  "termBands": [
+   {
+    "maxD": 0,
+    "lo": 2.22,
+    "hi": 10.66,
+    "tag": "cord"
+   },
+   {
+    "maxD": 1,
+    "lo": 2.69,
+    "hi": 26.5,
+    "tag": "day 1"
+   },
+   {
+    "maxD": 3,
+    "lo": 2.8,
+    "hi": 18.6,
+    "tag": "day 3"
+   },
+   {
+    "maxD": 7,
+    "lo": 1.34,
+    "hi": 12.08,
+    "tag": "day 7"
+   },
+   {
+    "maxD": 10,
+    "lo": 1.19,
+    "hi": 10.72,
+    "tag": "day 10"
+   },
+   {
+    "maxD": 14,
+    "lo": 1.72,
+    "hi": 7.87,
+    "tag": "day 14"
+   },
+   {
+    "maxD": 28,
+    "lo": 2.02,
+    "hi": 4.9,
+    "tag": "day 28"
+   }
+  ],
+  "pretermHi": [
+   {
+    "gaLo": 22,
+    "gaHi": 27,
+    "wk1": 14,
+    "wk34": 11.8,
+    "pma36": 9
+   },
+   {
+    "gaLo": 28,
+    "gaHi": 31,
+    "wk1": 13.1,
+    "wk34": 9,
+    "pma36": 8
+   }
+  ],
+  "pretermWindowD": 60,
+  "persistWindowD": 90,
+  "ispae": {
+   "treatNow": 80,
+   "confirmNow": 40,
+   "repeatLo": 20,
+   "repeatWindow": "7-10 days",
+   "ft4Treat": 1.1,
+   "t4Treat": 8,
+   "persistTsh": 10,
+   "persistAgeD": 21,
+   "persistLabel": "beyond 3 wk"
+  },
+  "aap": {
+   "treatNow": 40,
+   "screen24_48": 34,
+   "confirmTreat": 20,
+   "persistTsh": 10,
+   "persistAgeD": 28,
+   "persistLabel": "beyond 4 wk"
+  }
+ }
+}
