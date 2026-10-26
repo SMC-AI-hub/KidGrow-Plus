@@ -57,5 +57,10 @@ ok(ev(`guideRequested("zzz") === null && guideEffective("zzz") === null && guide
 ok(ev(`guideEnabled("tsh", "mayo") && guideEnabled("bili", "nice")`), "status quo always enabled, even with empty gates");
 ok(ev(`guideEnabled("tsh", "xyz") === false && guideEnabled("zzz", "mayo") === false`), "unknown mode/module never enabled");
 
+// ---- production wiring (G1 gap, caught pre-merge): framework must load + persist ----
+ok(fs.readFileSync(path.join(R, "index.html"), "utf8").includes('<script src="js/guides.js"></script>'), "wiring: index.html loads guides.js");
+ok(fs.readFileSync(path.join(R, "sw.js"), "utf8").includes('"./js/guides.js"'), "wiring: sw SHELL caches guides.js");
+ok((() => { const a = fs.readFileSync(path.join(R, "js/app.js"), "utf8"); const i = a.indexOf("function saveSettings()"); const j = a.indexOf("function savePrintPref()"); const body = a.slice(i, j); return body.includes("sGuideSource") && body.includes("guideEnabled:"); })(), "wiring: saveSettings persists guide keys");
+
 console.log(`guides: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

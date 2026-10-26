@@ -2009,7 +2009,10 @@ function saveSettings() {
   const lm = document.getElementById("sLockMins"), scp0 = document.getElementById("sColorPrint");
   const snv = document.getElementById("sNicuValid");
   const sgst = document.getElementById("sGstin");
-  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), gstin: sgst ? sgst.value.trim().toUpperCase() : ((DB.settings || {}).gstin || ""), addr: $("sAddr").value.trim(), phone: $("sPhone").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15"), colorPrint: scp0 ? scp0.checked : ((DB.settings || {}).colorPrint !== false), nicuValid: snv ? snv.checked : !!((DB.settings || {}).nicuValid) });
+  const sgs0 = document.getElementById("sGuideSource"), sgt0 = document.getElementById("sGuideTSH"), sgb0 = document.getElementById("sGuideBili");
+  const gE0 = {}; [["sGuideTshAiims", "tsh_aiims"], ["sGuideTshAap", "tsh_aap"], ["sGuideBiliIap", "bili_iap"], ["sGuideBiliNnf", "bili_nnf"], ["sGuideBiliAap", "bili_aap"]].forEach(function (pair) { const el = document.getElementById(pair[0]); if (el) gE0[pair[1]] = el.checked; });
+  const prevG = (DB.settings || {});
+  DB.settings = Object.assign({}, DB.settings, { clinic: $("sClinic").value.trim(), doctor: $("sDoctor").value.trim(), reg: $("sReg").value.trim(), gstin: sgst ? sgst.value.trim().toUpperCase() : ((DB.settings || {}).gstin || ""), addr: $("sAddr").value.trim(), phone: $("sPhone").value.trim(), lockMins: lm ? lm.value.trim() : ((DB.settings || {}).lockMins || "15"), colorPrint: scp0 ? scp0.checked : ((DB.settings || {}).colorPrint !== false), nicuValid: snv ? snv.checked : !!((DB.settings || {}).nicuValid), guideSource: sgs0 ? sgs0.value : (prevG.guideSource || "aiims"), guideTSH: sgt0 ? sgt0.value : (prevG.guideTSH || "auto"), guideBili: sgb0 ? sgb0.value : (prevG.guideBili || "auto"), guideEnabled: Object.assign({}, prevG.guideEnabled, gE0) });
   save(); syncChildPicker(); renderBrand(); applyPrintMode(); alert("Clinic profile saved.");
 }
 function savePrintPref() { const scp = $("sColorPrint"); if (!scp) return; DB.settings = Object.assign({}, DB.settings, { colorPrint: scp.checked }); save(); applyPrintMode(); toast(scp.checked ? "Color printing on 🎨" : "Ink-saver B&W printing on"); }
