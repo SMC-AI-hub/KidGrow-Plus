@@ -1,1 +1,297 @@
-{"source":"NeoKid Care Phase 3 — safety envelopes around the app's DRUGS formulary (standard paediatric references; IAP/Nelson's-style ranges). ref = wide mg/kg envelope the formulary dose must sit inside (self-consistency gate, tested). Hard-stop rules: implausible weight, anaphylaxis allergy match, NSAID in dengue (WHO/CDC contraindicate NSAIDs in dengue — bleeding risk).","version":"2026.1-p3","last_reviewed":null,"verification":"PENDING — every range, maximum, weight band and rule needs clinician verification before real-world use","wtBands":[[1,1.5,6],[12,3,16],[36,6,25],[72,8,35],[144,12,70],[216,20,120]],"wtHard":{"overMult":3,"underDiv":2},"drugs":{"para":{"ref":{"per":"dose","lo":10,"hi":20},"maxSingle":1000,"maxDailyMgKg":75},"ibu":{"ref":{"per":"dose","lo":5,"hi":10},"maxSingle":400,"maxDailyMgKg":40,"ageMinM":3},"mef":{"ref":{"per":"dose","lo":5,"hi":7},"maxSingle":250,"maxDailyMgKg":25,"ageMinM":6},"amox":{"ref":{"per":"dose","lo":13,"hi":30},"maxSingle":1000,"maxDailyMgKg":100},"aug":{"ref":{"per":"dose","lo":13,"hi":30},"maxSingle":1000,"maxDailyMgKg":100},"azi":{"ref":{"per":"dose","lo":5,"hi":20},"maxSingle":500},"cefi":{"ref":{"per":"day","lo":6,"hi":12},"maxDaily":400},"cefp":{"ref":{"per":"day","lo":8,"hi":12},"maxDaily":400},"cefa":{"ref":{"per":"dose","lo":6,"hi":15},"maxSingle":500},"cotri":{"ref":{"per":"dose","lo":3,"hi":6},"maxSingle":160},"metro":{"ref":{"per":"dose","lo":6,"hi":10},"maxSingle":500},"cet":{"ref":{"per":"dose","lo":0.2,"hi":0.3},"maxSingle":10},"levo":{"ref":{"per":"dose","lo":0.1,"hi":0.15},"maxSingle":5},"onda":{"ref":{"per":"dose","lo":0.1,"hi":0.2},"maxSingle":8},"domp":{"ref":{"per":"dose","lo":0.2,"hi":0.3},"maxSingle":10},"iron":{"ref":{"per":"day","lo":3,"hi":6},"maxDaily":200},"salb":{"ref":{"per":"dose","lo":0.1,"hi":0.15},"maxSingle":4},"fluco":{"ref":{"per":"dose","lo":3,"hi":6},"maxSingle":200}},"bandDrugs":["alb","lora","zinc","vitd","mont","ambro","omep"],"infoDrugs":["ors","cala","perm","hc","xylo"],"contraRules":[{"id":"nsaid-dengue","drugs":["ibu","mef"],"match":{"icd":["A90","A91"]},"tier":"hard","text":"NSAID contraindicated in dengue — bleeding risk (WHO/CDC). Use paracetamol."},{"id":"nsaid-asthma","drugs":["ibu","mef"],"match":{"icd":["J45","J45.0","J45.9"],"problems":["asthma"]},"tier":"warn","text":"Ask about NSAID-triggered wheeze before giving an NSAID."},{"id":"cotri-g6pd","drugs":["cotri"],"match":{"icd":["D55.0"],"problems":["g6pd","glucose-6-phosphate","favism"]},"tier":"warn","text":"Cotrimoxazole in G6PD deficiency — haemolysis risk; confirm choice."},{"id":"cotri-young","drugs":["cotri"],"match":{"ageBelowM":2},"tier":"warn","text":"Cotrimoxazole under 2 months — use only if benefit outweighs risk."}],"interactions":[{"id":"qt-onda-azi","drugs":["onda","azi"],"tier":"warn","text":"QT caution: ondansetron + azithromycin together — ECG/caution if cardiac history."},{"id":"qt-domp-azi","drugs":["domp","azi"],"tier":"warn","text":"QT caution: domperidone + azithromycin together — caution if cardiac history."}]}
+{
+ "source": "NeoKid Care Phase 3 \u2014 safety envelopes around the app's DRUGS formulary (standard paediatric references; IAP/Nelson's-style ranges). ref = wide mg/kg envelope the formulary dose must sit inside (self-consistency gate, tested). Hard-stop rules: implausible weight, anaphylaxis allergy match, NSAID in dengue (WHO/CDC contraindicate NSAIDs in dengue \u2014 bleeding risk).",
+ "version": "2026.1-p3",
+ "last_reviewed": null,
+ "verification": "PENDING \u2014 every range, maximum, weight band and rule needs clinician verification before real-world use",
+ "wtBands": [
+  [
+   1,
+   1.5,
+   6
+  ],
+  [
+   12,
+   3,
+   16
+  ],
+  [
+   36,
+   6,
+   25
+  ],
+  [
+   72,
+   8,
+   35
+  ],
+  [
+   144,
+   12,
+   70
+  ],
+  [
+   216,
+   20,
+   120
+  ]
+ ],
+ "wtHard": {
+  "overMult": 3,
+  "underDiv": 2
+ },
+ "drugs": {
+  "para": {
+   "ref": {
+    "per": "dose",
+    "lo": 10,
+    "hi": 20
+   },
+   "maxSingle": 1000,
+   "maxDailyMgKg": 75,
+   "ageMinM": 3
+  },
+  "ibu": {
+   "ref": {
+    "per": "dose",
+    "lo": 5,
+    "hi": 10
+   },
+   "maxSingle": 400,
+   "maxDailyMgKg": 40,
+   "ageMinM": 6
+  },
+  "mef": {
+   "ref": {
+    "per": "dose",
+    "lo": 5,
+    "hi": 7
+   },
+   "maxSingle": 250,
+   "maxDailyMgKg": 25,
+   "ageMinM": 6
+  },
+  "amox": {
+   "ref": {
+    "per": "dose",
+    "lo": 13,
+    "hi": 30
+   },
+   "maxSingle": 1000,
+   "maxDailyMgKg": 100
+  },
+  "aug": {
+   "ref": {
+    "per": "dose",
+    "lo": 13,
+    "hi": 30
+   },
+   "maxSingle": 1000,
+   "maxDailyMgKg": 100
+  },
+  "azi": {
+   "ref": {
+    "per": "dose",
+    "lo": 5,
+    "hi": 20
+   },
+   "maxSingle": 500
+  },
+  "cefi": {
+   "ref": {
+    "per": "day",
+    "lo": 6,
+    "hi": 12
+   },
+   "maxDaily": 400
+  },
+  "cefp": {
+   "ref": {
+    "per": "day",
+    "lo": 8,
+    "hi": 12
+   },
+   "maxDaily": 400
+  },
+  "cefa": {
+   "ref": {
+    "per": "dose",
+    "lo": 6,
+    "hi": 15
+   },
+   "maxSingle": 500
+  },
+  "cotri": {
+   "ref": {
+    "per": "dose",
+    "lo": 3,
+    "hi": 6
+   },
+   "maxSingle": 160
+  },
+  "metro": {
+   "ref": {
+    "per": "dose",
+    "lo": 6,
+    "hi": 10
+   },
+   "maxSingle": 500
+  },
+  "cet": {
+   "ref": {
+    "per": "dose",
+    "lo": 0.2,
+    "hi": 0.3
+   },
+   "maxSingle": 10
+  },
+  "levo": {
+   "ref": {
+    "per": "dose",
+    "lo": 0.1,
+    "hi": 0.15
+   },
+   "maxSingle": 5
+  },
+  "onda": {
+   "ref": {
+    "per": "dose",
+    "lo": 0.1,
+    "hi": 0.2
+   },
+   "maxSingle": 8
+  },
+  "domp": {
+   "ref": {
+    "per": "dose",
+    "lo": 0.2,
+    "hi": 0.3
+   },
+   "maxSingle": 10
+  },
+  "iron": {
+   "ref": {
+    "per": "day",
+    "lo": 3,
+    "hi": 6
+   },
+   "maxDaily": 200
+  },
+  "salb": {
+   "ref": {
+    "per": "dose",
+    "lo": 0.1,
+    "hi": 0.15
+   },
+   "maxSingle": 4
+  },
+  "fluco": {
+   "ref": {
+    "per": "dose",
+    "lo": 3,
+    "hi": 6
+   },
+   "maxSingle": 200
+  }
+ },
+ "bandDrugs": [
+  "alb",
+  "lora",
+  "zinc",
+  "vitd",
+  "mont",
+  "ambro",
+  "omep"
+ ],
+ "infoDrugs": [
+  "ors",
+  "cala",
+  "perm",
+  "hc",
+  "xylo"
+ ],
+ "contraRules": [
+  {
+   "id": "nsaid-dengue",
+   "drugs": [
+    "ibu",
+    "mef"
+   ],
+   "match": {
+    "icd": [
+     "A90",
+     "A91"
+    ]
+   },
+   "tier": "hard",
+   "text": "NSAID contraindicated in dengue \u2014 bleeding risk (WHO/CDC). Use paracetamol."
+  },
+  {
+   "id": "nsaid-asthma",
+   "drugs": [
+    "ibu",
+    "mef"
+   ],
+   "match": {
+    "icd": [
+     "J45",
+     "J45.0",
+     "J45.9"
+    ],
+    "problems": [
+     "asthma"
+    ]
+   },
+   "tier": "warn",
+   "text": "Ask about NSAID-triggered wheeze before giving an NSAID."
+  },
+  {
+   "id": "cotri-g6pd",
+   "drugs": [
+    "cotri"
+   ],
+   "match": {
+    "icd": [
+     "D55.0"
+    ],
+    "problems": [
+     "g6pd",
+     "glucose-6-phosphate",
+     "favism"
+    ]
+   },
+   "tier": "warn",
+   "text": "Cotrimoxazole in G6PD deficiency \u2014 haemolysis risk; confirm choice."
+  },
+  {
+   "id": "cotri-young",
+   "drugs": [
+    "cotri"
+   ],
+   "match": {
+    "ageBelowM": 2
+   },
+   "tier": "warn",
+   "text": "Cotrimoxazole under 2 months \u2014 use only if benefit outweighs risk."
+  }
+ ],
+ "interactions": [
+  {
+   "id": "qt-onda-azi",
+   "drugs": [
+    "onda",
+    "azi"
+   ],
+   "tier": "warn",
+   "text": "QT caution: ondansetron + azithromycin together \u2014 ECG/caution if cardiac history."
+  },
+  {
+   "id": "qt-domp-azi",
+   "drugs": [
+    "domp",
+    "azi"
+   ],
+   "tier": "warn",
+   "text": "QT caution: domperidone + azithromycin together \u2014 caution if cardiac history."
+  }
+ ]
+}

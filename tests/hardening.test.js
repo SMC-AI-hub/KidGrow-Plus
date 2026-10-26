@@ -21,6 +21,7 @@ for (const h of ["Strict-Transport-Security", "X-Content-Type-Options", "Referre
 }
 const csp = (allHeaders.match(/Content-Security-Policy: ([^\n]+)/) || [])[1] || "";
 ok(csp.includes("frame-ancestors 'none'"), "CSP: frame-ancestors 'none' (clickjacking)");
+ok(/X-Frame-Options: DENY/.test(allHeaders), "P3.4/L4: X-Frame-Options DENY (legacy framing defense)");
 ok(csp.includes("connect-src 'self'") && csp.includes("supabase.co"), "CSP: connect-src locked to self + backends");
 ok(!csp.includes("unsafe-eval"), "CSP: no unsafe-eval");
 

@@ -27,6 +27,7 @@ module.exports = async function handler(req, res) {
     if (!r.ok) throw new Error((j.error && j.error.description) || "Razorpay error");
     return res.status(200).json({ ok: true, cancel_at_cycle_end: true });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Could not cancel." });
+    console.error("[cancel-subscription] 500:", (e && e.message) || e);
+    return res.status(500).json({ error: "Could not cancel." });
   }
 };

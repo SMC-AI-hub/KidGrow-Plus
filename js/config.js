@@ -39,6 +39,7 @@
     PLAN_NAME: "NeoKid Care Monthly",
     PLAN_PRICE: "₹499/month",
     TRIAL_DAYS: 14,          // must match trial interval in supabase/schema.sql
+    MFA_GRACE_UNTIL: "2026-11-05", // P3.1: first MFA-enforcement day (UTC); prod DB 0009 lands on/after this date
     OFFLINE_GRACE_DAYS: 7    // paid users stay usable offline this long after last check
   };
 })();

@@ -623,6 +623,14 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
 .ctx-probmeta{font-size:12px;color:var(--muted)}
 .ctx-trend{font-size:12px;color:var(--muted)}
 .ctx-trend-bad{color:#e26d6d;font-weight:700}
+/* Phase U: category cards */
+.ctx-cardpanel{margin-bottom:10px}
+.tl-cardhead{display:flex;gap:8px;align-items:baseline;width:100%;text-align:left;background:transparent;border:none;padding:2px;cursor:pointer;color:inherit;font-family:inherit;font-size:15px}
+.tl-cardface{margin-left:auto;font-size:12px;color:var(--muted);text-align:right}
+.tl-cardbody{margin-top:6px}
+.tl-subhead{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:8px 0 4px}
+.tl-grp{display:flex;gap:6px;align-items:baseline;width:100%;text-align:left;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin:4px 0;font-size:13px;cursor:pointer;color:inherit;font-family:inherit}
+.tl-grp:hover{border-color:var(--teal)}
 .ctx-dot.ctx-visit{background:#0d9488}.ctx-card.ctx-visit{border-left-color:#0d9488}
 .ctx-dot.ctx-rx{background:#7c3aed}.ctx-card.ctx-rx{border-left-color:#7c3aed}
 .ctx-dot.ctx-vax{background:#16a34a}.ctx-card.ctx-vax{border-left-color:#16a34a}

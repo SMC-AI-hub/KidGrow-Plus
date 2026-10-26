@@ -431,6 +431,19 @@
             </div>
             <button class="btn btn-p" data-act="saveSettings">💾 Save lock setting</button>
           </div>
+          <div class="card"><h3>📚 Guideline sources</h3><div class="hint">Global default + per-module override. New modes take effect ONLY after validator sign-off (checkboxes) — until then Mayo (TSH) and NICE (jaundice) stay active.</div>
+            <div class="form-grid">
+              <div><label>Global default</label><select id="sGuideSource" data-onchange="saveSettings"><option value="aiims">AIIMS protocols</option><option value="aap">AAP</option><option value="iap">IAP</option><option value="nnf">NNF</option></select></div>
+              <div><label>TSH panel source</label><select id="sGuideTSH" data-onchange="saveSettings"><option value="auto">Auto (follow global)</option><option value="aiims">AIIMS protocols</option><option value="aap">AAP</option><option value="mayo">Mayo (validated)</option></select></div>
+              <div><label>Jaundice tool source</label><select id="sGuideBili" data-onchange="saveSettings"><option value="auto">Auto (follow global)</option><option value="nice">NICE (validated)</option><option value="iap">IAP</option><option value="nnf">NNF</option><option value="aap">AAP</option></select></div>
+              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sGuideTshAiims" data-onchange="saveSettings"> ✅ TSH · AIIMS enabled — check ONLY after validator sign-off</label></div>
+              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sGuideTshAap" data-onchange="saveSettings"> ✅ TSH · AAP enabled — check ONLY after validator sign-off</label></div>
+              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sGuideBiliIap" data-onchange="saveSettings"> ✅ Jaundice · IAP enabled — check ONLY after validator sign-off</label></div>
+              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sGuideBiliNnf" data-onchange="saveSettings"> ✅ Jaundice · NNF enabled — check ONLY after validator sign-off</label></div>
+              <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sGuideBiliAap" data-onchange="saveSettings"> ✅ Jaundice · AAP enabled — check ONLY after validator sign-off</label></div>
+            </div>
+            <button class="btn btn-p" data-act="saveSettings">💾 Save guideline sources</button>
+          </div>
           <div class="card"><h3>👩‍⚕️ Doctors & letterheads</h3><div class="hint">Add all consulting doctors · ● selected prints on reports</div><div id="docBox"></div></div>
           <div class="card"><h3>🗄️ Data management</h3><div class="hint">All data stays on this device (offline-first, private) · App <b>v10</b></div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -675,6 +688,7 @@
 <script src="js/hx.js"></script>
 <script src="js/exam.js"></script>
 <script src="js/dose.js"></script>
+<script src="js/guides.js"></script>
 <script src="js/labs.js"></script>
 <script src="js/aefi.js"></script>
 <script src="js/screen.js"></script>

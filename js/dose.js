@@ -188,7 +188,10 @@ function doseAgeCheck(drugId, ageM) {
   try {
     const d = doseDrug(drugId);
     if (d && d.ageMinM && ageM != null && ageM < d.ageMinM) {
-      out.push({ tier: "warn", code: "AGE-MIN", text: `Below usual minimum age (${d.ageMinM} mo) — confirm indication.` });
+      out.push({ tier: "warn", code: "AGE-MIN", text: d.ageMinMsg || `Below usual minimum age (${d.ageMinM} mo) — confirm indication.` });
+    }
+    if (d && d.neoBelowM && ageM != null && ageM < d.neoBelowM) {
+      out.push({ tier: "warn", code: "AGE-NEO", text: d.neoMsg || "Neonatal use — confirm dose vs reference." });
     }
   } catch (e) {}
   return out;

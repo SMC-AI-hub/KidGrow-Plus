@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
     const page = G.cleanStr(body.page, 64), msg = G.cleanStr(body.msg, 200), ver = G.cleanStr(body.ver, 16);
     if (!page || !msg) return res.status(400).json({ error: "bad shape" });
     if (!/^[a-z0-9\-_#]+$/i.test(page)) return res.status(400).json({ error: "bad shape" });
-    try { console.log(JSON.stringify({ svc: "kidgrow-err", t: new Date().toISOString(), ip: G.ipOf(req), page, ver, msg })); } catch (e) {}
+    try { console.log(JSON.stringify({ svc: "kidgrow-err", t: new Date().toISOString(), ipTag: G.ipTag(req), page, ver, msg })); } catch (e) {}
     return res.status(204).json({});
   } catch (e) {
     return res.status(500).json({ error: "beacon failed" });

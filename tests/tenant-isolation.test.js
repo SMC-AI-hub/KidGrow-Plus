@@ -14,18 +14,27 @@ const N = "44444444-4444-4444-4444-444444444444"; // nurse, member of A only
 
 const SHIM = `
 CREATE SCHEMA IF NOT EXISTS auth;
-CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY, email text);
+CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY, email text, email_confirmed_at timestamptz);
 DO $outer$ BEGIN IF NOT EXISTS (
   SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'auth' AND p.proname = 'uid') THEN
   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
   $inner$ SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid $inner$;
+END IF;
+IF NOT EXISTS (
+  SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'auth' AND p.proname = 'jwt') THEN
+  CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS
+  $inner$ SELECT NULLIF(current_setting('request.jwt.claims', true), '')::jsonb $inner$;
 END IF; END $outer$;`;
 
-async function withClaim(client, sub, fn) {
+async function withClaim(client, sub, fn, aal) {
   await client.query("BEGIN");
   try {
-    if (sub) await client.query("SELECT set_config('request.jwt.claim.sub', $1, true)", [sub]);
+    if (sub) {
+      await client.query("SELECT set_config('request.jwt.claim.sub', $1, true)", [sub]);
+      await client.query("SELECT set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: sub, aal: aal || "aal2" })]);
+    }
     const r = await fn();
     await client.query("COMMIT");
     return r;
@@ -89,6 +98,7 @@ async function main() {
     : { host: "127.0.0.1", port: 55434, user: "app", password: "app-test-pw", database: "postgres" };
   app = new Client(appCfg); await app.connect();
 
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'owner-a@synthetic.test',now()),($2,'owner-b@synthetic.test',now()),($3,'nurse-n@synthetic.test',now()) ON CONFLICT (id) DO NOTHING", [A, B, N]); // 0010: writers confirmed before setup writes
   // ---- setup: two hospitals, one patient each (as the apps would) ----
   const tA = await withClaim(app, A, async () => (await app.query("INSERT INTO tenants (name, plan) VALUES ('City Care (synthetic)', 'clinic') RETURNING id")).rows[0].id);
   const tB = await withClaim(app, B, async () => (await app.query("INSERT INTO tenants (name, plan) VALUES ('Metro Kids (synthetic)', 'nicu') RETURNING id")).rows[0].id);
@@ -161,7 +171,7 @@ async function main() {
   const D = "55555555-5555-5555-5555-555555555555"; // quota-tenant owner
   const E = "66666666-6666-6666-6666-666666666666"; // invitee
   const F = "77777777-7777-7777-7777-777777777777"; // wrong-email stranger
-  await owner.query("INSERT INTO auth.users (id, email) VALUES ($1,'owner-a@synthetic.test'),($2,'nurse-e@synthetic.test'),($3,'stranger-f@synthetic.test') ON CONFLICT (id) DO NOTHING", [A, E, F]);
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'owner-a@synthetic.test',now()),($2,'nurse-e@synthetic.test',now()),($3,'stranger-f@synthetic.test',now()),($4,'owner-b@synthetic.test',now()),($5,'stranger-c@synthetic.test',now()),($6,'owner-d@synthetic.test',now()),($7,'nurse-n@synthetic.test',now()) ON CONFLICT (id) DO NOTHING", [A, E, F, B, C, D, N]);
 
   // ---- quota values ----
   const q = async (p, k) => (await owner.query("SELECT public.plan_quota($1,$2) AS v", [p, k])).rows[0].v;
@@ -324,6 +334,153 @@ async function main() {
   ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO subscription_events (user_id, event) VALUES ($1,'x')", [A]))) === "denied", "direct subscription_events insert denied");
   const seOwn = await withClaim(app, A, async () => (await app.query("SELECT count(*)::int AS n FROM subscription_events WHERE user_id=$1", [A])).rows[0].n);
   ok(seOwn === 0, "owner can read own (empty) subscription events");
+
+  // ================= 0007: role governance (Phase 2) =================
+  const RU = "88888888-8888-8888-8888-888888888888"; // readonly member of A
+  const BL = "99999999-9999-9999-9999-999999999999"; // billing member of A
+  const AD = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"; // admin of A
+  const O3 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"; // spare user for owner-grant tests
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'readonly-ru@synthetic.test',now()),($2,'billing-bl@synthetic.test',now()),($3,'admin-ad@synthetic.test',now()),($4,'spare-o3@synthetic.test',now()) ON CONFLICT (id) DO NOTHING", [RU, BL, AD, O3]); // 0010: all suite writers confirmed
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='hospital' WHERE id=$1", [tA])); // quota headroom
+  await withClaim(app, A, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'readonly'),($1,$3,'billing'),($1,$4,'admin')", [tA, RU, BL, AD]));
+  const rList = await withClaim(app, RU, async () => (await app.query("SELECT id FROM patients")).rows);
+  ok(rList.length >= 1, "readonly member still reads own-tenant patients");
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'R-1','Nope')", [tA]))) === "denied", "readonly insert denied");
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("UPDATE patients SET name='X' WHERE id=$1", [pA]))) === "denied", "readonly update denied (loud 42501: USING passes, WITH CHECK fails)");
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ tenant_id: tA, local_id: "c_ro", client_rev: "2026-10-10T00:00:00Z", mrn: "CC-RO", name: "Ro" })]))) === "denied", "readonly sync-RPC denied");
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("SELECT public.apply_clinical_op($1,$2)", ["growth_points", JSON.stringify({ tenant_id: tA, local_id: "g_ro", client_rev: "2026-10-10T00:00:00Z", patient_local_id: "c_m5kid", wt_kg: 3 })]))) === "denied", "readonly clinical-RPC denied");
+  ok(await expectDeny(withClaim(app, BL, async () => app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'BILL-1')", [tA]))) === "denied", "billing insert denied");
+  const nPat = await withClaim(app, N, async () => (await app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'N-1','Nurse Admit') RETURNING id", [tA])).rows[0].id);
+  ok(!!nPat, "nurse CAN admit patients (writer role)");
+  ok(await ac(N, "mar_entries", { tenant_id: tA, local_id: "m_nurse1", client_rev: "2026-10-10T09:00:00Z", patient_local_id: "c_m5kid", drug: "Paracetamol", dose: "120 mg", route: "PO", freq: "sos", status: "given", given_by: "Nurse N", given_at: "2026-10-10T09:05:00Z" }) === "inserted", "nurse CAN chart MAR via RPC");
+  ok((await withClaim(app, A, async () => (await app.query("DELETE FROM patients WHERE id=$1", [pA])).rowCount)) === 0, "owner hard delete is now a silent no-op");
+  const pAStill = await withClaim(app, A, async () => (await app.query("SELECT id FROM patients WHERE id=$1", [pA])).rows);
+  ok(pAStill.length === 1, "blocked delete left the row intact");
+  ok(await expectDeny(withClaim(owner, A, async () => owner.query("DELETE FROM patients WHERE id=$1", [pA]))) === "denied", "trigger backstop fires when RLS is bypassed (owner session + claim)");
+  const delPols = await owner.query("SELECT count(*)::int AS n FROM pg_policies WHERE schemaname='public' AND cmd='DELETE' AND tablename IN ('patients','encounters','consents','nicu_admissions','nicu_rounds','mar_entries','growth_points')");
+  ok(delPols.rows[0].n === 0, "no DELETE policies survive on clinical tables");
+  await owner.query("GRANT anon TO app"); // test-only: let the harness wear the anon role
+  await app.query("SET ROLE anon");
+  ok(await expectDeny(app.query("SELECT public.apply_patient_op($1)", [JSON.stringify(P1)])) === "denied", "anon cannot execute sync RPC");
+  ok(await expectDeny(app.query("SELECT public.accept_invite('nope')")) === "denied", "anon cannot execute accept_invite");
+  await app.query("RESET ROLE");
+  await owner.query("REVOKE anon FROM app");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'superwizard')", [tA, O3]))) === "error:23514", "junk role violates CHECK");
+  const admDoc = await withClaim(app, AD, async () => (await app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'doctor') RETURNING user_id", [tA, O3])).rows);
+  ok(admDoc.length === 1, "admin can grant doctor");
+  await withClaim(app, A, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tA, O3]));
+  ok(await expectDeny(withClaim(app, AD, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'owner')", [tA, O3]))) === "denied", "admin cannot mint owners");
+  ok(await expectDeny(withClaim(app, AD, async () => app.query("UPDATE memberships SET role='owner' WHERE tenant_id=$1 AND user_id=$2", [tA, E]))) === "denied", "admin cannot promote to owner");
+  ok((await withClaim(app, AD, async () => (await app.query("UPDATE memberships SET role='nurse' WHERE tenant_id=$1 AND user_id=$2", [tA, A])).rowCount)) === 0, "admin cannot demote an owner (0 rows)");
+  const aStillOwner = await withClaim(app, A, async () => (await app.query("SELECT role FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tA, A])).rows[0].role);
+  ok(aStillOwner === "owner", "failed demotion changed nothing");
+  await withClaim(app, A, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'owner')", [tA, O3]));
+  ok(true, "owner CAN grant owner (second owner exists)");
+  await withClaim(app, A, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tA, O3]));
+  ok(await expectDeny(withClaim(app, AD, async () => app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'o@x.y','owner')", [tA]))) === "denied", "admin cannot invite owners");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'w@x.y','wizard')", [tA]))) === "error:23514", "junk invite role violates CHECK");
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='clinic' WHERE id=$1", [tA])); // restore
+  // ================= 0008: no RLS-blind privileges to app roles =================
+  // (CI never grants these, so this guards the invariant; the live proof is the
+  // post-apply check in the 0008 header + the E-block re-run on staging/prod.)
+  const priv = async (r, t, p) => (await owner.query("SELECT has_table_privilege($1,$2,$3) AS v", [r, t, p])).rows[0].v;
+  ok(await priv("anon", "public.patients", "TRUNCATE") === false, "anon holds no TRUNCATE on patients");
+  ok(await priv("authenticated", "public.patients", "TRUNCATE") === false, "authenticated holds no TRUNCATE on patients");
+  ok(await priv("anon", "public.patients", "TRIGGER") === false, "anon holds no TRIGGER on patients");
+  ok(await priv("authenticated", "public.patients", "TRIGGER") === false, "authenticated holds no TRIGGER on patients");
+  // ================= 0009: aal2 enforcement (P3.1) =================
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='hospital' WHERE id=$1", [tA])); // quota headroom (denies below must be aal-caused, not quota-caused)
+  ok(await expectDeny(withClaim(app, A, async () => app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'AAL1-1')", [tA]), "aal1")) === "denied", "owner aal1 insert denied");
+  const aal2Pat = await withClaim(app, A, async () => (await app.query("INSERT INTO patients (tenant_id, mrn, name) VALUES ($1,'AAL2-1','AAL ok') RETURNING id", [tA])).rows[0].id);
+  ok(!!aal2Pat, "owner aal2 insert allowed");
+  ok(await expectDeny(withClaim(app, A, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ tenant_id: tA, local_id: "c_aal1", client_rev: "2026-10-10T00:00:00Z", mrn: "CC-AAL1", name: "No" })]), "aal1")) === "denied", "owner aal1 sync-RPC denied");
+  const nAal1 = await withClaim(app, N, async () => (await app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'N-AAL1') RETURNING id", [tA])).rows[0].id, "aal1");
+  ok(!!nAal1, "nurse aal1 insert allowed (MFA-exempt role)");
+  await withClaim(app, A, async () => app.query("UPDATE memberships SET role='doctor' WHERE tenant_id=$1 AND user_id=$2", [tA, RU]));
+  ok(await expectDeny(withClaim(app, RU, async () => app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'D-AAL1')", [tA]), "aal1")) === "denied", "doctor aal1 insert denied");
+  const dAal2 = await withClaim(app, RU, async () => (await app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'D-AAL2') RETURNING id", [tA])).rows[0].id);
+  ok(!!dAal2, "doctor aal2 insert allowed");
+  await withClaim(app, A, async () => app.query("UPDATE memberships SET role='readonly' WHERE tenant_id=$1 AND user_id=$2", [tA, RU]));
+  ok(await expectDeny(withClaim(app, AD, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'nurse')", [tA, O3]), "aal1")) === "denied", "admin aal1 grant denied");
+  await withClaim(app, AD, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'nurse')", [tA, O3]));
+  ok(true, "admin aal2 grant allowed");
+  await withClaim(app, A, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tA, O3]));
+  ok(await expectDeny(withClaim(app, A, async () => app.query("UPDATE tenants SET name='X' WHERE id=$1", [tA]), "aal1")) === "denied", "owner aal1 tenant update denied");
+  await withClaim(app, A, async () => app.query("INSERT INTO audit_events (tenant_id, actor_id, action) VALUES ($1,$2,'aal.probe')", [tA, A]), "aal1");
+  const au1 = await withClaim(app, A, async () => (await app.query("SELECT count(*)::int AS n FROM audit_events WHERE tenant_id=$1", [tA])).rows[0].n, "aal1");
+  const au2 = await withClaim(app, A, async () => (await app.query("SELECT count(*)::int AS n FROM audit_events WHERE tenant_id=$1", [tA])).rows[0].n);
+  ok(au1 === 0 && au2 >= 1, "audit reads: aal1 sees 0 rows, aal2 sees rows");
+  await withClaim(app, N, async () => app.query("INSERT INTO break_glass_events (tenant_id, actor_id, reason, scope) VALUES ($1,$2,'night-duty drill probe entry','subscription-gate')", [tA, N]), "aal1");
+  ok(true, "break-glass log stays writable at aal1 (emergencies loggable)");
+  await withClaim(app, A, async () => app.query("UPDATE memberships SET role='auditor' WHERE tenant_id=$1 AND user_id=$2", [tA, BL]));
+  const auAud = await withClaim(app, BL, async () => (await app.query("SELECT count(*)::int AS n FROM audit_events WHERE tenant_id=$1", [tA])).rows[0].n, "aal1");
+  ok(auAud >= 1, "auditor reads audit at aal1 (MFA-exempt role)");
+  await withClaim(app, A, async () => app.query("UPDATE memberships SET role='billing' WHERE tenant_id=$1 AND user_id=$2", [tA, BL]));
+  await withClaim(app, A, async () => app.query("UPDATE tenants SET plan='clinic' WHERE id=$1", [tA])); // restore
+
+  // ================= 0010: email-confirmed writes (P3.3) =================
+  await withClaim(app, B, async () => app.query("UPDATE tenants SET plan='hospital' WHERE id=$1", [tB])); // quota headroom (denies below must be email-caused, not quota-caused)
+  const G = "cccccccc-cccc-cccc-cccc-cccccccccccc"; // unconfirmed doctor of B
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'unconfirmed-g@synthetic.test',NULL) ON CONFLICT (id) DO NOTHING", [G]);
+  await withClaim(app, B, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'doctor')", [tB, G]));
+  ok((await withClaim(app, G, async () => (await app.query("SELECT public.my_email_confirmed() AS v")).rows[0].v)) === false, "helper: unconfirmed -> false");
+  ok(await expectDeny(withClaim(app, G, async () => app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'G-UNC')", [tB]))) === "denied", "unconfirmed doctor insert denied");
+  ok(await expectDeny(withClaim(app, G, async () => app.query("SELECT public.apply_patient_op($1)", [JSON.stringify({ tenant_id: tB, local_id: "c_g", client_rev: "2026-10-10T00:00:00Z", mrn: "CC-G", name: "No" })]))) === "denied", "unconfirmed sync-RPC denied");
+  await withClaim(app, B, async () => app.query("INSERT INTO audit_events (tenant_id, actor_id, action) VALUES ($1,$2,'probe-b')", [tB, B]));
+  await owner.query("UPDATE auth.users SET email_confirmed_at=NULL WHERE id=$1", [B]);
+  const bUnc = await withClaim(app, B, async () => (await app.query("SELECT count(*)::int AS n FROM audit_events WHERE tenant_id=$1", [tB])).rows[0].n);
+  ok(bUnc >= 1, "unconfirmed owner still reads audit (reads ungated)");
+  ok(await expectDeny(withClaim(app, B, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'nurse')", [tB, C]))) === "denied", "unconfirmed owner grant denied");
+  await owner.query("UPDATE auth.users SET email_confirmed_at=now() WHERE id=$1", [B]);
+  await withClaim(app, B, async () => app.query("INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1,$2,'nurse')", [tB, C]));
+  ok(true, "re-confirmed owner grant allowed");
+  await withClaim(app, B, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tB, C]));
+  await owner.query("UPDATE auth.users SET email_confirmed_at=now() WHERE id=$1", [G]);
+  ok((await withClaim(app, G, async () => (await app.query("SELECT public.my_email_confirmed() AS v")).rows[0].v)) === true, "helper: confirmed -> true");
+  const gPat = await withClaim(app, G, async () => (await app.query("INSERT INTO patients (tenant_id, mrn) VALUES ($1,'G-CONF') RETURNING id", [tB])).rows[0].id);
+  ok(!!gPat, "confirmed doctor insert allowed");
+  await withClaim(app, B, async () => app.query("UPDATE tenants SET plan='nicu' WHERE id=$1", [tB])); // restore
+
+  // ================= 0011: guarded RPC input casts (P3.4/L5) =================
+  const errOf = async (promise) => { try { await promise; return { code: "OK", msg: "" }; } catch (e) { return { code: e.code || "?", msg: e.message || "" }; } };
+  const eT = await errOf(ap(A, "apply_patient_op", { ...P1, tenant_id: "not-a-uuid" }));
+  ok(eT.code === "P0001" && eT.msg === "bad tenant_id", "garbage tenant_id -> clean P0001 'bad tenant_id' (no 22P02)");
+  const eR = await errOf(ap(A, "apply_patient_op", { ...P1, client_rev: "not-a-time" }));
+  const eR2 = await errOf(ap(A, "apply_patient_op", { ...P1, client_rev: "2026-13-45T99:99:99Z" }));
+  ok(eR.code === "P0001" && eR.msg === "bad client_rev", "garbage client_rev -> clean P0001 'bad client_rev'");
+  ok(eR2.code === "P0001" && eR2.msg === "bad client_rev", "out-of-range client_rev (22008) -> clean P0001 'bad client_rev'");
+  const eE = await errOf(ap(A, "apply_encounter_op", { tenant_id: "zzz", local_id: "e1", client_rev: "2026-10-01T10:00:00Z" }));
+  ok(eE.code === "P0001" && eE.msg === "bad tenant_id", "guard covers all four RPCs (encounter)");
+  const eN = await errOf(ap(A, "apply_patient_op", { ...P1, client_rev: null }));
+  ok(eN.code === "P0001" && eN.msg === "client_rev required", "NULL client_rev path unchanged ('client_rev required')");
+  const eTN = await errOf(ap(A, "apply_patient_op", { ...P1, tenant_id: null }));
+  ok(eTN.code === "P0001" && eTN.msg === "tenant_id required", "NULL tenant_id path unchanged ('tenant_id required')");
+
+  // ================= 0012: tenant minting gates (P3.2) =================
+  const H = "dddddddd-dddd-dddd-dddd-dddddddddddd"; // unconfirmed outsider
+  await owner.query("INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1,'h-owner@synthetic.test',NULL) ON CONFLICT (id) DO NOTHING", [H]);
+  ok(await expectDeny(withClaim(app, H, async () => app.query("INSERT INTO tenants (name) VALUES ('Hacker Clinic')"))) === "denied", "unconfirmed user cannot mint tenants (t_ins email gate)");
+  const c0 = await withClaim(app, A, async () => (await app.query("SELECT public.my_created_tenant_count() AS v")).rows[0].v);
+  const tC = await withClaim(app, A, async () => (await app.query("INSERT INTO tenants (name) VALUES ('C Clinic (synthetic)') RETURNING id")).rows[0].id);
+  ok(!!tC, "confirmed owner mints (gate is email-only, no cap)");
+  const c1 = await withClaim(app, A, async () => (await app.query("SELECT public.my_created_tenant_count() AS v")).rows[0].v);
+  ok(Number(c1) === Number(c0) + 1, "mint counter increments (audit trail queryable)");
+  // owner-invite TOCTOU: B invites H as owner, then is demoted before H accepts
+  const tokH = await withClaim(app, B, async () => (await app.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'h-owner@synthetic.test','owner') RETURNING token", [tB])).rows[0].token);
+  ok(!!tokH, "owner can still invite owners (owner-only preserved)");
+  await withClaim(app, B, async () => app.query("UPDATE memberships SET role='owner' WHERE tenant_id=$1 AND user_id=$2", [tB, G]));
+  await withClaim(app, G, async () => app.query("UPDATE memberships SET role='admin' WHERE tenant_id=$1 AND user_id=$2", [tB, B]));
+  const eH = await errOf(withClaim(app, H, async () => app.query("SELECT public.accept_invite($1)", [tokH])));
+  ok(eH.code === "P0001" && eH.msg === "inviter is no longer an owner", "stale owner-invite rejected after inviter demotion");
+  await withClaim(app, G, async () => app.query("UPDATE memberships SET role='owner' WHERE tenant_id=$1 AND user_id=$2", [tB, B]));
+  await withClaim(app, B, async () => app.query("UPDATE memberships SET role='doctor' WHERE tenant_id=$1 AND user_id=$2", [tB, G]));
+  await withClaim(app, B, async () => app.query("DELETE FROM invites WHERE token=$1", [tokH]));
+  // NULL-created_by grandfather: pre-0012 owner-invite still acceptable
+  await owner.query("INSERT INTO invites (tenant_id, email, role) VALUES ($1,'h-owner@synthetic.test','owner')", [tB]);
+  const tokG = await withClaim(app, B, async () => (await app.query("SELECT token FROM invites WHERE tenant_id=$1 AND email='h-owner@synthetic.test' AND accepted_at IS NULL ORDER BY created_at DESC LIMIT 1", [tB])).rows[0].token);
+  const accG = await withClaim(app, H, async () => (await app.query("SELECT public.accept_invite($1) AS t", [tokG])).rows[0].t);
+  ok(accG === tB, "pre-0012 (unstamped) owner-invite still accepted");
+  await withClaim(app, B, async () => app.query("DELETE FROM memberships WHERE tenant_id=$1 AND user_id=$2", [tB, H]));
 
   try { await app.end(); } catch (_) {}
   await stop();

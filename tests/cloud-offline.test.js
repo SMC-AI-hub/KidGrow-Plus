@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v46/.test(sw), "SW cache bumped to v46 (Phase T: productive timeline)");
+  ok(/neokid-v47/.test(sw), "SW cache bumped to v47 (Phase U: category cards)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -245,6 +245,9 @@ async function main() {
   ok(TP.mfaNext({ aal: "aal1", hasFactors: false, role: "owner", required: ["owner", "admin"] }) === "enroll", "mfa: required without factors enrolls");
   ok(TP.mfaNext({ aal: "aal1", hasFactors: true, role: "admin", required: ["owner", "admin"] }) === "verify", "mfa: required with factors verifies");
   ok(TP.mfaNext(null) === "ok", "mfa: null-safe");
+  ok(TP.mfaGraceActive("2026-11-05", Date.parse("2026-10-22")) === true, "mfa grace: before cutoff active");
+  ok(TP.mfaGraceActive("2026-11-05", Date.parse("2026-11-06")) === false, "mfa grace: after cutoff over");
+  ok(TP.mfaGraceActive("", Date.now()) === false && TP.mfaGraceActive(null, Date.now()) === false, "mfa grace: missing key fails closed");
   const bgOK = { tenant_id: "t1", reason: "Night duty emergency case", at: NOW - 1000, until: NOW + 3600e3 };
   ok(TP.breakGlassValid(bgOK, NOW) === true, "breakglass: valid record passes");
   ok(TP.breakGlassValid({ ...bgOK, until: NOW - 1 }, NOW) === false, "breakglass: expired rejected");
