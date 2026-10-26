@@ -154,9 +154,11 @@ async function main() {
   ok(/day 14/.test(t337.note || ""), "cap: 337h -> unit-protocol note, no line");
   ok((NP.biliFlag(400, 29, 400) || {}).band === "info", "cap: 400@400h -> info (no fabricated line)");
 
-  // Slot 10 (F25-P3 RULED 2026-10-23: keep app intervals, no risk input). biliFlag takes
-  // (tsb, ga, hrs) only; repeat texts locked below so any future change is deliberate.
-  ok(NP.biliFlag.length === 3, "slot10-ruled: no risk-factor parameter (P3)");
+  // Slot 10 (F25-P3 RULED 2026-10-23, SUPERSEDED by approved G3 2026-10-26:
+  // NICE 1.4.1 18/24h branch needs well/risk context). biliFlag takes
+  // (tsb, ga, hrs, x?) — x optional; WITHOUT context the repeat texts below
+  // stay byte-identical, so any future change is still deliberate.
+  ok(NP.biliFlag.length === 4, "slot10-g3: optional 4th context parameter (P3 superseded)");
   const r10a = NP.biliFlag(210, 39, 48) || {}, r10b = NP.biliFlag(210, 39, 48) || {};
   ok(r10a.band === "consider" && r10b.band === r10a.band, "slot10-ruled: same inputs -> same tier (consider)");
   ok((r10a.text || "").indexOf("repeat in 6h") >= 0, "slot10-ruled: consider band keeps 6h repeat text");

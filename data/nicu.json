@@ -265,5 +265,110 @@
   "Hypotonic",
   "Hypertonic"
  ],
- "biliStopMargin": 50
+ "biliStopMargin": 50,
+ "biliGuides": {
+  "source": "NNF CPG Dec 2019 (ResearchGate 340116901); IAP STG 2022 Ch-079 (Jain et al, iapindia.org); MoHFW STG 5461 (NNF-adapted, Table 1 follow-up); NICE CG98 section 1.4.1-1.4.2 (2016 update). Thresholds shared (NICE table); modes change sub-threshold/monitoring/follow-up only.",
+  "risks": [
+   {
+    "id": "sibPhoto",
+    "label": "Sibling needed phototherapy",
+    "nice141": true,
+    "iap": true,
+    "nnf": true
+   },
+   {
+    "id": "bfIntent",
+    "label": "Exclusive breastfeeding intended",
+    "nice141": true,
+    "iap": false,
+    "nnf": true
+   },
+   {
+    "id": "bloodIncompat",
+    "label": "Blood group incompatibility (Rh-ve / O mother)",
+    "iap": true,
+    "nnf": true
+   },
+   {
+    "id": "g6pd",
+    "label": "G6PD deficiency / high-prevalence setting",
+    "iap": true,
+    "nnf": true
+   },
+   {
+    "id": "cephalo",
+    "label": "Cephalohematoma",
+    "iap": true,
+    "nnf": false
+   },
+   {
+    "id": "lactation",
+    "label": "Lactation not established",
+    "iap": true,
+    "nnf": false
+   },
+   {
+    "id": "predisHigh",
+    "label": "Predischarge bilirubin high-zone (TcB>13)",
+    "iap": true,
+    "nnf": false
+   },
+   {
+    "id": "wtLoss",
+    "label": "Weight loss >3%/24h or >7% cumulative",
+    "iap": false,
+    "nnf": true
+   },
+   {
+    "id": "j24",
+    "label": "Jaundice <24h",
+    "iap": false,
+    "nnf": true
+   },
+   {
+    "id": "jDischarge",
+    "label": "Visible jaundice at discharge",
+    "iap": false,
+    "nnf": true
+   },
+   {
+    "id": "primi",
+    "label": "Primipara mother",
+    "iap": false,
+    "nnf": true
+   }
+  ],
+  "autoPreterm38": true,
+  "nnf": {
+   "tcbMargin": 50,
+   "nearExchangeMargin": 50,
+   "monitorNear": "4-6h",
+   "monitorDeclining": "8-12h",
+   "postStopWindow": "12-24h"
+  },
+  "iap": {
+   "followRiskHrs": 24,
+   "followNoRiskHrs": 48,
+   "stopBelowMgdl": [
+    2,
+    3
+   ],
+   "tcbHigh": 13
+  },
+  "mohfwFollowup": {
+   "riskEarlyH": 48,
+   "riskEarlyVisit": "24h",
+   "riskLateVisit": "48h",
+   "noRiskMinH": 24,
+   "noRiskMaxH": 72,
+   "noRiskVisit": "48h",
+   "lateVisit": "optional"
+  },
+  "nice141": {
+   "riskHrs": 18,
+   "noRiskHrs": 24,
+   "minHrs": 24,
+   "minGa": 38
+  }
+ }
 }
