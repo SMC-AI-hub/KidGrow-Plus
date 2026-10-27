@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
     });
     const user = await me.json().catch(() => ({}));
     if (!me.ok || !user.id) return res.status(401).json({ error: "Session expired — sign in again." });
-    const svc = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: "Bearer " + process.env.SUPABASE_SERVICE_KEY, "Content-Type": "application/json" };
+    const svc = { apikey: (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY), Authorization: "Bearer " + (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY), "Content-Type": "application/json" };
     const profR = await fetch(process.env.SUPABASE_URL + "/rest/v1/profiles?id=eq." + user.id + "&select=razorpay_sub_id", { headers: svc });
     const prof = (await profR.json().catch(() => []))[0] || {};
     if (!prof.razorpay_sub_id) return res.status(400).json({ error: "No active subscription to cancel." });

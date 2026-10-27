@@ -1,5 +1,5 @@
 /* Vercel serverless: Razorpay webhook -> update subscription in Supabase.
-   Env needed: SUPABASE_URL, SUPABASE_SERVICE_KEY, RAZORPAY_WEBHOOK_SECRET.
+   Env needed: SUPABASE_URL, SUPABASE_SERVICE_KEY (or SUPABASE_SERVICE_ROLE_KEY), RAZORPAY_WEBHOOK_SECRET.
    Configure in Razorpay dashboard: subscription.authenticated/charged/
    activated/cancelled/completed/expired + payment.failed */
 const crypto = require("crypto");
@@ -23,8 +23,8 @@ module.exports = async function handler(req, res) {
     const ent = (evt.payload && (evt.payload.subscription || {}).entity) || (evt.payload && (evt.payload.payment || {}).entity) || {};
     const subId = ent.id && String(ent.id).startsWith("sub_") ? ent.id : (ent.subscription_id || "");
     const svc = {
-      apikey: process.env.SUPABASE_SERVICE_KEY,
-      Authorization: "Bearer " + process.env.SUPABASE_SERVICE_KEY,
+      apikey: (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
+      Authorization: "Bearer " + (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
       "Content-Type": "application/json",
     };
     const sb = (path, opts) => fetch(process.env.SUPABASE_URL + "/rest/v1/" + path, { headers: svc, ...opts });

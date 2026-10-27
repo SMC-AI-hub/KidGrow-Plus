@@ -444,11 +444,11 @@ function loadRazorpay() {
 }
 function subscribe() {
   if (!Cloud.enabled || !session) { showAuth("login"); return; }
-  if (!RZP_KEY) { toast("Payments not configured yet."); return; }
   toast("Preparing secure payment…");
   fetch("/api/create-subscription", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.access_token }, body: "{}" })
     .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
     .then(function (x) {
+      if (x.j && x.j.error === "PAYMENTS_NOT_CONFIGURED") throw new Error("Payments not configured yet.");
       if (!x.ok || !x.j.subscription_id) throw new Error((x.j && x.j.error) || "Payment backend not reachable.");
       return loadRazorpay().then(function () { return x.j; });
     })

@@ -1,5 +1,5 @@
 /* Vercel serverless: billing center data for the signed-in user.
-   Env needed: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY,
+   Env needed: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY (or SUPABASE_SERVICE_ROLE_KEY),
    RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET.
    Returns subscription status + invoices. Never returns secrets. */
 const RZP = "https://api.razorpay.com/v1";
@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
   try {
     const user = await authedUser(req);
     if (!user) return res.status(401).json({ error: "Sign in first." });
-    const svc = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: "Bearer " + process.env.SUPABASE_SERVICE_KEY };
+    const svc = { apikey: (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY), Authorization: "Bearer " + (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY) };
     const profR = await fetch(
       process.env.SUPABASE_URL + "/rest/v1/profiles?id=eq." + user.id +
       "&select=sub_status,trial_ends_at,current_period_end,razorpay_sub_id,razorpay_customer_id",

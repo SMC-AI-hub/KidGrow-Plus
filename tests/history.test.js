@@ -253,9 +253,9 @@ async function main() {
   const hdr = vm.runInContext("childHeader(globalThis.__kid)", sb);
   ok(hdr.includes("Asthma (J45.9)") && hdr.includes("Peanuts"), "childHeader carries problems + allergy");
   try {
-    const rec = sb.abhaJson(sb.__kid);
-    ok(rec.problems.length === 2 && rec.structuredAllergies.length === 1 && rec.visits[0].icd[0] === "J06.9" && /Amoxicillin/.test(rec.allergies), "ABHA export carries P1 fields");
-  } catch (e) { ok(false, "ABHA export carries P1 fields (" + e.message + ")"); }
+    const rec = sb.recordJson(sb.__kid);
+    ok(rec.problems.length === 2 && rec.structuredAllergies.length === 1 && rec.visits[0].icd[0] === "J06.9" && /Amoxicillin/.test(rec.allergies), "Health-record export carries P1 fields");
+  } catch (e) { ok(false, "Health-record export carries P1 fields (" + e.message + ")"); }
   ok(Sc.list().includes("apgar") && Sc.list().includes("ballard"), "apgar + ballard registered");
   const ap = Sc.run("apgar", { scores: [2, 2, 1, 2, 2] });
   ok(ap.ok && ap.total === 9 && /Reassuring/.test(ap.interp) && ap.source && /Screening/.test(ap.notice), "apgar via registry");

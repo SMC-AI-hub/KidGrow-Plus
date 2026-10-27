@@ -12,7 +12,7 @@ when online. No build step: static files + Vercel serverless API.
 | Overview | Dashboard (hero + pulse + NICU/MAR/growth cards), Children registry, Newborn care, Schedule & reminders |
 | Clinical | Milestones, Vaccination (IAP ACVIP) + QR card, AEFI, Growth (WHO/CDC/IAP) + alerts, Labs, Screening, Diet, Visits (SOAP), Prescription (mg/kg engine + formulary review), E-consent, NICU longitudinal, eMAR, Clinical calculators, Formulary review |
 | Front office | Tokens & billing, Vaccine stock, TV display |
-| Insights | Analytics (defined denominators), Emergency reckoner, Handouts (EN/TA/HI), Reports & certificates, MRD registers, CSV/ABHA/JSON exports |
+| Insights | Analytics (defined denominators), Emergency reckoner, Handouts (EN/TA/HI), Reports & certificates, MRD registers, CSV/JSON exports |
 | Platform | Multi-tenant orgs + invites + MFA, break-glass, quotas, lifecycle, DPDP consents, dual-write sync with conflict queue, FHIR R4 read API |
 
 ## 🚀 Quickstart

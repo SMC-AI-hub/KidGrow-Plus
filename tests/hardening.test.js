@@ -193,7 +193,7 @@ ok(!cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PRO
   ok(read("js/cloud.js").includes("data safe on this device, retrying"), "sync-failure microcopy states data safety");
   ok(read("index.html").includes('aria-label="Search and commands"') && read("css/style.css").includes("focus-visible"), "a11y: labelled controls + focus styles (F21)");
   ok(read("js/app.js").includes("f.focus({ preventScroll: true })"), "modals autofocus first control (F21)");
-  ok(read("js/exports.js").includes("abdmReady: false"), "ABDM disclaimed to manual-recording-only (E3)");
+  ok(!/abha|abdm/i.test(read("js/exports.js") + read("index.html") + read("js/app.js") + read("js/fhirx.js") + read("js/ops.js")), "ABHA fully removed from app surface (F12-REMOVED 2026-10-27)");
   ok(read(".github/workflows/ci.yml").includes("tests/e2e-smoke.js"), "CI runs e2e smoke (F23)");
   ok(read("js/app.js").includes("IDB.mirror") && read("js/app.js").includes('_meta'), "saves dual-write to IndexedDB shadow + LS meta (E1)");
   ok(read("js/idb.js").includes("IDB_CUTOVER = false") && read("js/app.js").includes("Adopted newer IndexedDB copy"), "cutover implemented but gated OFF for soak (E1)");

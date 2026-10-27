@@ -22,7 +22,7 @@ TypeScript/React migration is deferred to M8 and only if justified by team size.
 | Wards/beds, handover, discharge, analytics | ⚠️ partial (handover + NICU discharge summary ✅ 2026-10-16; wards/beds still missing) | M5–M6 |
 | Plans/quotas/suspension-grace billing | ⚠️ single plan only | M3 |
 | Backups tested, RPO/RTO, staging env | ❌ | M2 |
-| FHIR/ICD/LOINC/ABDM | ❌ | M6 |
+| FHIR/ICD/LOINC | ❌ (ABDM removed 2026-10-27, F12) | M6 |
 | DPDP consent/retention/breach workflows | ❌ | M3 + legal review |
 | Pen-test, clinician UAT, go-live gates | ❌ | M7 (human blockers) |
 
@@ -42,7 +42,7 @@ TypeScript/React migration is deferred to M8 and only if justified by team size.
 - **M4 — Relational migration (✅ DONE 2026-10-13 — 240/240 green: 120 offline + 77 isolation + 33 hardening + 10 api).** Dual-write (blob + relational),
   conflict-safe sync, idempotent orders; keep offline-first guarantees.
 - **M5 — Clinical modules (✅ DONE 2026-10-13 — 326/326 green: 178 offline + 97 isolation + 41 hardening + 10 api).** NICU longitudinal, eMAR + witness rule, validated fluids/feeds/nutrition calculators, growth alerts. Calculators await M7 clinician UAT before clinical-use claims.
-- **M6 — Reports/analytics/interop (✅ DONE 2026-10-14 — 365/365 green: 194 offline + 97 isolation + 48 hardening + 26 api).** Tenant-branded documents, MRD registers, denominator'd dashboards + clinical metrics, GET-only FHIR read API. ABDM Connector deferred — needs explicit authorization + sandbox credentials.
+- **M6 — Reports/analytics/interop (✅ DONE 2026-10-14 — 365/365 green: 194 offline + 97 isolation + 48 hardening + 26 api).** Tenant-branded documents, MRD registers, denominator'd dashboards + clinical metrics, GET-only FHIR read API. ABDM removed per owner 2026-10-27 (F12).
 - **M7 — Validation gates (human) (🛠️ PREP DELIVERED 2026-10-14 — see docs/M7-VALIDATION-PACK.md; execution needs pen-tester, clinicians, counsel).** Independent pen-test, clinician/pharmacist/nurse UAT, witnessed restore drill, legal/DPDP review. **No real patients before M7.**
 - **M8 — Scale.** Multi-facility enterprise, dedicated DB/keys option, React/TS
   migration decision, performance/load program.
