@@ -55,6 +55,7 @@ module.exports = async function handler(req, res) {
     }
     return res.status(200).json({ status: "ok" });
   } catch (e) {
+    if (/payload too large/.test((e && e.message) || "")) return res.status(413).json({ error: "payload too large" });
     console.error("[razorpay-webhook] 500:", (e && e.message) || e);
     return res.status(500).json({ error: "webhook failed" });
   }

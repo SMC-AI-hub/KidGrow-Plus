@@ -49,6 +49,7 @@ function renderConsent() {
         <span style="font-size:12.5px;color:var(--muted)">${esc(x.guardian || "")} (${esc(x.relation || "")})${x.witness ? " · witness: " + esc(x.witness) : ""}</span><br>
         ${x.sig ? `<img src="${x.sig}" style="height:44px;border:1px solid #e2e8f0;border-radius:6px;background:#fff" alt="sig">` : `<span style="font-size:12px;color:var(--muted)">no e-signature (wet-sign printout)</span>`}</div>
         <button class="btn btn-o btn-xs" data-act="printConsent" data-arg="${x.id}">🖨️</button>
+        ${x.status === "withdrawn" ? `<span class="badge" style="background:#fee2e2;color:#b91c1c">Withdrawn ${fmtDate(x.withdrawnAt)}</span>` : `<button class="btn btn-o btn-xs" data-act="withdrawConsent" data-arg="${x.id}">↩ Withdraw</button>`}
         <button class="btn btn-danger btn-xs" data-act="delConsent" data-arg="${x.id}">✕</button></div>`).join("")
       : `<div style="font-size:13px;color:var(--muted)">No consents yet — complete the form above and tap Save.</div>`}
     </div>
@@ -81,7 +82,7 @@ function saveConsent() {
     if (cv.toDataURL() === blank.toDataURL() && !confirm("No signature drawn — save anyway (wet-sign the printout)?")) return;
     if (cv.toDataURL() !== blank.toDataURL()) CONS_SIG = cv.toDataURL("image/png");
   }
-  c.consents.push({ id: uid(), date: document.getElementById("conDate").value || todayISO(), type: CONS_TYPE, text: document.getElementById("conText").value, guardian: document.getElementById("conGuard").value.trim(), relation: document.getElementById("conRel").value, witness: document.getElementById("conWit").value.trim(), by: document.getElementById("conBy").value.trim(), sig: CONS_SIG || "" });
+  c.consents.push({ id: uid(), date: document.getElementById("conDate").value || todayISO(), type: CONS_TYPE, status: "granted", text: document.getElementById("conText").value, guardian: document.getElementById("conGuard").value.trim(), relation: document.getElementById("conRel").value, witness: document.getElementById("conWit").value.trim(), by: document.getElementById("conBy").value.trim(), sig: CONS_SIG || "" });
   CONS_TEXT = null; CONS_SIG = null;
   auditSafe("Consent", `${c.name} — ${CONS_TYPE}`);
   save(); renderAll();
@@ -94,11 +95,20 @@ function delConsent(id) {
   auditSafe("Consent deleted", c.name);
   save(); renderAll();
 }
+function withdrawConsent(id) {
+  const c = child(); if (!c) return;
+  const x = (c.consents || []).find((v) => v.id === id); if (!x || x.status === "withdrawn") return;
+  if (!confirm(`Withdraw this consent (${(CONSENT_TYPES[x.type] || {}).label || x.type}, ${fmtDate(x.date)})? Withdrawal is logged and honored from now on; past care given under it remains lawful.`)) return;
+  x.status = "withdrawn"; x.withdrawnAt = todayISO();
+  auditSafe("Consent withdrawn", `${c.name} — ${x.type}`);
+  save(); renderAll();
+}
 function printConsent(id) {
   const c = child(); if (!c) return;
   const x = (c.consents || []).find((v) => v.id === id); if (!x) return;
   $("conPrint").innerHTML = `${clinicHeader()}
     <div style="text-align:center;font-weight:800;letter-spacing:1px;margin:6px 0">CONSENT FORM — ${(CONSENT_TYPES[x.type] || {}).label || x.type}</div>
+    ${x.status === "withdrawn" ? `<div style="text-align:center;color:#b91c1c;font-weight:700">WITHDRAWN ${fmtDate(x.withdrawnAt)} — kept for record</div>` : ""}
     ${childHeader(c)}
     <div style="border:1px solid #cbd5e1;border-radius:10px;padding:14px;font-size:14px;line-height:1.7;white-space:pre-wrap">${esc(x.text)}</div>
     <dl class="kv" style="margin-top:12px"><dt>Date</dt><dd>${fmtDate(x.date)}</dd><dt>Guardian</dt><dd>${esc(x.guardian || "—")} (${esc(x.relation || "—")})</dd><dt>Witness</dt><dd>${esc(x.witness || "—")}</dd><dt>Taken by</dt><dd>${esc(x.by || "—")}</dd></dl>
@@ -111,7 +121,7 @@ function printConsent(id) {
 
 /* E2c: delegated actions for templates in this file. */
 try {
-  ["delConsent", "printConsent", "saveConsent", "sigClear"].forEach(function (n) { actCall0(n); });
+  ["delConsent", "printConsent", "saveConsent", "sigClear", "withdrawConsent"].forEach(function (n) { actCall0(n); });
   actRegister("consTypeSel", function (el) { try { CONS_TYPE = el.value; CONS_TEXT = consentFill(CONS_TYPE, actArg(el)); renderConsent(); } catch (e) { actReport("consTypeSel", e); } });
   actRegister("consTextInput", function (el) { try { CONS_TEXT = el.value; } catch (e) { actReport("consTextInput", e); } });
 } catch (e) {}

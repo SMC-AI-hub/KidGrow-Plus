@@ -1,6 +1,14 @@
 # Changelog
 
 ## Unreleased (staging)
+- NEW: consent withdrawal path (DPDP) — status flip + withdrawnAt + audit +
+  Withdrawn badge + WITHDRAWN print stamp; covered by tests/consent.test.js.
+- NEW: in-app privacy notice v2026-10-27-v1 — first-run modal before any
+  collection, version+date stamp in settings, Settings re-view, re-prompt
+  on version bump (js/notice.js).
+- FIX: webhook returns 413 (was 500) on oversized bodies; clinic logo
+  escaped in sidebar brand + print letterhead (XSS hardening).
+- TOOL: scripts/restore-drill.js — machine restore drill, 7/7 green.
 - REMOVED: ABHA field + ABDM references per owner decision 2026-10-27 (F12).
   Children-Edit field, UIP CSV column, ABHA-ready JSON (now generic child
   health record), FHIR ABHA identifier, ABHA search matching — all deleted;

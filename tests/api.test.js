@@ -183,6 +183,11 @@ async function main() {
   };
   const rW401 = await runWh("subscription.activated", { id: "sub_9" }, false);
   ok(rW401._s === 401, "webhook rejects bad signature");
+  const rW413 = mkRes();
+  const bigReq = mkReq("x".repeat(300000));
+  bigReq.headers["x-razorpay-signature"] = "bogus";
+  await webhook(bigReq, rW413);
+  ok(rW413._s === 413, "webhook rejects oversized body with 413");
   seenWh.current = "created"; seenWh.patches = [];
   const rWAuth = await runWh("subscription.authenticated", { id: "sub_9" }, true);
   ok(rWAuth._s === 200 && seenWh.patches.length === 1 && seenWh.patches[0].sub_status === "authenticated", "webhook: authenticated stays gated (not active)");
