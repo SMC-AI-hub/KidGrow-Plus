@@ -221,6 +221,25 @@ async function main() {
   global.fetch = realFetch;
   ok(rS._s === 200 && rS._b.subscription_id === "sub_new", "create-subscription provisions sub");
   ok(!/MARKER_SECRET/.test(JSON.stringify(rS._b)), "create-subscription leaks no secret");
+  delete process.env.RAZORPAY_KEY_ID;
+  const rS503 = mkRes();
+  await createSub({ method: "POST", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rS503);
+  ok(rS503._s === 503 && rS503._b.error === "PAYMENTS_NOT_CONFIGURED", "create-subscription 503s cleanly with no Razorpay env");
+  process.env.RAZORPAY_KEY_ID = "rzp_MARKER_KEY";
+  delete process.env.SUPABASE_SERVICE_KEY;
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "MARKER_ROLE_KEY_role789";
+  let seenSvcKey = "";
+  global.fetch = async (url, opts) => {
+    if (String(url).includes("/auth/v1/user")) return J({ id: "u-bill-2", email: "doc2@clinic.in" });
+    if (String(url).includes("/rest/v1/profiles")) { seenSvcKey = (opts.headers.apikey || ""); return J([{ sub_status: "trialing", razorpay_sub_id: "" }]); }
+    return J({});
+  };
+  const rBRole = mkRes();
+  await billInfo({ method: "GET", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rBRole);
+  global.fetch = realFetch;
+  ok(rBRole._s === 200 && seenSvcKey === "MARKER_ROLE_KEY_role789", "billing-info falls back to SUPABASE_SERVICE_ROLE_KEY");
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.SUPABASE_SERVICE_KEY = "MARKER_SERVICE_KEY_def456";
 
   // ---- F11 guard: rate limit + validators + bounded reads ----
   const G = require("../api/_guard");

@@ -610,7 +610,6 @@ th{background:#0f2b4d;color:#fff}.due{background:#fefce8;border:1px solid #fde68
 <dt>Born</dt><dd>${esc(fmtDate(c.dob))} (${esc(ageStr(age))})</dd>
 <dt>Parent</dt><dd>${esc([c.mother, c.father].filter(Boolean).join(" & ") || "—")}${c.phone ? " · " + esc(c.phone) : ""}</dd>
 <dt>Blood</dt><dd>${esc(c.blood || "—")}${c.allergy ? " · ⚠️ " + esc(c.allergy) : ""}</dd>
-${c.abha ? "<dt>ABHA</dt><dd>" + esc(c.abha) + "</dd>" : ""}
 <dt>Growth</dt><dd>${lm ? `${esc(fmtDate(lm.date))}: ${lm.wt} kg · ${lm.ht} cm` : "Not recorded yet"}</dd></dl>
 ${due.length ? `<div class="due"><b>⏰ Due / overdue:</b> ${due.map((i) => `${esc(i.name)} ${esc(i.dose || "")} (${esc(fmtDate(i.due))})`).join(" · ")}</div>` : `<div class="due"><b>✅ Up to date</b> — no pending doses.</div>`}
 <table><tr><th>Age</th><th>Recommended Vaccines</th><th>Due on</th><th>Brand given</th><th>Given on</th><th>Batch</th></tr>${rows}${ex}</table>

@@ -286,7 +286,6 @@ function seedDemo() {
   c.asthma = { sev: "Mild persistent", best: "", controller: "Budesonide 100 MDI 2 puff BD + spacer", reliever: "Salbutamol MDI 2-4 puff SOS", triggers: ["Dust", "Viral cold", "Weather change"], green: "Continue controller daily.", yellow: "Reliever q4h via spacer + review within 24-48 h.", red: "Reliever now + rush to hospital.", pef: [] };
   c.dental = {}; ["55", "54", "53", "52", "51", "61", "62", "63", "64", "65", "75", "74", "73", "72", "71", "81", "82", "83", "84", "85"].forEach((t, i) => (c.dental[t] = { st: "e", d: addDays(c.dob, 200 + i * 12) }));
   c2.dental = {}; ["51", "61", "71", "81"].forEach((t, i) => (c2.dental[t] = { st: "e", d: addDays(c2.dob, 210 + i * 20) }));
-  c.abha = "91-2345-6789-0123";
   c.diet = { type: "nonveg" }; c2.diet = { type: "veg" };
   DB.settings = { clinic: "Smile Child Care Clinic", doctor: "Dr. A. Sharma, MD (Paediatrics)", reg: "TNMC 12345", addr: "12 Anna Nagar, Coimbatore", phone: "0422-4001234" };
 }
@@ -542,7 +541,7 @@ function openChildModal(id) {
   $("cGest").value = c?.gest || ""; $("cBirthLen").value = c?.birthLen || ""; $("cBirthHC").value = c?.birthHC || "";
   $("cFather").value = c?.father || ""; $("cMother").value = c?.mother || "";
   $("cFHt").value = c?.fHt || ""; $("cMHt").value = c?.mHt || ""; $("cPhone").value = c?.phone || "";
-  $("cPed").value = c?.ped || ""; $("cAllergy").value = c?.allergy || ""; $("cAbha").value = c?.abha || "";
+  $("cPed").value = c?.ped || ""; $("cAllergy").value = c?.allergy || "";
   try { if (typeof Hx !== "undefined" && Hx.fill) Hx.fill(c); } catch (eHx) {}
   openModal("mChild");
 }
@@ -564,7 +563,7 @@ function saveChild() {
   const id = $("cId").value;
   const dups = findDupChildren({ name, dob, phone: $("cPhone").value }, DB.children, id || null);
   if (dups.length && !confirm(`⚠️ Possible duplicate record:\n${dups.slice(0, 3).map((d) => `• ${d.c.name} (DOB ${fmtDate(d.c.dob)}) — ${d.why}`).join("\n")}\n\nSave anyway?`)) return;
-  const data = { name, sex: $("cSex").value, dob, blood: $("cBlood").value, birthWt: parseFloat($("cBirthWt").value) || "", gest: $("cGest").value, birthLen: parseFloat($("cBirthLen").value) || "", birthHC: parseFloat($("cBirthHC").value) || "", father: $("cFather").value.trim(), mother: $("cMother").value.trim(), fHt: parseFloat($("cFHt").value) || "", mHt: parseFloat($("cMHt").value) || "", phone: $("cPhone").value.trim(), abha: $("cAbha").value.trim(), ped: $("cPed").value.trim(), allergy: $("cAllergy").value.trim() };
+  const data = { name, sex: $("cSex").value, dob, blood: $("cBlood").value, birthWt: parseFloat($("cBirthWt").value) || "", gest: $("cGest").value, birthLen: parseFloat($("cBirthLen").value) || "", birthHC: parseFloat($("cBirthHC").value) || "", father: $("cFather").value.trim(), mother: $("cMother").value.trim(), fHt: parseFloat($("cFHt").value) || "", mHt: parseFloat($("cMHt").value) || "", phone: $("cPhone").value.trim(), ped: $("cPed").value.trim(), allergy: $("cAllergy").value.trim() };
   try { if (typeof Hx !== "undefined" && Hx.collect) Object.assign(data, Hx.collect()); } catch (eHx) {}
   if (id) { const ex = DB.children.find((x) => x.id === id); if (ex) normalizeChild(Object.assign(ex, data)); }
   else DB.children.push(normalizeChild(Object.assign({ id: uid(), created: todayISO(), mrn: nextMrn(DB.children) }, data)));
@@ -587,7 +586,6 @@ function childHay(c) {
     name: String(c.name || "").toLowerCase(),
     parents: `${c.father || ""} ${c.mother || ""}`.toLowerCase(),
     digits: String(c.phone || "").replace(/\D/g, ""),
-    abha: String(c.abha || "").replace(/\D/g, ""),
     mrn: String(c.mrn || "").toLowerCase(),
     dob: String(c.dob || ""),
   };
@@ -610,7 +608,6 @@ function matchChildren(q, kids, recentIds) {
       if (t.length >= 2 && h.parents.includes(t) && s < 25) { s = 25; w = "parent"; }
       if (td.length >= 3 && h.digits.includes(td) && s < 50) { s = 50; w = "phone"; }
       if (t.length >= 2 && h.mrn.includes(t) && s < 45) { s = 45; w = "MRN"; }
-      if (td.length >= 4 && h.abha.includes(td) && s < 30) { s = 30; w = "ABHA"; }
       if (td.length >= 4 && h.dob.includes(t) && s < 20) { s = 20; w = "DOB"; }
       if (!s) { okAll = false; break; }
       score += s; if (w && !why.includes(w)) why.push(w);
@@ -1956,7 +1953,6 @@ function childHeader(c) {
   return `<dl class="kv" style="margin-bottom:14px">
     <dt>Child</dt><dd>${esc(c.name)} · ${c.sex === "boy" ? "Boy" : "Girl"} · ${ageStr(a)} (DOB ${fmtDate(c.dob)})</dd>
     <dt>Parents</dt><dd>${esc(c.father || "—")} · ${esc(c.mother || "—")} ${c.phone ? "· ☎ " + esc(c.phone) : ""}</dd>
-    ${c.abha ? "<dt>ABHA</dt><dd>" + esc(c.abha) + "</dd>" : ""}
     <dt>Birth</dt><dd>${c.birthWt ? c.birthWt + " kg" : "—"} ${c.gest ? "· " + c.gest + " wk" : ""} ${c.blood ? "· Blood " + esc(c.blood) : ""}</dd>
     ${c.allergy ? `<dt>Alerts</dt><dd style="color:var(--red)">⚠ ${esc(c.allergy)}</dd>` : ""}${(() => { try { return (typeof Hx !== "undefined" && Hx.headerProblems) ? Hx.headerProblems(c) : ""; } catch (eHx) { return ""; } })()}</dl>`;
 }

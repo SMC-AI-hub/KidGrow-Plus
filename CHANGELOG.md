@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased (staging)
+- REMOVED: ABHA field + ABDM references per owner decision 2026-10-27 (F12).
+  Children-Edit field, UIP CSV column, ABHA-ready JSON (now generic child
+  health record), FHIR ABHA identifier, ABHA search matching — all deleted;
+  hardening test pins ABHA-absence.
+- FIX: api/* accept SUPABASE_SERVICE_ROLE_KEY as fallback for
+  SUPABASE_SERVICE_KEY; create-subscription returns 503
+  PAYMENTS_NOT_CONFIGURED when Razorpay env is missing (client toasts
+  instead of failing silently).
+
 ## v10.40.0 — 2026-10-19 — Clinical-depth track (Phases 1–8)
 - NEW: history/perinatal data model + shared clinical infra (migrations,
   versioned content packs, ICD-10 terms, tiered alerts, score registry,

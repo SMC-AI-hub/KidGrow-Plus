@@ -1,7 +1,7 @@
 /* =====================================================
    NeoKid Care — Data & exports (Round 4)
    UIP register · due-list · AEFI / birth line-lists ·
-   coverage CSV · ABHA/ABDM-ready record JSON.
+   coverage CSV · child health record JSON.
    ===================================================== */
 function csvEsc(x) {
   const s = String(x ?? "");
@@ -22,9 +22,9 @@ function schedCodes() {
 /* ---- UIP immunisation register ---- */
 function uipCsv(children) {
   const codes = schedCodes();
-  const head = ["Child", "DOB", "Sex", "Father", "Mother", "Phone", "ABHA", ...codes.map((x) => x.code)];
+  const head = ["Child", "DOB", "Sex", "Father", "Mother", "Phone", ...codes.map((x) => x.code)];
   const rows = (children || []).map((c) => [
-    c.name, c.dob, c.sex, c.father || "", c.mother || "", c.phone || "", c.abha || "",
+    c.name, c.dob, c.sex, c.father || "", c.mother || "", c.phone || "",
     ...codes.map((x) => { const r = (c.vaccines || {})[x.code]; return r && r.date ? dmy(r.date) : ""; }),
   ]);
   return csvOf([head, ...rows]);
@@ -69,13 +69,12 @@ function birthCsv(children) {
   });
   return csvOf([head, ...rows]);
 }
-/* ---- ABHA/ABDM-ready record (per child) ---- */
-function abhaJson(c) {
+/* ---- Child health record JSON (per child) ---- */
+function recordJson(c) {
   const codes = schedCodes();
   return {
-    record: "KidGrowPro-Child-Health-Record", version: 2, abdmReady: false,
-    note: "ABHA ID recorded manually — ABDM HIP/MHR upload is NOT built (see docs/F12-ABDM-POSITION.md).",
-    profile: { name: c.name, dob: c.dob, sex: c.sex, blood: c.blood || "", phone: c.phone || "", father: c.father || "", mother: c.mother || "", abhaId: c.abha || "", address: (DB.settings || {}).addr || "" },
+    record: "KidGrowPro-Child-Health-Record", version: 2,
+    profile: { name: c.name, dob: c.dob, sex: c.sex, blood: c.blood || "", phone: c.phone || "", father: c.father || "", mother: c.mother || "", address: (DB.settings || {}).addr || "" },
     allergies: ((typeof Hx !== "undefined" && Hx.allergyText) ? Hx.allergyText(c) : (c.allergy || "")),
     structuredAllergies: c.allergies || [],
     problems: c.problems || [],
@@ -109,7 +108,7 @@ function renderExport() {
     ${card("📊", "Coverage summary (CSV)", `Per-antigen coverage + dropout + fully-immunised counts.`, "⬇ Download", "dlCov")}"
     ${card("⚠️", "AEFI line-list (CSV)", `${nae} event(s) across all children for DIO reporting.`, "⬇ Download", "dlAefi")}"
     ${card("📖", "Birth register (CSV)", `One row per child with delivery + screening results.`, "⬇ Download", "dlBirth")}"
-    ${card("🪪", "ABHA-ready record (JSON)", `${c ? `For <b>${esc(c.name)}</b>${c.abha ? ` · ABHA ${esc(c.abha)}` : " · <span style='color:var(--amber)'>no ABHA linked — add in Children → Edit</span>"}` : "No child selected."} Links demographics + immunisation + growth to the ABHA ID.`, "⬇ Download", "dlAbha")}"
+    ${card("🪪", "Child health record (JSON)", `${c ? `For <b>${esc(c.name)}</b>` : "No child selected."} Links demographics + immunisation + growth in one file.`, "⬇ Download", "dlRecord")}"
     ${card("🔥", "FHIR R4 Bundle (JSON)", `${c ? `For <b>${esc(c.name)}</b> — Patient, Immunizations, Observations, Encounters, Allergies, Consents.` : "No child selected."}`, "⬇ Download", "dlFhir")}"
   </div>
   <div class="card" style="margin-top:12px"><h3>🗑️ Erased records (30-day grace)</h3>
@@ -125,8 +124,7 @@ function renderExport() {
     <input type="file" id="encFile" accept=".kgenc,.json" style="display:none" data-onchange="importEncryptedSel"></div>
     <div class="hint">${(typeof backupAgeLine === "function") ? backupAgeLine() : ""}</div>
     <div class="hint">${(typeof storageLine === "function") ? storageLine() : ""}</div>
-    <div class="hint">${(typeof undoImportLine === "function") ? undoImportLine() : ""}</div></div>
-  <div class="hint" style="margin-top:8px">ABDM upload is not built — ABHA numbers here are manual records only, not a gateway connection.</div>`;
+    <div class="hint">${(typeof undoImportLine === "function") ? undoImportLine() : ""}</div></div>`;
 }
 function dlFhir() {
   const c = child();
@@ -143,15 +141,15 @@ function dlDue() { downloadFile(`due_list_${todayISO()}.csv`, dueListCsv(DB.chil
 function dlCov() { downloadFile(`coverage_${todayISO()}.csv`, covCsv(DB.children, todayISO()), "text/csv"); auditSafe("Export", "Coverage"); }
 function dlAefi() { downloadFile(`aefi_linelist_${todayISO()}.csv`, aefiCsvAll(DB.children), "text/csv"); auditSafe("Export", "AEFI line-list"); }
 function dlBirth() { downloadFile(`birth_register_${todayISO()}.csv`, birthCsv(DB.children), "text/csv"); auditSafe("Export", "Birth register"); }
-function dlAbha() {
+function dlRecord() {
   const c = child(); if (!c) return;
-  downloadFile(`${c.name.replace(/[^\w]+/g, "_")}_abha_record.json`, JSON.stringify(abhaJson(c), null, 1), "application/json");
-  auditSafe("Export", `ABHA record — ${c.name}`);
+  downloadFile(`${c.name.replace(/[^\w]+/g, "_")}_health_record.json`, JSON.stringify(recordJson(c), null, 1), "application/json");
+  auditSafe("Export", `Health record — ${c.name}`);
 }
 
 /* E2c: delegated actions for templates in this file. */
 try {
-  ["erasePurgeNow", "eraseRestore", "exportEncrypted", "dlUip", "dlDue", "dlCov", "dlAefi", "dlBirth", "dlAbha", "dlFhir"].forEach(function (n) { actCall0(n); });
+  ["erasePurgeNow", "eraseRestore", "exportEncrypted", "dlUip", "dlDue", "dlCov", "dlAefi", "dlBirth", "dlRecord", "dlFhir"].forEach(function (n) { actCall0(n); });
   actRegister("importEncryptedSel", function (el) { try { importEncrypted(el.files[0]); el.value = ""; } catch (e) { actReport("importEncryptedSel", e); } });
   actRegister("clickEncFile", function () { try { document.getElementById("encFile").click(); } catch (e) { actReport("clickEncFile", e); } });
 } catch (e) {}

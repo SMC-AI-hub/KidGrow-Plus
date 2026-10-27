@@ -1,7 +1,7 @@
 /* NeoKid Care — client-side FHIR R4 Bundle export (Phase 8, per child).
    Pure builder over the local record: Patient + Immunization + growth/Hb
    Observations + Encounters + AllergyIntolerance + Consents. Complements the
-   server read facade (api/fhir). ABDM upload still needs a registered HIP. */
+   server read facade (api/fhir). National health-ID support removed 2026-10-27 (see F12). */
 function fhirClean(o) {
   if (Array.isArray(o)) return o.map(fhirClean);
   if (o && typeof o === "object") {
@@ -17,8 +17,7 @@ function fhirClean(o) {
 function fhirPatient(c) {
   return fhirClean({
     resourceType: "Patient", id: String(c.id || ""),
-    identifier: [{ system: "urn:kidgrow:mrn", value: c.mrn || c.id || "" }]
-      .concat(c.abha ? [{ system: "https://abha.abdm.gov.in", value: c.abha }] : []),
+    identifier: [{ system: "urn:kidgrow:mrn", value: c.mrn || c.id || "" }],
     name: [{ text: c.name || "" }],
     gender: c.sex === "boy" ? "male" : c.sex === "girl" ? "female" : "unknown",
     birthDate: c.dob || undefined,
