@@ -155,7 +155,7 @@ function copyDayClose() {
 function exportDayCloseCSV() {
   if (!OPS.day) OPS.day = todayISO();
   const d = dayCloseData(OPS.day);
-  const q = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
+  const q = (v) => csvEsc(v); // KG-PT-003: single hardened quoter (formula-safe)
   const L = [["Date", "Receipt", "Patient", "Particulars", "Mode", "Staff", "Total", "Paid"].map(q).join(",")];
   d.bills.forEach((b) => L.push([d.date, (typeof receiptRef === "function" ? receiptRef(b) : b.invNo || ("R-" + String(b.id || "").slice(-6).toUpperCase())), b.name, b.items.map((i) => i.desc).join(" + "), b.mode || "", b.by || "", b.total, b.paid].map(q).join(",")));
   const blob = new Blob([L.join("\n")], { type: "text/csv" });
@@ -372,7 +372,7 @@ function stockSetQty(id) {
   save(); renderStock();
 }
 function exportStockCSV() {
-  const q = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
+  const q = (v) => csvEsc(v); // KG-PT-003: single hardened quoter (formula-safe)
   const L = [["Vaccine", "Code", "Brand", "Batch", "Expiry", "Qty", "Reorder level", "Updated", "Note"].map(q).join(",")];
   stockLots().forEach((l) => L.push([l.name, l.code, l.brand, l.batch, l.expiry, l.qty, l.min, l.updated, l.note].map(q).join(",")));
   const blob = new Blob([L.join("\n")], { type: "text/csv" });

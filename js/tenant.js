@@ -294,6 +294,9 @@ function mfaFinish(factorId) {
 function mfaMaybe(e) {
   var m = String((e && e.message) || "") + " " + String((e && e.code) || "");
   if (!/42501|permission denied|role cannot write/i.test(m)) return false;
+  // KG-PT-001: post-0013 a lapsed subscription also surfaces as 42501 — route to
+  // the paywall, not the MFA prompt (no point verifying MFA for a locked account).
+  try { if (typeof Cloud !== "undefined" && Cloud.enabled && typeof currentAccess === "function" && !currentAccess().ok && typeof enforceGate === "function") { enforceGate(); return true; } } catch (_) {}
   if (!T.role || MFA_ROLES.indexOf(T.role) < 0) return false;
   if (T._aal === "aal2") return false;
   toast("🔐 Verification needed for this action.");

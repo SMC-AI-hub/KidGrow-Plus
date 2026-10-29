@@ -1,6 +1,17 @@
 # Changelog
 
 ## Unreleased (staging)
+- SEC (KG-PT-001, P1): server-side subscription gate — RLS enforces
+  entitlement (migration 0013, staging-applied); lapsed = writes denied,
+  reads/export stay open; break-glass honored server-side; 42501 routes to
+  paywall instead of MFA prompt; regression supabase/tests/rls-gate.sql 11/11.
+- SEC (KG-PT-002, P2): webhook idempotency — evt.id dedupe + stale-event
+  guard (migration 0014, staging-applied); redeliveries acked, not re-applied.
+- SEC (KG-PT-003, P2): CSV formula injection closed — hardened csvEsc + all
+  six exporters routed through it; new tests/exports.test.js (26 asserts).
+- SEC (KG-PT-004, P3): FHIR allowlist own-property check (__proto__ → 404).
+- SEC (KG-PT-005, P3): rate-limit key prefers x-real-ip (XFF rotation fixed).
+- VER: v10.53.1 / SW neokid-v49.
 - NEW: consent withdrawal path (DPDP) — status flip + withdrawnAt + audit +
   Withdrawn badge + WITHDRAWN print stamp; covered by tests/consent.test.js.
 - NEW: in-app privacy notice v2026-10-27-v1 — first-run modal before any

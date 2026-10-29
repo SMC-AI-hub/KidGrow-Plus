@@ -58,6 +58,12 @@ async function main() {
   const r401 = mkRes();
   await fhir({ method: "GET", url: "/api/fhir/Patient?tenant=11111111-1111-1111-1111-111111111111", headers: {} }, r401);
   ok(r401._s === 401, "missing user JWT rejected");
+  const rProto = mkRes();
+  await fhir({ method: "GET", url: "/api/fhir/__proto__?tenant=11111111-1111-1111-1111-111111111111", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rProto);
+  ok(rProto._s === 404, "KG-PT-004: __proto__ rejected by allowlist");
+  const rCtor = mkRes();
+  await fhir({ method: "GET", url: "/api/fhir/constructor?tenant=11111111-1111-1111-1111-111111111111", headers: { authorization: "Bearer USER_JWT_0123456789abcdef" } }, rCtor);
+  ok(rCtor._s === 404, "KG-PT-004: constructor rejected by allowlist");
   const r400 = mkRes();
   await fhir({ method: "GET", url: "/api/fhir/Patient", headers: { authorization: "Bearer xxxxxxxxxxxxxxxxxxxx" } }, r400);
   ok(r400._s === 400, "missing tenant rejected");
@@ -166,14 +172,22 @@ async function main() {
     process.nextTick(() => { r.emit("data", Buffer.from(body)); r.emit("end"); });
     return r;
   };
-  const seenWh = { patches: [], current: "created" };
+  const seenWh = { patches: [], current: "created", seenEv: new Set(), evRows: 0, lastTs: null };
   global.fetch = async (url, opts) => {
-    if (String(url).includes("profiles?razorpay_sub_id")) return J([{ id: "u-wh-1", sub_status: seenWh.current }]);
-    if (String(url).includes("profiles?id=eq.")) { seenWh.patches.push(JSON.parse(opts.body)); return J({}); }
+    if (String(url).includes("profiles?razorpay_sub_id")) return J([{ id: "u-wh-1", sub_status: seenWh.current, last_webhook_at: seenWh.lastTs }]);
+    if (String(url).includes("profiles?id=eq.")) { const pb = JSON.parse(opts.body); seenWh.patches.push(pb); if (pb.last_webhook_at) seenWh.lastTs = pb.last_webhook_at; return J({}); }
+    if (String(url).includes("subscription_events?razorpay_event_id=eq.")) {
+      const eid = decodeURIComponent(String(url).split("razorpay_event_id=eq.")[1].split("&")[0]);
+      return J(seenWh.seenEv.has(eid) ? [{ id: 7 }] : []);
+    }
+    if (String(url).includes("subscription_events") && opts && opts.method === "POST") {
+      const eb = JSON.parse(opts.body); if (eb.razorpay_event_id) seenWh.seenEv.add(eb.razorpay_event_id);
+      seenWh.evRows++; return J({});
+    }
     return J({});
   };
-  const runWh = async (event, ent, sigOk) => {
-    const body = JSON.stringify({ event, payload: { subscription: { entity: ent } } });
+  const runWh = async (event, ent, sigOk, extra) => {
+    const body = JSON.stringify({ event, payload: { subscription: { entity: ent } }, ...(extra || {}) });
     const req = mkReq(body);
     req.headers["x-razorpay-signature"] = sigOk
       ? crypto.createHmac("sha256", "MARKER_WEBHOOK").update(Buffer.from(body)).digest("hex") : "bogus";
@@ -200,6 +214,14 @@ async function main() {
   seenWh.current = "active"; seenWh.patches = [];
   const rWFail2 = await runWh("payment.failed", { id: "pay_2", subscription_id: "sub_9" }, true);
   ok(rWFail2._s === 200 && seenWh.patches.length === 1 && seenWh.patches[0].sub_status === "past_due", "webhook: failed recurring charge -> past_due");
+
+  seenWh.current = "authenticated"; seenWh.patches = []; seenWh.evRows = 0; seenWh.lastTs = null;
+  const rWD1 = await runWh("subscription.activated", { id: "sub_9", current_end: 1763078400 }, true, { id: "evt_dup_1", created_at: 1763078400 });
+  const rWD2 = await runWh("subscription.activated", { id: "sub_9", current_end: 1763078400 }, true, { id: "evt_dup_1", created_at: 1763078400 });
+  ok(rWD1._s === 200 && !rWD1._b.duplicate && rWD2._s === 200 && rWD2._b.duplicate === true && seenWh.patches.length === 1 && seenWh.evRows === 1, "KG-PT-002: redelivered evt.id deduped (1 PATCH, 1 row)");
+  seenWh.patches = []; seenWh.evRows = 0;
+  const rWStale = await runWh("subscription.cancelled", { id: "sub_9" }, true, { id: "evt_old_9", created_at: 1763000000 });
+  ok(rWStale._s === 200 && rWStale._b.stale === true && seenWh.patches.length === 0 && seenWh.evRows === 0, "KG-PT-002: stale out-of-order event acknowledged, not applied");
 
   // ---- create-subscription ----
   const createSub = require("../api/create-subscription.js");
@@ -254,6 +276,11 @@ async function main() {
   for (let i = 0; i < 61; i++) { if (!G.rateLimit(mkGReq(), { prefix: "t", max: 60 }).ok) trips++; }
   ok(trips === 1, "rate limit trips on 61st request in window");
   ok(G.rateLimit(mkGReq("8.8.8.8"), { prefix: "t", max: 60 }).ok, "rate limit is per-IP");
+  G._resetForTests();
+  const mkXR = (xff) => ({ headers: { "x-real-ip": "5.6.7.8", "x-forwarded-for": xff }, socket: {} });
+  let tripsX = 0;
+  for (let i = 0; i < 61; i++) { if (!G.rateLimit(mkXR("1.2.3." + i), { prefix: "x", max: 60 }).ok) tripsX++; }
+  ok(tripsX === 1, "KG-PT-005: rotating XFF under constant x-real-ip shares one bucket");
   ok(!G.isTokenShape("") && !G.isTokenShape("short") && G.isTokenShape("USER_JWT_0123456789abcdef"), "token shape check");
   ok(G.isUuid("11111111-1111-1111-1111-111111111111") && !G.isUuid("nope"), "uuid check");
   ok(G.isEmail("doc@clinic.in") && !G.isEmail("a@b"), "email check");

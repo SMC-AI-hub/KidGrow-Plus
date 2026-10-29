@@ -5,7 +5,13 @@
    ===================================================== */
 function csvEsc(x) {
   const s = String(x ?? "");
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  // KG-PT-003: neutralise spreadsheet formula injection. A leading = + - @
+  // (or tab/CR, which some parsers treat as a prefix) would execute on open
+  // in Excel/Sheets. Prefixing with ' is data-preserving: Excel renders it as
+  // an escape marker, not content. First-char-only by design: a leading space
+  // is never evaluated, so benign values pass through byte-identical.
+  const t = /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+  return /[",\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
 }
 function csvOf(rows) { return rows.map((r) => r.map(csvEsc).join(",")).join("\n"); }
 function downloadFile(name, content, mime) {

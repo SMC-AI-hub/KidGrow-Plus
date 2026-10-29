@@ -204,5 +204,6 @@ ok(!cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PRO
   ok(read("sw.js").includes("./js/idb.js"), "SW shell caches idb store");
 }
 
+ok(read("js/tenant.js").includes("KG-PT-001") && read("js/tenant.js").includes("!currentAccess().ok"), "paywall routed before MFA prompt on 42501 (KG-PT-001)");
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

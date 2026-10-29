@@ -112,7 +112,8 @@ async function handler(req, res) {
   const parts = u.pathname.replace(/\/$/, "").split("/");
   const resource = slug0 || (parts[parts.length - 1] === "fhir" ? "metadata" : parts[parts.length - 1]);
   if (resource === "metadata" || resource === "metadata.json") { res.status(200).json(metadata()); return; }
-  if (!TABLES[resource]) { res.status(404).json({ resourceType: "OperationOutcome", issue: [{ severity: "error", code: "not-found", diagnostics: "unknown resource" }] }); return; }
+  /* KG-PT-004: own-property allowlist (__proto__/constructor must 404, not 502) */
+  if (!Object.prototype.hasOwnProperty.call(TABLES, resource)) { res.status(404).json({ resourceType: "OperationOutcome", issue: [{ severity: "error", code: "not-found", diagnostics: "unknown resource" }] }); return; }
   const tenant = u.searchParams.get("tenant") || "";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenant)) { res.status(400).json({ error: "tenant query param (uuid) required" }); return; }
   const auth = (req.headers && (req.headers.authorization || req.headers.Authorization)) || "";

@@ -22,6 +22,10 @@ module.exports = async function handler(req, res) {
     const name = evt.event || "";
     const ent = (evt.payload && (evt.payload.subscription || {}).entity) || (evt.payload && (evt.payload.payment || {}).entity) || {};
     const subId = ent.id && String(ent.id).startsWith("sub_") ? ent.id : (ent.subscription_id || "");
+    // KG-PT-002: event identity for idempotency + stale guard.
+    const evtId = evt.id || "";
+    const evtTs = (typeof evt.created_at === "number" && isFinite(evt.created_at))
+      ? new Date(evt.created_at * 1000).toISOString() : null;
     const svc = {
       apikey: (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
       Authorization: "Bearer " + (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
@@ -42,15 +46,28 @@ module.exports = async function handler(req, res) {
     // the user previously paid (active/cancelled/past_due).
     else if (name === "payment.failed") { patch = { sub_status: "past_due" }; guardFrom = ["active", "cancelled", "past_due"]; }
 
+    if (patch && evtTs) patch.last_webhook_at = evtTs; // KG-PT-002: advance the stale-guard marker
     if (patch && subId) {
       // find user by razorpay_sub_id
-      const r = await sb("profiles?razorpay_sub_id=eq." + encodeURIComponent(subId) + "&select=id,sub_status");
+      const r = await sb("profiles?razorpay_sub_id=eq." + encodeURIComponent(subId) + "&select=id,sub_status,last_webhook_at");
       const rows = await r.json().catch(() => []);
       if (rows[0]) {
+        // KG-PT-002: idempotency — Razorpay retries redeliver the same evt.id.
+        if (evtId) {
+          try {
+            const d = await sb("subscription_events?razorpay_event_id=eq." + encodeURIComponent(evtId) + "&select=id");
+            const seen = await d.json().catch(() => []);
+            if (seen && seen[0] && seen[0].id) return res.status(200).json({ status: "ok", duplicate: true });
+          } catch (e) { /* lookup failure: proceed (fail-open; today's behavior, never worse) */ }
+        }
+        // KG-PT-002: stale guard — a redelivered older event must not regress state.
+        if (evtTs && rows[0].last_webhook_at && evtTs <= rows[0].last_webhook_at) {
+          return res.status(200).json({ status: "ok", stale: true });
+        }
         if (!guardFrom || guardFrom.indexOf(rows[0].sub_status) > -1) {
           await sb("profiles?id=eq." + rows[0].id, { method: "PATCH", body: JSON.stringify(patch) });
         }
-        await sb("subscription_events", { method: "POST", body: JSON.stringify({ user_id: rows[0].id, event: name, razorpay_sub_id: subId, payload: evt }) });
+        await sb("subscription_events", { method: "POST", body: JSON.stringify({ user_id: rows[0].id, event: name, razorpay_sub_id: subId, razorpay_event_id: evtId || null, payload: evt }) });
       }
     }
     return res.status(200).json({ status: "ok" });

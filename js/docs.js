@@ -126,7 +126,7 @@ function printMilestonesFull() {
 
 function exportMilestonesCSV() {
   const c = child(); if (!c) return;
-  const q = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
+  const q = (v) => csvEsc(v); // KG-PT-003: single hardened quoter (formula-safe)
   const L = [["Child", "Band #", "Band", "Domain", "Milestone", "Status"].map(q).join(",")];
   MILESTONES.forEach((b, bi) => b.items.forEach((it, ii) =>
     L.push([c.name, bi + 1, b.band, DOMAIN_META[it.d].label, it.t, msValLabel((c.milestones || {})[bi + "_" + ii])].map(q).join(","))));
