@@ -167,7 +167,7 @@ function log(action, detail) {
 function exportAudit() {
   if (!need(3, "export audit")) return;
   const rows = [["Time", "User", "Action", "Detail"], ...(DB.audit || []).map((a) => [a.t, a.user, a.action, a.detail])];
-  const csv = rows.map((r) => r.map((x) => `"${String(x ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const csv = rows.map((r) => r.map(csvEsc).join(",")).join("\n"); // KG-PT-003: hardened quoter
   const b = new Blob([csv], { type: "text/csv" }), el = document.createElement("a");
   el.href = URL.createObjectURL(b); el.download = `kidgrow_audit_${todayISO()}.csv`; el.click();
   setTimeout(() => URL.revokeObjectURL(el.href), 2000);

@@ -10,3 +10,4 @@ if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
     reg.onupdatefound = function () { watch(reg.installing); };
   }).catch(function () {});
 }
+try { if (typeof noticeMaybeShow === "function") noticeMaybeShow(); } catch (e) {}

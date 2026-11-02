@@ -410,6 +410,9 @@
             </div>
             <button class="btn btn-p" data-act="saveSettings">💾 Save clinic profile</button>
           </div>
+          <div class="card"><h3>🔒 Privacy notice</h3><div class="hint" id="noticeStatus"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-o btn-sm" data-act="noticeShow">📄 View privacy notice</button></div>
+          </div>
           <div class="card"><h3>🎨 Appearance</h3><div class="hint">App colors — applies instantly, saved with your login</div>
             <div class="theme-grid">
               <button class="theme-sw" data-theme="light" data-act="setTheme" data-arg="light"><span class="sw" style="--a:#0d9488;--b:#0f2b4d"></span>Classic</button>
@@ -493,6 +496,19 @@
     <button class="btn btn-p btn-sm" data-act="confirmMerge">Merge records</button>
     <button class="btn btn-o btn-sm" data-act="closeModal" data-arg="mMerge">Cancel</button>
   </div>
+</div></div>
+<div class="modal-bg" id="mNotice"><div class="modal">
+  <h3>🔒 Privacy notice</h3><div class="hint">Notice v2026-10-27-v1 · shown before any patient data is recorded</div>
+  <div style="font-size:13.5px;line-height:1.65">
+  <p><b>Who looks after your data.</b> This clinic is responsible for your child's health records. NeoKid Care provides the software; hosting, database and payments run with contracted processors — your data is never sold and never used for advertising.</p>
+  <p><b>What we record &amp; why.</b> Child details, growth, vaccines, visits and prescriptions — for treatment and continuity of care. Guardian contact details — for care communication and billing. Login and sync records — for security.</p>
+  <p><b>Your choices.</b> Treatment consent is recorded at registration. Optional uses (research, marketing) need your separate opt-in and can be withdrawn anytime — withdrawal applies from that day forward and is logged.</p>
+  <p><b>Your rights.</b> You can ask to see, correct, or delete records (medical rules may require keeping some), nominate someone, or complain to the clinic's grievance officer.</p>
+  <p><b>How it's protected.</b> Encrypted in transit and storage, access limited by staff role, every access logged, each clinic's data kept separate.</p>
+  <p><b>Keeping &amp; deleting.</b> Medical records are kept as required by medical-record rules, then securely deleted. You can request deletion anytime; deletion pauses while a record is under legal hold.</p>
+  </div>
+  <div class="hint" id="noticePrevAccept"></div>
+  <div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-p" data-act="noticeAccept">✓ I understand — continue</button></div>
 </div></div>
 <div class="modal-bg" id="mChild"><div class="modal">
   <h3 id="childModalTitle">Register child</h3><div class="hint" style="font-size:12.5px;color:var(--muted)">Starred fields are required</div>
@@ -698,6 +714,7 @@
 <script src="js/comply.js"></script>
 <script src="js/diet.js"></script>
 <script src="js/consent.js"></script>
+<script src="js/notice.js"></script>
 <script src="js/handouts.js"></script>
 <script src="js/handbook.js"></script>
 <script src="js/exports.js"></script>

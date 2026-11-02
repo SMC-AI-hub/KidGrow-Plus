@@ -14,6 +14,11 @@ const buckets = new Map(); // key -> { n, reset }
 
 function ipOf(req) {
   try {
+    // KG-PT-005: X-Forwarded-For[0] is client-forgeable (Vercel appends the true
+    // client IP to any client-sent XFF), so rotating XFF minted a fresh bucket
+    // per request. Prefer Vercel-authoritative x-real-ip; XFF[0] is fallback only.
+    const real = (req.headers["x-real-ip"] || "").trim();
+    if (real) return real.slice(0, 64);
     const f = (req.headers["x-forwarded-for"] || "").split(",")[0].trim();
     if (f) return f.slice(0, 64);
     return ((req.socket && req.socket.remoteAddress) || "?").slice(0, 64);

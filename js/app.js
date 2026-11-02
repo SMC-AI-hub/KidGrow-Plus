@@ -358,7 +358,7 @@ function renderBrand() {
   const nm = $("brandName"), sb = $("brandSub"), lg = $("brandLogo");
   if (nm) nm.textContent = s.clinic || "NeoKid Care";
   if (sb) { const ld = (typeof letterDoc === "function") ? letterDoc() : { name: s.doctor || "" }; sb.textContent = ld.name || s.addr || "Neonatal · Pediatric · IAP"; }
-  if (lg) lg.innerHTML = s.logo ? `<img src="${s.logo}" alt="">` : "👶";
+  if (lg) lg.innerHTML = s.logo ? `<img src="${esc(s.logo)}" alt="">` : "👶";
 }
 function handleLogoFile(input) {
   const f = input && input.files && input.files[0];
@@ -1942,7 +1942,7 @@ function splitClinicContact(s) {
 function clinicHeader() {
   const s = DB.settings || {};
   const ld = (typeof letterDoc === "function") ? letterDoc() : { name: s.doctor || "", qual: "", reg: s.reg || "" };
-  const logo = s.logo ? `<img src="${s.logo}" alt="logo" class="report-logo" data-onerror="hideImg">` : `<div style="font-size:40px">👶</div>`;
+  const logo = s.logo ? `<img src="${esc(s.logo)}" alt="logo" class="report-logo" data-onerror="hideImg">` : `<div style="font-size:40px">👶</div>`;
   const cc = splitClinicContact(s);
   return `<div class="report-head">${logo}<div><div class="clinic">${esc(s.clinic || "NeoKid Care Clinic")}</div>
   <div style="font-size:13px;color:var(--muted)">${esc(ld.name)}${ld.qual ? ", " + esc(ld.qual) : ""} ${ld.reg ? "· Reg: " + esc(ld.reg) : ""}${s.gstin ? " · GSTIN " + esc(s.gstin) : ""}<br>${esc(cc.addr)}</div></div>
@@ -2017,7 +2017,7 @@ function applyPrintMode() {
   try { document.body.classList.toggle("bw-print", !color); document.body.dataset.printMode = color ? "color" : "bw"; } catch (e) {}
   return color;
 }
-function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; const sg = document.getElementById("sGstin"); if (sg) sg.value = s.gstin || ""; $("sAddr").value = s.addr || ""; $("sPhone").value = s.phone || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; const scp = document.getElementById("sColorPrint"); if (scp) scp.checked = s.colorPrint !== false; const snv = document.getElementById("sNicuValid"); if (snv) snv.checked = !!s.nicuValid; const sgs = document.getElementById("sGuideSource"); if (sgs) sgs.value = s.guideSource || "aiims"; const sgt = document.getElementById("sGuideTSH"); if (sgt) sgt.value = s.guideTSH || "auto"; const sgb = document.getElementById("sGuideBili"); if (sgb) sgb.value = s.guideBili || "auto"; const gE = s.guideEnabled || {}; [["sGuideTshAiims", "tsh_aiims"], ["sGuideTshAap", "tsh_aap"], ["sGuideBiliIap", "bili_iap"], ["sGuideBiliNnf", "bili_nnf"], ["sGuideBiliAap", "bili_aap"]].forEach(function (pair) { const el = document.getElementById(pair[0]); if (el) el.checked = !!gE[pair[1]]; }); }
+function loadSettings() { const s = DB.settings || {}; $("sClinic").value = s.clinic || ""; $("sDoctor").value = s.doctor || ""; $("sReg").value = s.reg || ""; const sg = document.getElementById("sGstin"); if (sg) sg.value = s.gstin || ""; $("sAddr").value = s.addr || ""; $("sPhone").value = s.phone || ""; const slm = $("sLockMins"); if (slm) slm.value = s.lockMins || "15"; const pv = $("logoPrev"); if (pv) { pv.style.display = s.logo ? "" : "none"; if (s.logo) pv.src = s.logo; } const li = $("sLogo"); if (li) li.value = ""; const scp = document.getElementById("sColorPrint"); if (scp) scp.checked = s.colorPrint !== false; const snv = document.getElementById("sNicuValid"); if (snv) snv.checked = !!s.nicuValid; const sgs = document.getElementById("sGuideSource"); if (sgs) sgs.value = s.guideSource || "aiims"; const sgt = document.getElementById("sGuideTSH"); if (sgt) sgt.value = s.guideTSH || "auto"; const sgb = document.getElementById("sGuideBili"); if (sgb) sgb.value = s.guideBili || "auto"; const gE = s.guideEnabled || {}; [["sGuideTshAiims", "tsh_aiims"], ["sGuideTshAap", "tsh_aap"], ["sGuideBiliIap", "bili_iap"], ["sGuideBiliNnf", "bili_nnf"], ["sGuideBiliAap", "bili_aap"]].forEach(function (pair) { const el = document.getElementById(pair[0]); if (el) el.checked = !!gE[pair[1]]; }); const nz = document.getElementById("noticeStatus"); if (nz) nz.textContent = (typeof noticeStatusLine === "function") ? noticeStatusLine() : ""; }
 function exportData() {
   DB.lastBackup = todayISO(); save();
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: "application/json" });

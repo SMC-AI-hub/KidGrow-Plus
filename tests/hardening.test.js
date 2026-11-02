@@ -194,11 +194,16 @@ ok(!cfgSrc.includes('"kidgrow-plus"') && cfgSrc.includes('"kidgrow-prod"'), "PRO
   ok(read("index.html").includes('aria-label="Search and commands"') && read("css/style.css").includes("focus-visible"), "a11y: labelled controls + focus styles (F21)");
   ok(read("js/app.js").includes("f.focus({ preventScroll: true })"), "modals autofocus first control (F21)");
   ok(!/abha|abdm/i.test(read("js/exports.js") + read("index.html") + read("js/app.js") + read("js/fhirx.js") + read("js/ops.js")), "ABHA fully removed from app surface (F12-REMOVED 2026-10-27)");
+  ok(read("js/app.js").includes('<img src="${esc(s.logo)}"'), "clinic logo escaped in img src (XSS hardening)");
+  ok(read("index.html").includes('id="mNotice"'), "privacy notice modal present in-app (DPDP)");
+  ok(read("index.html").includes("v2026-10-27-v1") && read("js/notice.js").includes("2026-10-27-v1"), "notice version consistent (html+js)");
+  ok(read("sw.js").includes("./js/notice.js") && read("index.html").includes('js/notice.js'), "notice.js wired (index+sw)");
   ok(read(".github/workflows/ci.yml").includes("tests/e2e-smoke.js"), "CI runs e2e smoke (F23)");
   ok(read("js/app.js").includes("IDB.mirror") && read("js/app.js").includes('_meta'), "saves dual-write to IndexedDB shadow + LS meta (E1)");
   ok(read("js/idb.js").includes("IDB_CUTOVER = false") && read("js/app.js").includes("Adopted newer IndexedDB copy"), "cutover implemented but gated OFF for soak (E1)");
   ok(read("sw.js").includes("./js/idb.js"), "SW shell caches idb store");
 }
 
+ok(read("js/tenant.js").includes("KG-PT-001") && read("js/tenant.js").includes("!currentAccess().ok"), "paywall routed before MFA prompt on 42501 (KG-PT-001)");
 console.log(`\nhardening: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
