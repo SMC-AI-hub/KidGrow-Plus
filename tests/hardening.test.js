@@ -137,6 +137,11 @@ ok(m4.includes("witness required for controlled drugs") && m4.includes("controll
 ok(m4.includes("unknown clinical table") && m4.includes("tenant_write_ok(tenant_id)"), "table whitelist + write-gate in policies");
 const marSrc = read("js/mar.js");
 ok((marSrc.match(/witness/gi) || []).length >= 6, "client mirrors the witness rule");
+// 2026-11-03 recheck: the status <select> used to default to "given", so a
+// dose could be recorded as administered without an explicit choice. Pin the
+// neutral placeholder AND the server-of-the-UI guard that rejects empty.
+ok(/<option value=''>[^<]*select status[^<]*<\/option>/.test(marSrc), "eMAR status select has a neutral, empty placeholder");
+ok(/if\s*\(!\$\("mlSt_" \+ id\)\.value\)/.test(marSrc), "eMAR log refuses an unselected status");
 const calcSrc = read("js/calc.js");
 ok(calcSrc.includes("capped") && (calcSrc.match(/warnings/gi) || []).length >= 8, "calculators cap + warn, never bare numbers");
 const nicuSrc = read("js/nicu.js");

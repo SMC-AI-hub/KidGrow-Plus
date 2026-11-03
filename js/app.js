@@ -1610,7 +1610,9 @@ function greetName() { try { const u = (typeof currentUser === "function") ? cur
 function queueToday() {
   const t = todayISO();
   return (DB.tokens || []).filter((x) => x.date === t && (x.status === "waiting" || x.status === "in"))
-    .sort((a, b) => (a.n || 0) - (b.n || 0)).map((x) => ({ ...x, child: childById(x.childId) }));
+    // 2026-11-03 recheck: childById lives in ops.js, which loads after app.js.
+    // Keep the early boot render fault-free with the same lookup inline.
+    .sort((a, b) => (a.n || 0) - (b.n || 0)).map((x) => ({ ...x, child: (typeof childById === "function") ? childById(x.childId) : ((DB.children || []).find((c) => c.id === x.childId) || null) }));
 }
 function billsToday() {
   const t = todayISO(), bs = (DB.bills || []).filter((b) => b.date === t);
@@ -1884,8 +1886,12 @@ function renderDashHome() {
 function renderDashboard() {
   renderDashHome();
   const _role = myAppRole();
+  // 2026-11-03 recheck: app.js boots before clinic.js (which defines
+  // clinicPulseHTML). Guard it like the sibling renderers so the early
+  // renderAll() stays fault-free; ops.js runs the full render once all
+  // modules have parsed.
   const _clinicExtra = CLINICAL_ROLES.includes(_role)
-    ? (clinicPulseHTML() + (typeof nicuCensusHTML === "function" ? nicuCensusHTML() : "") + (typeof marDueHTML === "function" ? marDueHTML() : "") + (typeof growthAlertsHTML === "function" ? growthAlertsHTML() : ""))
+    ? ((typeof clinicPulseHTML === "function" ? clinicPulseHTML() : "") + (typeof nicuCensusHTML === "function" ? nicuCensusHTML() : "") + (typeof marDueHTML === "function" ? marDueHTML() : "") + (typeof growthAlertsHTML === "function" ? growthAlertsHTML() : ""))
     : "";
   $("dashClinic").innerHTML = roleDashHTML(_role) + _clinicExtra;
   const c = child();
