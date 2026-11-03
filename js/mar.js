@@ -108,7 +108,7 @@ function renderMar() {
       "<div class='hint'>" + esc([e.dose, e.route, e.freq].filter(Boolean).join(" · ")) + " · scheduled " + esc(String(e.scheduledAt || "").slice(0, 16).replace("T", " ")) + " · <b>" + esc(e.status) + "</b></div>" +
       logs +
       "<div class='form-grid' style='margin-top:8px'><div><label>Given by</label><input id='mlBy_" + e.id + "' placeholder='nurse / doctor'></div>" +
-      "<div><label>Status</label><select id='mlSt_" + e.id + "'><option>given</option><option>held</option><option>refused</option><option>missed</option></select></div>" +
+      "<div><label>Status</label><select id='mlSt_" + e.id + "'><option value=''>— select status —</option><option>given</option><option>held</option><option>refused</option><option>missed</option></select></div>" +
       (e.controlled ? "<div><label>Witness (required)</label><input id='mlWt_" + e.id + "' placeholder='second staff'></div>" : "") + "</div>" +
       "<button class='btn btn-p btn-sm' style='margin-top:8px' data-act='marLogDose' data-arg='" + e.id + "' data-arg2='" + e.controlled + "'>Log administration</button></div>";
   }).join("");
@@ -161,6 +161,7 @@ window.logMarDose = function (id, isCtl) {
   var list = marOf(c), ix = -1, i;
   for (i = 0; i < list.length; i++) if (list[i].id === id) ix = i;
   if (ix < 0) return;
+  if (!$("mlSt_" + id).value) { alert("Select a status (given / held / refused / missed) before logging the dose."); return; }
   var now = new Date();
   var at = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0") +
     "T" + String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
