@@ -11,7 +11,21 @@
   six exporters routed through it; new tests/exports.test.js (26 asserts).
 - SEC (KG-PT-004, P3): FHIR allowlist own-property check (__proto__ → 404).
 - SEC (KG-PT-005, P3): rate-limit key prefers x-real-ip (XFF rotation fixed).
-- VER: v10.53.1 / SW neokid-v49.
+- VER: v10.53.2 / SW neokid-v50 (eMAR status fix + 2026-11-03 full recheck).
+- FIX (full recheck 2026-11-03): `0013_subscription_gate.sql` had an unmatched
+  `)` in the `d_upd` storage policy and unguarded `storage.objects` statements,
+  which broke `npm test`/CI on vanilla Postgres since `f0d9440`. Parentheses
+  balanced + storage policies wrapped in the 0001/0007 existence guard; the
+  live staging/prod policy expressions are unchanged (verified by read-back).
+- FIX (full recheck): eMAR status `<select>` no longer silently defaults to
+  "given" (commit 2d00312) — now pinned by two hardening asserts; SW cache
+  bumped so cached clients actually receive the fix.
+- FIX (full recheck): early `renderAll()` no longer throws on
+  `clinicPulseHTML` (app.js boots before clinic.js); legacy/imported bills
+  lacking `items` no longer blank the front desk or receipt. New regression
+  assert for the legacy-bill path.
+- NEW: docs/FULL-RECHECK-2026-11-03.md — repo + CI + live-environment recheck
+  record (read-only Supabase probes; no prod writes).
 - NEW: consent withdrawal path (DPDP) — status flip + withdrawnAt + audit +
   Withdrawn badge + WITHDRAWN print stamp; covered by tests/consent.test.js.
 - NEW: in-app privacy notice v2026-10-27-v1 — first-run modal before any

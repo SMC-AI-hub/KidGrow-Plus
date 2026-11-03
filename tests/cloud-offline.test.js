@@ -99,7 +99,7 @@ async function main() {
     if (!fs.existsSync(path.join(R, m[1]))) missing.push("SHELL:" + m[1]);
   }
   ok(!missing.length, "all script/SHELL files resolve" + (missing.length ? ": " + missing.join(",") : ""));
-  ok(/neokid-v49/.test(sw), "SW cache bumped to v49 (pentest fixes: hardened exporters)");
+  ok(/neokid-v50/.test(sw), "SW cache bumped to v50 (eMAR status fix + full recheck)");
   ok(html.includes('<div class="tabs no-print" id="growthSubTabs">'), "growth sub-tabs hidden in print");
 
   const C = sb.Cloud;
@@ -499,6 +499,12 @@ async function main() {
   ok(sb.roleDashHTML("Admin").includes("clinic overview") && sb.roleDashHTML("Admin").includes("Admin Al"), "admin panel shows staff");
   sb.renderDashboard();
   ok(sb.document.getElementById("dashClinic").innerHTML.includes("clinic overview"), "dashboard renders role panel");
+  // 2026-11-03 recheck: a legacy/imported bill with no items array used to
+  // throw inside renderFront (b.items.map) and blank the whole front desk.
+  vm.runInContext("DB.bills=[{id:'legacy1',date:todayISO(),name:'Walk-in',total:500,paid:200}];", sb);
+  let legacyRender = true;
+  try { sb.renderFront(); } catch (e) { legacyRender = false; }
+  ok(legacyRender && sb.document.getElementById("frontBox").innerHTML.includes("Walk-in"), "legacy bill without items renders (no items.map crash)");
 
   // ---- billing center ----
   ok(vm.runInContext("TITLES.billing", sb) === "Subscription & Billing" && vm.runInContext("TITLES.pricing", sb) === undefined, "merged page titled, old route gone");

@@ -269,14 +269,15 @@ function delBill(id) {
 }
 function printBill(id) {
   const b = (DB.bills || []).find((x) => x.id === id); if (!b) return;
-  const bal = b.total - b.paid;
+  // 2026-11-03 recheck: legacy/imported bills may lack items or amounts.
+  const bal = (+b.total || 0) - (+b.paid || 0);
   $("billPrint").innerHTML = `<div class="receipt">${clinicHeader()}
     <div style="text-align:center;font-weight:800;letter-spacing:1px;margin:6px 0">RECEIPT · No. ${esc(receiptRef(b))}</div>
     <dl class="kv"><dt>Date</dt><dd>${fmtDate(b.date)} ${esc(b.time || "")}</dd><dt>Received from</dt><dd><b>${esc(b.name)}</b></dd><dt>Mode</dt><dd>${esc(b.mode || "—")}</dd></dl>
     <table class="tbl"><tr><th>Particulars</th><th style="text-align:right">Amount (₹)</th></tr>
-    ${b.items.map((i) => `<tr><td>${esc(i.desc)}</td><td style="text-align:right">${(+i.amt || 0).toFixed(0)}</td></tr>`).join("")}
-    <tr><td><b>Total</b></td><td style="text-align:right"><b>₹${b.total.toFixed(0)}</b></td></tr>
-    <tr><td>Paid</td><td style="text-align:right">₹${b.paid.toFixed(0)}</td></tr>
+    ${(b.items || []).map((i) => `<tr><td>${esc(i.desc)}</td><td style="text-align:right">${(+i.amt || 0).toFixed(0)}</td></tr>`).join("")}
+    <tr><td><b>Total</b></td><td style="text-align:right"><b>₹${(+b.total || 0).toFixed(0)}</b></td></tr>
+    <tr><td>Paid</td><td style="text-align:right">₹${(+b.paid || 0).toFixed(0)}</td></tr>
     ${bal !== 0 ? `<tr><td><b>Balance</b></td><td style="text-align:right"><b>₹${bal.toFixed(0)}</b></td></tr>` : ""}</table>
     <div style="display:flex;justify-content:space-between;margin-top:28px;font-size:13px"><span>Received by: ${esc(b.by || "")}</span><span>Authorised signatory</span></div>
     <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px">Get well soon! · Thank you for visiting.</div></div>`;
@@ -349,13 +350,13 @@ function renderFront() {
   <div style="height:16px"></div>
   <div class="grid g2">
     <div class="card"><h3>📒 Bills — ${fmtDate(t)} <span style="font-size:13px;color:var(--muted)">(collected ₹${coll.toFixed(0)} today)</span></h3>
-      ${todayBills.length ? todayBills.map((b) => `<div class="vac-row"><div class="grow"><b>R-${b.id.slice(-6).toUpperCase()}</b> · ${esc(b.name)} · ${esc(b.time || "")}<br>
-        <span style="font-size:12.5px;color:var(--muted)">${b.items.map((i) => esc(i.desc)).join(" + ")} · ${esc(b.mode || "")}</span></div>
-        <b>₹${b.total.toFixed(0)}</b>
-        <button class="btn btn-o btn-xs" data-act="printBill" data-arg="${b.id}">🖨️</button>
-        <button class="btn btn-danger btn-xs" data-act="delBill" data-arg="${b.id}">✕</button></div>`).join("")
+      ${todayBills.length ? todayBills.map((b) => `<div class="vac-row"><div class="grow"><b>R-${String(b.id || "").slice(-6).toUpperCase()}</b> · ${esc(b.name || "Walk-in")} · ${esc(b.time || "")}<br>
+        <span style="font-size:12.5px;color:var(--muted)">${(b.items || []).map((i) => esc(i.desc)).join(" + ")} · ${esc(b.mode || "")}</span></div>
+        <b>₹${(+b.total || 0).toFixed(0)}</b>
+        <button class="btn btn-o btn-xs" data-act="printBill" data-arg="${esc(b.id)}">🖨️</button>
+        <button class="btn btn-danger btn-xs" data-act="delBill" data-arg="${esc(b.id)}">✕</button></div>`).join("")
       : `<div style="font-size:13px;color:var(--muted)">No bills today yet — start one from a token above.</div>`}
-      ${bills.filter((b) => b.date !== t).length ? `<div class="hint" style="margin-top:8px">Earlier (${bills.filter((b) => b.date !== t).length}) — latest:</div>` + bills.filter((b) => b.date !== t).slice(0, 5).map((b) => `<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)">${fmtDate(b.date)} · ${esc(b.name)} · <b>₹${b.total.toFixed(0)}</b> <button class="btn btn-o btn-xs" data-act="printBill" data-arg="${b.id}">🖨️</button></div>`).join("") : ""}
+      ${bills.filter((b) => b.date !== t).length ? `<div class="hint" style="margin-top:8px">Earlier (${bills.filter((b) => b.date !== t).length}) — latest:</div>` + bills.filter((b) => b.date !== t).slice(0, 5).map((b) => `<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)">${fmtDate(b.date)} · ${esc(b.name || "Walk-in")} · <b>₹${(+b.total || 0).toFixed(0)}</b> <button class="btn btn-o btn-xs" data-act="printBill" data-arg="${esc(b.id)}">🖨️</button></div>`).join("") : ""}
     </div>
     <div class="card"><h3>💰 Charge rates</h3><div class="hint">Doctor can edit · used by quick-charge buttons</div>
       <div class="form-grid">${rKeys.map((k, i) => `<div><label>${esc(k)} (₹)</label><input type="number" min="0" id="rate${i}" value="${r[k]}"></div>`).join("")}</div>

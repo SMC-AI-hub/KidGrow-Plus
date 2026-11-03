@@ -131,32 +131,44 @@ create policy "t_ins" on public.tenants for insert with check (
   (auth.uid() is not null) and my_email_confirmed() and my_subscription_ok());
 
 -- ================= 5. Storage writes (inline membership checks) =================
-drop policy if exists "d_ins" on storage.objects;
-create policy "d_ins" on storage.objects for insert with check (
-  (bucket_id = 'clinic-docs'::text)
-  and (exists (select 1 from memberships m
-    where m.user_id = auth.uid() and m.status = 'active'::text
-      and (m.tenant_id)::text = (storage.foldername(objects.name))[1]
-      and (m.role = any (array['owner'::text, 'admin'::text, 'doctor'::text, 'nurse'::text]))))
-  and (public.my_subscription_ok() or exists (select 1 from public.break_glass_events b
-    where b.actor_id = auth.uid() and b.scope = 'subscription-gate'
-      and char_length(b.reason) >= 8 and b.created_at > now() - interval '4 hours'
-      and b.tenant_id::text = (storage.foldername(objects.name))[1])));
+-- Vanilla-Postgres CI has no storage schema: guard everything like 0001/0007
+-- so a fresh apply outside Supabase skips these two policies instead of
+-- aborting the whole migration. On Supabase (where storage.objects exists)
+-- the policy expressions are unchanged from the staging/prod applied version.
+do $$
+begin
+  if exists (select 1 from information_schema.tables
+             where table_schema = 'storage' and table_name = 'objects') then
+    drop policy if exists "d_ins" on storage.objects;
+    create policy "d_ins" on storage.objects for insert with check (
+      (bucket_id = 'clinic-docs'::text)
+      and (exists (select 1 from memberships m
+        where m.user_id = auth.uid() and m.status = 'active'::text
+          and (m.tenant_id)::text = (storage.foldername(objects.name))[1]
+          and (m.role = any (array['owner'::text, 'admin'::text, 'doctor'::text, 'nurse'::text]))))
+      and (public.my_subscription_ok() or exists (select 1 from public.break_glass_events b
+        where b.actor_id = auth.uid() and b.scope = 'subscription-gate'
+          and char_length(b.reason) >= 8 and b.created_at > now() - interval '4 hours'
+          and b.tenant_id::text = (storage.foldername(objects.name))[1]))
+    );
 
-drop policy if exists "d_upd" on storage.objects;
-create policy "d_upd" on storage.objects for update
-  using ((bucket_id = 'clinic-docs'::text)
-    and ((storage.foldername(name))[1] in (select (my_tenant_ids())::text as my_tenant_ids)))
-  with check (
-    (bucket_id = 'clinic-docs'::text)
-    and (exists (select 1 from memberships m
-      where m.user_id = auth.uid() and m.status = 'active'::text
-        and (m.tenant_id)::text = (storage.foldername(objects.name))[1]
-        and (m.role = any (array['owner'::text, 'admin'::text, 'doctor'::text, 'nurse'::text]))))
-    and (public.my_subscription_ok() or exists (select 1 from public.break_glass_events b
-      where b.actor_id = auth.uid() and b.scope = 'subscription-gate'
-        and char_length(b.reason) >= 8 and b.created_at > now() - interval '4 hours'
-        and b.tenant_id::text = (storage.foldername(objects.name))[1]))));
+    drop policy if exists "d_upd" on storage.objects;
+    create policy "d_upd" on storage.objects for update
+      using ((bucket_id = 'clinic-docs'::text)
+        and ((storage.foldername(name))[1] in (select (my_tenant_ids())::text as my_tenant_ids)))
+      with check (
+        (bucket_id = 'clinic-docs'::text)
+        and (exists (select 1 from memberships m
+          where m.user_id = auth.uid() and m.status = 'active'::text
+            and (m.tenant_id)::text = (storage.foldername(objects.name))[1]
+            and (m.role = any (array['owner'::text, 'admin'::text, 'doctor'::text, 'nurse'::text]))))
+        and (public.my_subscription_ok() or exists (select 1 from public.break_glass_events b
+          where b.actor_id = auth.uid() and b.scope = 'subscription-gate'
+            and char_length(b.reason) >= 8 and b.created_at > now() - interval '4 hours'
+            and b.tenant_id::text = (storage.foldername(objects.name))[1]))
+      );
+  end if;
+end $$;
 
 -- ================= 6. RPC least privilege for the new helpers (0007 pattern) =================
 do $$
