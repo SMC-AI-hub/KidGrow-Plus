@@ -80,11 +80,30 @@ were the committed auto-rollback gate on staging, verified rolled back.
 - 2026-11-05 prod gate (on/after that date; re-take census, backups decision,
   billing state, unconfirmed-user decision first).
 
-## 6. Next actions
+## 6. Post-merge verification — COMPLETED 2026-11-03 15:12 UTC
 
-1. Merge/push this branch to `main` (and `staging` if desired) → CI `test` +
-   `smoke` run; confirm both green.
-2. After the Vercel redeploy: `/api/health` must read `10.53.2`, `/sw.js` must
-   read `neokid-v50` on both targets, and cached clients get the eMAR fix.
-3. Re-take the Nov-5 gate preconditions on/after 2026-11-05, then follow
+- PR **#1** `arena/510fe3ba-kidgrow-plus → main` opened; checks: `test` PASS
+  (31 s), `smoke` PASS (36 s), `Vercel – kidgrow-staging` PASS,
+  `Vercel – neokidcare` PASS, `Supabase Preview` skipping, merge state CLEAN.
+- Merged with `gh pr merge 1 --merge` → `main @ a187a81` (merge commit).
+- Main CI run `41661177883`: **test success (28 s) + smoke success (53 s)** —
+  the Playwright e2e smoke that could not run locally is now CI-verified.
+  `npm audit --audit-level=high` also passed. The two previously red main runs
+  (`41463582610`, `41649136708`) are superseded.
+- Live read-back at 15:12:29 UTC:
+  - `kidgrow-prod.vercel.app/api/health` → 200, `version 10.53.2`,
+    `supabaseLive true`, `razorpayConfigured false`, `webhookSecretSet false`.
+  - `kidgrow-staging.vercel.app/api/health` → 200, `version 10.53.2`, same checks.
+  - Both `/sw.js` → `const CACHE = "neokid-v50"`.
+  - Both `/js/mar.js` → `— select status —` placeholder present.
+  So cached clients now receive the eMAR fix; the v49→v50 cache bust is live.
+
+## 7. Remaining (human-owned / dated)
+
+1. Re-take the Nov-5 gate preconditions on/after 2026-11-05, then follow
    `docs/security/prod-gate-nov5.md` — never before.
+2. Wire Razorpay test→live keys + Step-5 e2e (billing still DOWN).
+3. Close M7 Gates 1–5 and the §5 items; **no real patients before M7 sign-off**.
+4. Owner: grant the Vercel token project/deployment read scope if a connector-
+   based deployment inventory is wanted; confirm the auth-config hardening
+   items (password length/HIBP/CAPTCHA/session timeout) and trial end dates.
