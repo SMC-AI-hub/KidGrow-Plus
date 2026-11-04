@@ -1,6 +1,26 @@
 # Changelog
 
 ## Unreleased (staging)
+- SAFETY (2026-11-04, both A + B chosen by owner): wrong-child / twin
+  safeguard. The app keeps ONE active child in `DB.activeId`, so every form
+  silently wrote to it — "Abhinaya Twin 1 is selected as default".
+  - A (app-wide): a twin-confirm banner above every page whenever the active
+    child has a twin / same-DOB sibling / look-alike record, plus a gate on
+    ~70 delegated clinical write + delete actions. Confirmation is
+    session-scoped and invalidated by a child switch, rename, DOB/MRN edit,
+    or sibling add/remove. "Change confirmation" re-locks entries.
+  - B (highest-risk forms): `mVisit`, `mGrowth`, `mVac`, `mTanner`, `mExtra`,
+    `mAppt` now open with NO child selected; Save/Book is disabled and the
+    delegated save is blocked until a child is picked by name / DOB / MRN.
+    `#aChild` no longer pre-selects `DB.activeId`.
+  - Pure client-side heuristic (explicit twin links, twin-marked names, or
+    same DOB + shared parent/phone). Clinics with no such pair see no change.
+    No schema, server, data-model or billing changes. Additive CSS only.
+  - NEW `js/childguard.js` + `tests/childguard.test.js` (69 asserts): twin
+    detection, signature invalidation, both gates, wiring/CSP/version pins.
+    Chained into `npm test`; CSP converted-file list extended.
+- VER: v10.53.3 / SW neokid-v51 (child-safety guard). Cache bumped so
+  offline clients actually receive the new script and styles.
 - SEC (KG-PT-001, P1): server-side subscription gate — RLS enforces
   entitlement (migration 0013, staging-applied); lapsed = writes denied,
   reads/export stay open; break-glass honored server-side; 42501 routes to

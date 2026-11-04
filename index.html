@@ -124,6 +124,8 @@
     </div>
 
     <div class="content">
+      <!-- Child-safety guard (2026-11-04): twin-confirm banner, app-wide, screen only -->
+      <div id="cgBanner" class="cg-banner-slot no-print" aria-live="polite"></div>
       <!-- ======== DASHBOARD ======== -->
       <!-- BILLING (merged: #pricing redirects here via ROUTE_ALIASES) -->
       <section class="page bigpage" id="pg-billing">
@@ -656,7 +658,7 @@
   <h3>Book appointment</h3>
   <div class="form-grid">
     <input type="hidden" id="aId">
-    <div><label>Child *</label><select id="aChild"></select></div>
+    <div><label>Child *</label><select id="aChild" data-onchange="cgPick"></select></div>
     <div><label>Date *</label><input type="date" id="aDate"></div>
     <div><label>Time</label><input type="time" id="aTime"></div>
     <div><label>Type</label><select id="aType"><option>Vaccine</option><option>Growth review</option><option>Review</option><option>General</option><option>Follow-up</option></select></div>
@@ -734,6 +736,7 @@
 <script src="js/formulary.js"></script>
 <script src="js/ops.js"></script>
 <script src="js/cmdk.js"></script>
+<script src="js/childguard.js"></script>
 <div id="updateBar" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#0c2340;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px;text-align:center">A new version of NeoKid Care is ready. <button data-act="kgUpdate" style="background:#0e7c7b;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;margin-left:8px">Refresh now</button></div>
 <script src="js/boot.js"></script>
 </body>

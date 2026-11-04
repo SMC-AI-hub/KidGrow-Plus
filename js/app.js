@@ -2118,6 +2118,8 @@ function factoryReset() {
 /* ---------------- Modals / print / render ---------------- */
 function openModal(id) {
   $(id).classList.add("open");
+  /* 2026-11-04 child-safety guard: each entry form starts with NO child picked. */
+  try { if (typeof cgFormOpen === "function") cgFormOpen(id); } catch (e0) {}
   try { const f = $(id).querySelector("input, select, textarea, button"); if (f) setTimeout(() => { try { f.focus({ preventScroll: true }); } catch (e) {} }, 40); } catch (e2) {}
 }
 function closeModal(id) { $(id).classList.remove("open"); }
@@ -2257,7 +2259,7 @@ function renderAll() {
   if (!child() && DB.children.length) DB.activeId = DB.children[0].id;
   DB.appts = DB.appts || []; DB.tokens = DB.tokens || []; DB.bills = DB.bills || []; DB.users = DB.users || []; DB.audit = DB.audit || []; DB.session = DB.session || {};
   try { syncChildPicker(); } catch (e) {}
-  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderNicu", "renderHri", "renderChronic", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders"].forEach(callRender);
+  ["renderDashboard", "renderChildren", "renderMilestones", "renderVaccines", "renderGrowth", "renderVisits", "renderTimeline", "renderSchedule", "renderAnalytics", "renderCard", "renderEmergency", "renderRx", "renderFront", "renderUsers", "renderNB", "renderNicu", "renderHri", "renderChronic", "renderLabs", "renderAefi", "renderScreen", "renderDiet", "renderConsent", "renderHand", "renderStock", "renderDisplay", "renderDoctors", "renderExport", "applyRole", "enforceLock", "renderPatientHeaders", "cgRender"].forEach(callRender);
   try { applyFolds(); } catch (e) {}
   try { if (typeof backupWatch === "function") backupWatch(); } catch (e) {} // F20: post-login watchdog
 }

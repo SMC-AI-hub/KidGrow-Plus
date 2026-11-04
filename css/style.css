@@ -646,3 +646,29 @@ table.tbl tr:hover td{background:color-mix(in srgb,var(--teal) 7%,var(--rowh))}
 :focus-visible{outline:2.5px solid var(--teal);outline-offset:2px;border-radius:6px}
 .sr-row:focus-visible{outline-offset:-2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- 2026-11-04 · Child-safety guard (Option A + Option B) ----------
+   Additive only. Never renames or removes existing selectors; class names are
+   a public contract. Uses theme tokens so dark / sunrise themes stay legible. */
+.cg-banner-slot:empty{display:none}
+.cg-banner-slot{margin:0 0 12px}
+.cg-banner{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;
+  padding:11px 14px;border:1px solid #d6a13a;border-left:5px solid #d97706;border-radius:10px;
+  background:#fff8e8;color:#6b3f06;box-shadow:0 1px 3px rgba(15,43,77,.08);font-size:13.5px}
+.cg-title{display:block;font-weight:800;font-size:14px;letter-spacing:.1px;margin-bottom:2px}
+.cg-note{display:block;color:#7a531a;font-size:12.5px;line-height:1.45}
+.cg-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.cg-actions button{font-size:12.5px;padding:6px 11px}
+.cg-actions select{font-size:12.5px;padding:6px 8px;max-width:230px}
+.cg-pick{margin:0 0 12px;padding:10px 12px;border:1px solid var(--teal);border-left:4px solid var(--teal);
+  border-radius:9px;background:var(--card2)}
+.cg-pick label{display:block;font-weight:800;font-size:12.5px;margin-bottom:5px;color:var(--head)}
+.cg-pick select{width:100%;font-size:14px;padding:8px 9px}
+.cg-pick .cg-note{margin-top:6px;color:var(--muted)}
+.cg-lock{margin:0 0 10px;padding:7px 10px;border:1px dashed #d97706;border-radius:8px;
+  background:#fff8e8;color:#6b3f06;font-size:12.5px;font-weight:700}
+.cg-flash{outline:3px solid #d97706!important;outline-offset:2px!important}
+[data-theme="dark"] .cg-banner{background:#3a2a10;color:#ffe0a8;border-color:#8a6220;border-left-color:#d97706}
+[data-theme="dark"] .cg-note,[data-theme="dark"] .cg-lock{color:#f0c887}
+[data-theme="dark"] .cg-lock{background:#3a2a10;border-color:#8a6220}
+@media print{.cg-banner-slot,.cg-pick,.cg-lock{display:none!important}}

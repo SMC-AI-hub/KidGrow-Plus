@@ -7,7 +7,7 @@ const CONVERTED = ["index.html", "js/app.js", "js/front.js", "js/cloud.js", "js/
   "js/aefi.js", "js/aids.js", "js/calc.js", "js/chronic.js", "js/clinic.js", "js/cmdk.js", "js/consent.js",
   "js/diet.js", "js/exam.js", "js/exports.js", "js/formulary.js", "js/growth-chart.js", "js/growth.js",
   "js/handouts.js", "js/hri.js", "js/hx.js", "js/labs.js", "js/letters.js", "js/mar.js", "js/mrd.js",
-  "js/nb.js", "js/nicu.js", "js/rx.js", "js/screen.js", "js/sync-rel.js", "js/terms.js"]; // E2c: everything
+  "js/nb.js", "js/nicu.js", "js/rx.js", "js/screen.js", "js/sync-rel.js", "js/terms.js", "js/childguard.js"]; // E2c: everything + 2026-11-04 child guard
 let pass = 0, fail = 0;
 function ok(c, name) { if (c) { pass++; } else { fail++; console.log("FAIL:", name); } }
 const read = (f) => fs.readFileSync(path.join(R, f), "utf8");
