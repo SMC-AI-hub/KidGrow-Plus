@@ -245,7 +245,11 @@ function copyMsg(childId) {
 function openApptModal() {
   if (!DB.children.length) return alert("Register a child first.");
   $("aId").value = "";
-  $("aChild").innerHTML = DB.children.map((c) => `<option value="${c.id}"${c.id === DB.activeId ? " selected" : ""}>${esc(c.name)}</option>`).join("");
+  /* 2026-11-04 child-safety guard: no child is pre-selected. The old default
+     (active child) let a twin's appointment be booked against the wrong twin. */
+  $("aChild").innerHTML = `<option value="">— select child —</option>` +
+    DB.children.map((c) => `<option value="${c.id}">${esc(c.name)}${c.dob ? " · " + esc(c.dob) : ""}${c.mrn ? " · MRN " + esc(c.mrn) : ""}</option>`).join("");
+  $("aChild").value = "";
   $("aDate").value = SCH.date || todayISO();
   $("aTime").value = ""; $("aType").value = "Vaccine"; $("aNote").value = "";
   openModal("mAppt");

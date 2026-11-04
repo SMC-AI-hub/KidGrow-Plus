@@ -20,6 +20,11 @@ function actRun(name, el, ev) {
   var fn = null;
   try { fn = Act[name]; } catch (e) {}
   if (typeof fn !== "function") return false;
+  /* 2026-11-04 child-safety guard: clinical writes require explicit child
+     confirmation when a twin/look-alike pair exists, and an explicit child
+     pick on the guarded entry forms. Single choke point for ALL delegated
+     actions, so no save function can bypass it. */
+  try { if (typeof cgAllow === "function" && !cgAllow(name, el)) return true; } catch (e) {}
   try { fn(el, ev); } catch (e) { actReport(name, e); }
   return true;
 }
